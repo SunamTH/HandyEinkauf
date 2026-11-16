@@ -4,6 +4,19 @@
 
 ---
 
+## 📱 1-Klick Handy-Download (Android `.apk` & iOS/Web)
+
+Du kannst die fertige App direkt auf deinem Smartphone herunterladen (kein Entpacken einer ZIP-Datei nötig):
+
+- 🤖 **Android App (`.apk` Direkt-Download):**  
+  👉 **[SmartCart.apk direkt herunterladen](https://github.com/SunamTH/HandyEinkauf/releases/latest/download/SmartCart.apk)**
+- 🌐 **Offline HTML-Einzeldatei (Android & iOS):**  
+  👉 **[SmartCart_Handy_App.html direkt herunterladen](https://github.com/SunamTH/HandyEinkauf/releases/latest/download/SmartCart_Handy_App.html)**
+- 📦 **Alle Versionen & Release-Übersicht:**  
+  👉 **[GitHub Releases (Latest)](https://github.com/SunamTH/HandyEinkauf/releases/latest)**
+
+---
+
 ## ✨ Hauptfunktionen
 
 1. **Manuelle & Foto-basierte Einkaufslisten-Erstellung (OCR)**

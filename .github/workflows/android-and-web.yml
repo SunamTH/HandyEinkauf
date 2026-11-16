@@ -87,3 +87,18 @@ jobs:
           name: SmartCart-Android-Debug-APK
           path: android/app/build/outputs/apk/debug/app-debug.apk
           retention-days: 30
+
+      - name: Publish Direct APK & HTML Release on GitHub
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cp android/app/build/outputs/apk/debug/app-debug.apk SmartCart.apk
+          TAG="v1.0.${{ github.run_number }}"
+          gh release create "$TAG" SmartCart.apk dist/SmartCart_Handy_App.html \
+            --repo "${{ github.repository }}" \
+            --title "SmartCart Einkaufslisten-App ($TAG)" \
+            --notes "### 📱 Direkter Handy-Download (ohne Entpacken)
+          - **Android App (.apk):** [SmartCart.apk direkt herunterladen](https://github.com/${{ github.repository }}/releases/latest/download/SmartCart.apk)
+          - **Offline HTML-Einzeldatei (Android & iOS):** [SmartCart_Handy_App.html herunterladen](https://github.com/${{ github.repository }}/releases/latest/download/SmartCart_Handy_App.html)" \
+            --latest
