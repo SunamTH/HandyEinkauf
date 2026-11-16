@@ -376,36 +376,159 @@
     }
 
     /**
-     * Creates a new shopping list, persists it, and activates it.
+     * Creates a new shopping list, persists it into `shoppingLists`, sets it as the active list, and returns it.
      * @param {Object} params
+     * @param {string} [params.name='Neuer Einkaufszettel']
+     * @param {string} [params.supermarketId]
+     * @param {boolean} [params.liveOptimizationEnabled=true]
+     * @param {Array} [params.items=[]]
      * @returns {Object}
      */
     createNewShoppingList(params = {}) {
       const stores = this.loadSupermarkets();
-      const newList = createShoppingList({
-        name: params.name || 'Neuer Einkaufszettel',
-        supermarketId: params.supermarketId || stores[0].id,
+      const targetStoreId = params.supermarketId || stores[0].id;
+      const targetStore =
+        stores.find((s) => s.id === targetStoreId) || stores[0];
+      const rawList = createShoppingList({
+        id: params.id,
+        name:
+          params.name && String(params.name).trim()
+            ? String(params.name).trim()
+            : 'Neuer Einkaufszettel',
+        supermarketId: targetStore.id,
         liveOptimizationEnabled:
-          params.liveOptimizationEnabled === undefined ? true : Boolean(params.liveOptimizationEnabled),
+          params.liveOptimizationEnabled === undefined
+            ? true
+            : Boolean(params.liveOptimizationEnabled),
         items: params.items || []
       });
+      const { sortedItems } = sortShoppingList(rawList, targetStore);
+      const newList = {
+        ...rawList,
+        items: sortedItems,
+        updatedAt: Date.now()
+      };
       return this.saveActiveList(newList);
     }
 
     /**
-     * Deletes a shopping list by ID (creates a fresh list if the last one was deleted).
+     * Renames a shopping list in `shoppingLists` and returns the updated list.
+     * If called with a single string argument `renameShoppingList(newName)`, renames the currently active list.
+     *
      * @param {string} listId
-     * @returns {Array<Object>}
+     * @param {string} [newName]
+     * @returns {Object} Updated shopping list
+     */
+    renameShoppingList(listId, newName) {
+      let targetId = listId;
+      let resolvedName = newName;
+      if (newName === undefined && typeof listId === 'string') {
+        targetId = this.getActiveListId();
+        resolvedName = listId;
+      }
+
+      const lists = this.loadShoppingLists();
+      const idx = lists.findIndex((l) => l.id === targetId);
+      const targetList = idx !== -1 ? lists[idx] : lists[0];
+      if (!targetList) {
+        return this.createNewShoppingList({ name: resolvedName || 'Mein Einkaufszettel' });
+      }
+
+      const cleanName =
+        resolvedName !== undefined && String(resolvedName).trim() !== ''
+          ? String(resolvedName).trim()
+          : targetList.name;
+
+      const updated = createShoppingList({
+        ...targetList,
+        name: cleanName,
+        updatedAt: Date.now()
+      });
+
+      if (idx !== -1) {
+        lists[idx] = updated;
+      } else {
+        lists[0] = updated;
+      }
+      this.saveShoppingLists(lists);
+
+      const store = this.getSupermarketById(updated.supermarketId);
+      const { sortedItems } = sortShoppingList(updated, store);
+      return {
+        ...updated,
+        items: sortedItems
+      };
+    }
+
+    /**
+     * Duplicates an existing shopping list under a new ID and name, sets it as active, and returns it.
+     *
+     * @param {string} [listId]
+     * @param {string} [newName]
+     * @returns {Object} Newly duplicated shopping list
+     */
+    duplicateShoppingList(listId, newName) {
+      const targetId = listId || this.getActiveListId();
+      const lists = this.loadShoppingLists();
+      const sourceList = lists.find((l) => l.id === targetId) || lists[0] || this.getActiveList();
+      const dupName =
+        newName && String(newName).trim()
+          ? String(newName).trim()
+          : `${sourceList.name} (Kopie)`;
+
+      const clonedItems = (sourceList.items || []).map((item, idx) =>
+        createItem({
+          ...item,
+          id: undefined,
+          originalOrder: typeof item.originalOrder === 'number' ? item.originalOrder : idx
+        })
+      );
+
+      return this.createNewShoppingList({
+        name: dupName,
+        supermarketId: sourceList.supermarketId,
+        liveOptimizationEnabled: sourceList.liveOptimizationEnabled,
+        items: clonedItems
+      });
+    }
+
+    /**
+     * Switches the active shopping list by ID and returns the newly active shopping list.
+     * @param {string} listId
+     * @returns {Object}
+     */
+    switchShoppingList(listId) {
+      if (listId) {
+        this.setActiveListId(listId);
+      }
+      return this.getActiveList();
+    }
+
+    /**
+     * Deletes a shopping list by ID from `shoppingLists`.
+     * If the deleted list was active, switches to another saved list or creates a fresh empty one.
+     *
+     * @param {string} listId
+     * @returns {Array<Object>} Remaining saved shopping lists
      */
     deleteShoppingList(listId) {
+      const targetId = listId || this.getActiveListId();
       const lists = this.loadShoppingLists();
-      const filtered = lists.filter((l) => l.id !== listId);
+      const filtered = lists.filter((l) => l.id !== targetId);
       if (filtered.length === 0) {
-        const fresh = this.createNewShoppingList({ name: 'Mein Einkaufszettel' });
+        const stores = this.loadSupermarkets();
+        const fresh = createShoppingList({
+          name: 'Mein Einkaufszettel',
+          supermarketId: stores[0].id,
+          liveOptimizationEnabled: true,
+          items: []
+        });
+        this.saveShoppingLists([fresh]);
+        this.setActiveListId(fresh.id);
         return [fresh];
       }
       this.saveShoppingLists(filtered);
-      if (this.getActiveListId() === listId) {
+      if (this.getActiveListId() === targetId) {
         this.setActiveListId(filtered[0].id);
       }
       return filtered;
@@ -458,6 +581,9 @@
     'upsertShoppingList',
     'saveActiveList',
     'createNewShoppingList',
+    'renameShoppingList',
+    'duplicateShoppingList',
+    'switchShoppingList',
     'deleteShoppingList',
     'loadState',
     'clearAll'

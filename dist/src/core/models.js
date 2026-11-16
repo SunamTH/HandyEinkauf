@@ -251,8 +251,24 @@
     icon = '🛒',
     color = '#2563eb',
     itemOrder = [],
+    sourceSupermarketId = undefined,
+    supermarkets = undefined,
     updatedAt = null
   } = {}) {
+    if (
+      (!Array.isArray(itemOrder) || itemOrder.length === 0) &&
+      sourceSupermarketId !== undefined
+    ) {
+      return createSupermarketWithSorting({
+        id,
+        name,
+        icon,
+        color,
+        sourceSupermarketId,
+        supermarkets: supermarkets || [],
+        updatedAt
+      });
+    }
     const cleanName = String(name || 'Supermarkt').trim();
     const seen = new Set();
     const deduplicatedOrder = [];
@@ -518,6 +534,87 @@
 
   const DEFAULT_SUPERMARKETS = getDefaultSupermarkets();
 
+  /**
+   * Returns a fresh copy of the standard German supermarket walking order
+   * (from the default REWE configuration).
+   * @returns {string[]}
+   */
+  function getDefaultItemOrder() {
+    const baseStore =
+      Array.isArray(DEFAULT_SUPERMARKETS) && DEFAULT_SUPERMARKETS.length > 0
+        ? DEFAULT_SUPERMARKETS[0]
+        : getDefaultSupermarkets()[0];
+    return Array.isArray(baseStore && baseStore.itemOrder)
+      ? [...baseStore.itemOrder]
+      : [];
+  }
+
+  /**
+   * Creates a new Supermarket configuration and adopts its initial item sorting
+   * either from the default walking order (`sourceSupermarketId === 'default'`)
+   * or from an existing supermarket in `supermarkets`.
+   *
+   * @param {Object} params
+   * @param {string} [params.id]
+   * @param {string} params.name
+   * @param {string} [params.icon='🛒']
+   * @param {string} [params.color='#2563eb']
+   * @param {string} [params.sourceSupermarketId='default']
+   * @param {Array<Object>} [params.supermarkets=[]]
+   * @param {string[]} [params.itemOrder]
+   * @param {number} [params.updatedAt]
+   * @returns {Object}
+   */
+  function createSupermarketWithSorting({
+    id,
+    name,
+    icon = '🛒',
+    color = '#2563eb',
+    sourceSupermarketId = 'default',
+    supermarkets = [],
+    itemOrder = null,
+    updatedAt = null
+  } = {}) {
+    let resolvedItemOrder = [];
+
+    if (Array.isArray(itemOrder) && itemOrder.length > 0) {
+      resolvedItemOrder = [...itemOrder];
+    } else if (
+      sourceSupermarketId &&
+      String(sourceSupermarketId).trim() !== '' &&
+      String(sourceSupermarketId).trim().toLowerCase() !== 'default'
+    ) {
+      const targetId = String(sourceSupermarketId).trim();
+      const pool =
+        Array.isArray(supermarkets) && supermarkets.length > 0
+          ? supermarkets
+          : DEFAULT_SUPERMARKETS;
+      const sourceStore =
+        pool.find((s) => s && s.id === targetId) ||
+        pool.find(
+          (s) => s && normalizeItemName(s.name) === normalizeItemName(targetId)
+        ) ||
+        DEFAULT_SUPERMARKETS.find((s) => s && s.id === targetId);
+
+      if (sourceStore && Array.isArray(sourceStore.itemOrder)) {
+        resolvedItemOrder = [...sourceStore.itemOrder];
+      } else {
+        resolvedItemOrder = getDefaultItemOrder();
+      }
+    } else {
+      resolvedItemOrder = getDefaultItemOrder();
+    }
+
+    return createSupermarket({
+      id,
+      name,
+      icon,
+      color,
+      itemOrder: resolvedItemOrder,
+      updatedAt
+    });
+  }
+
   const modelsExports = {
     generateId,
     normalizeItemName,
@@ -526,6 +623,8 @@
     guessItemCategory,
     createItem,
     createSupermarket,
+    createSupermarketWithSorting,
+    getDefaultItemOrder,
     getDefaultSupermarkets,
     DEFAULT_SUPERMARKETS,
     createShoppingList

@@ -547,13 +547,294 @@
   }
 
   /**
-   * Adds a new item to a supermarket's walking order at a specific position (or at the end).
+   * Attaches non-enumerable positioning metadata (`supermarket`, `insertedAtIndex`, `newIndex`,
+   * `foundPrevious`, `previousItem`, `movedItem`) to a returned supermarket object so callers can
+   * either use the return value directly as a Supermarket object OR destructure `{ supermarket, insertedAtIndex, foundPrevious }`.
+   *
+   * @param {Object} updatedStore
+   * @param {Object} meta
+   * @returns {Object}
+   */
+  function attachStorePositionMetadata(updatedStore, meta = {}) {
+    if (!updatedStore || typeof updatedStore !== 'object') return updatedStore;
+    const idx = typeof meta.insertedAtIndex === 'number' ? meta.insertedAtIndex : -1;
+    Object.defineProperties(updatedStore, {
+      supermarket: {
+        value: updatedStore,
+        enumerable: false,
+        configurable: true
+      },
+      insertedAtIndex: {
+        value: idx,
+        enumerable: false,
+        configurable: true
+      },
+      newIndex: {
+        value: idx,
+        enumerable: false,
+        configurable: true
+      },
+      foundPrevious: {
+        value: Boolean(meta.foundPrevious),
+        enumerable: false,
+        configurable: true
+      },
+      previousItem: {
+        value: meta.previousItem || null,
+        enumerable: false,
+        configurable: true
+      },
+      movedItem: {
+        value: meta.movedItem || null,
+        enumerable: false,
+        configurable: true
+      }
+    });
+    return updatedStore;
+  }
+
+  /**
+   * Checks whether a `previousItemName` value denotes inserting/moving to the very beginning (index 0).
+   * @param {*} prev
+   * @returns {boolean}
+   */
+  function isStartMarker(prev) {
+    if (prev === '__START__' || prev === 0) return true;
+    if (typeof prev !== 'string') return false;
+    const norm = prev.trim().toLowerCase();
+    return (
+      norm === '__start__' ||
+      norm === 'anfang' ||
+      norm === 'ganz am anfang' ||
+      norm === 'ganz an den anfang' ||
+      norm === 'start' ||
+      norm === 'position 1' ||
+      norm === 'pos 1'
+    );
+  }
+
+  /**
+   * Adds a known item to a supermarket's walking order immediately AFTER `previousItemName`.
+   * - If `previousItemName` is `'__START__'` (or `'Anfang'`), inserts at index `0`.
+   * - If `previousItemName` matches an existing item in `supermarket.itemOrder`, inserts right after it (`prevIdx + 1`).
+   *   If `itemName` already existed in `itemOrder`, it is moved to stand right after `previousItemName`.
+   * - If `previousItemName` is null/empty or not found, appends at the end of `itemOrder`.
+   *
    * @param {Object} supermarket
    * @param {string} itemName
-   * @param {number} [insertIndex=-1]
+   * @param {string|null} [previousItemName=null]
+   * @returns {Object} Updated supermarket (with `.supermarket`, `.insertedAtIndex`, `.foundPrevious`, `.previousItem` metadata)
+   */
+  function addSupermarketKnownItemAfter(supermarket, itemName, previousItemName = null) {
+    if (!supermarket || !String(itemName || '').trim()) {
+      return attachStorePositionMetadata(supermarket, {
+        insertedAtIndex: -1,
+        foundPrevious: false
+      });
+    }
+
+    const clean = String(itemName).trim();
+    const order = Array.isArray(supermarket.itemOrder) ? [...supermarket.itemOrder] : [];
+    const existingIdx = indexOfNormalized(order, clean);
+
+    // If user specified the item itself as previousItemName and it already exists, keep it in place
+    if (
+      existingIdx !== -1 &&
+      typeof previousItemName === 'string' &&
+      normalizeItemName(previousItemName) === normalizeItemName(clean)
+    ) {
+      const unchanged = createSupermarket({
+        ...supermarket,
+        itemOrder: order,
+        updatedAt: Date.now()
+      });
+      return attachStorePositionMetadata(unchanged, {
+        insertedAtIndex: existingIdx,
+        foundPrevious: true,
+        previousItem: order[existingIdx],
+        movedItem: clean
+      });
+    }
+
+    if (existingIdx !== -1) {
+      order.splice(existingIdx, 1);
+    }
+
+    let foundPrevious = false;
+    let matchedPrevious = null;
+
+    if (isStartMarker(previousItemName)) {
+      order.unshift(clean);
+      foundPrevious = true;
+      matchedPrevious = '__START__';
+    } else if (
+      typeof previousItemName === 'string' &&
+      previousItemName.trim() !== '' &&
+      previousItemName.trim() !== '__END__'
+    ) {
+      const prevIdx = indexOfNormalized(order, previousItemName.trim());
+      if (prevIdx !== -1) {
+        matchedPrevious = order[prevIdx];
+        order.splice(prevIdx + 1, 0, clean);
+        foundPrevious = true;
+      } else {
+        order.push(clean);
+        foundPrevious = false;
+      }
+    } else {
+      order.push(clean);
+      foundPrevious = false;
+    }
+
+    const updatedStore = createSupermarket({
+      ...supermarket,
+      itemOrder: order,
+      updatedAt: Date.now()
+    });
+    const finalIdx = indexOfNormalized(updatedStore.itemOrder, clean);
+
+    return attachStorePositionMetadata(updatedStore, {
+      insertedAtIndex: finalIdx,
+      foundPrevious,
+      previousItem: matchedPrevious,
+      movedItem: clean
+    });
+  }
+
+  /**
+   * Moves an existing item in `supermarket.itemOrder` (identified by item name or current index)
+   * so that it stands immediately AFTER `previousItemName` (or at index `0` if `previousItemName === '__START__'`).
+   *
+   * @param {Object} supermarket
+   * @param {string|number} itemNameOrIndex
+   * @param {string|null} previousItemName
+   * @returns {Object} Updated supermarket (with `.supermarket`, `.insertedAtIndex`, `.newIndex`, `.foundPrevious`, `.previousItem` metadata)
+   */
+  function moveSupermarketItemAfter(supermarket, itemNameOrIndex, previousItemName) {
+    if (!supermarket || !Array.isArray(supermarket.itemOrder)) {
+      return attachStorePositionMetadata(supermarket, {
+        insertedAtIndex: -1,
+        foundPrevious: false
+      });
+    }
+
+    const order = [...supermarket.itemOrder];
+    let currentIdx = -1;
+    let targetName = '';
+
+    if (typeof itemNameOrIndex === 'number') {
+      if (itemNameOrIndex < 0 || itemNameOrIndex >= order.length) {
+        return attachStorePositionMetadata(supermarket, {
+          insertedAtIndex: -1,
+          foundPrevious: false
+        });
+      }
+      currentIdx = itemNameOrIndex;
+      targetName = order[currentIdx];
+    } else if (typeof itemNameOrIndex === 'string' && itemNameOrIndex.trim() !== '') {
+      currentIdx = indexOfNormalized(order, itemNameOrIndex.trim());
+      if (currentIdx === -1) {
+        return addSupermarketKnownItemAfter(supermarket, itemNameOrIndex.trim(), previousItemName);
+      }
+      targetName = order[currentIdx];
+    } else {
+      return attachStorePositionMetadata(supermarket, {
+        insertedAtIndex: -1,
+        foundPrevious: false
+      });
+    }
+
+    if (isStartMarker(previousItemName)) {
+      order.splice(currentIdx, 1);
+      order.unshift(targetName);
+      const updatedStore = createSupermarket({
+        ...supermarket,
+        itemOrder: order,
+        updatedAt: Date.now()
+      });
+      return attachStorePositionMetadata(updatedStore, {
+        insertedAtIndex: 0,
+        foundPrevious: true,
+        previousItem: '__START__',
+        movedItem: targetName
+      });
+    }
+
+    if (
+      previousItemName === null ||
+      previousItemName === undefined ||
+      (typeof previousItemName === 'string' &&
+        (previousItemName.trim() === '' ||
+          previousItemName.trim() === '__END__' ||
+          previousItemName.trim().toLowerCase() === 'ende' ||
+          previousItemName.trim().toLowerCase() === 'am ende'))
+    ) {
+      order.splice(currentIdx, 1);
+      order.push(targetName);
+      const updatedStore = createSupermarket({
+        ...supermarket,
+        itemOrder: order,
+        updatedAt: Date.now()
+      });
+      return attachStorePositionMetadata(updatedStore, {
+        insertedAtIndex: updatedStore.itemOrder.length - 1,
+        foundPrevious: false,
+        previousItem: null,
+        movedItem: targetName
+      });
+    }
+
+    const cleanPrev = String(previousItemName).trim();
+    if (normalizeItemName(targetName) === normalizeItemName(cleanPrev)) {
+      return attachStorePositionMetadata(supermarket, {
+        insertedAtIndex: currentIdx,
+        foundPrevious: true,
+        previousItem: targetName,
+        movedItem: targetName
+      });
+    }
+
+    const checkPrevIdx = indexOfNormalized(order, cleanPrev);
+    if (checkPrevIdx === -1) {
+      return attachStorePositionMetadata(supermarket, {
+        insertedAtIndex: currentIdx,
+        foundPrevious: false,
+        previousItem: null,
+        movedItem: targetName
+      });
+    }
+
+    order.splice(currentIdx, 1);
+    const prevIdx = indexOfNormalized(order, cleanPrev);
+    const matchedPrevious = order[prevIdx];
+    order.splice(prevIdx + 1, 0, targetName);
+
+    const updatedStore = createSupermarket({
+      ...supermarket,
+      itemOrder: order,
+      updatedAt: Date.now()
+    });
+    const finalIdx = indexOfNormalized(updatedStore.itemOrder, targetName);
+
+    return attachStorePositionMetadata(updatedStore, {
+      insertedAtIndex: finalIdx,
+      foundPrevious: true,
+      previousItem: matchedPrevious,
+      movedItem: targetName
+    });
+  }
+
+  /**
+   * Adds a new item to a supermarket's walking order at a specific position (or after a named item, or at the end).
+   * @param {Object} supermarket
+   * @param {string} itemName
+   * @param {number|string} [insertIndex=-1]
    * @returns {Object} Updated supermarket
    */
   function addSupermarketKnownItem(supermarket, itemName, insertIndex = -1) {
+    if (typeof insertIndex === 'string') {
+      return addSupermarketKnownItemAfter(supermarket, itemName, insertIndex);
+    }
     if (!supermarket || !String(itemName || '').trim()) return supermarket;
     const clean = String(itemName).trim();
     const order = [...(supermarket.itemOrder || [])];
@@ -606,6 +887,8 @@
     uncheckAllItems,
     reorderSupermarketItem,
     addSupermarketKnownItem,
+    addSupermarketKnownItemAfter,
+    moveSupermarketItemAfter,
     removeSupermarketKnownItem
   };
 

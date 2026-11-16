@@ -34,6 +34,33 @@
 
     <!-- TAB 1: Einkaufszettel-Ansicht (Main Tab) -->
     <main class="tab-view active" id="tab-list" role="tabpanel">
+      <!-- Einkaufszettel-Verwaltung (Listen-Leiste: Auswählen, Neu, Umbenennen, Speichern, Löschen) -->
+      <section class="card shopping-lists-bar" id="shopping-lists-card">
+        <div class="lists-bar-header">
+          <label for="shoppingListSelect" class="lists-bar-label">📋 Gespeicherte Einkaufszettel</label>
+          <span class="lists-saved-badge" id="shopping-lists-count-badge">1 Liste</span>
+        </div>
+        <div class="lists-bar-SelectorRow">
+          <select id="shoppingListSelect" class="input-name select-input" aria-label="Gespeicherten Einkaufszettel auswählen">
+            <!-- Populated dynamically by app.js -->
+          </select>
+        </div>
+        <div class="lists-bar-actions">
+          <button type="button" class="btn btn-primary btn-sm" id="btnNewShoppingList" title="Neuen Einkaufszettel anlegen">
+            + Neu
+          </button>
+          <button type="button" class="btn btn-outline btn-sm" id="btnRenameShoppingList" title="Aktuellen Einkaufszettel umbenennen">
+            ✎ Umbenennen
+          </button>
+          <button type="button" class="btn btn-secondary btn-sm" id="btnSaveShoppingList" title="Aktuellen Einkaufszettel speichern">
+            💾 Speichern
+          </button>
+          <button type="button" class="btn btn-danger btn-sm" id="btnDeleteShoppingList" title="Aktuellen Einkaufszettel löschen" aria-label="Einkaufszettel löschen">
+            🗑️
+          </button>
+        </div>
+      </section>
+
       <!-- Live-Optimierung Toggle Header -->
       <section class="card live-opt-bar" id="live-opt-card">
         <div class="live-opt-info">
@@ -179,16 +206,11 @@
     <!-- TAB 3: Supermarkt-Konfigurator ("Supermärkte") -->
     <section class="tab-view" id="tab-stores" role="tabpanel">
       <div class="card">
-        <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 10px;">
-          <div>
-            <h2 style="margin: 0; font-size: 17px;">🏪 Supermarkt-Konfiguration</h2>
-            <p style="margin: 2px 0 0; font-size: 12px; color: var(--text-secondary);">
-              Lege für jeden Supermarkt fest, in welcher Reihenfolge die Waren im Markt angeordnet sind.
-            </p>
-          </div>
-          <button type="button" class="btn btn-outline btn-sm" id="reset-stores-btn" title="Standard-Supermärkte wiederherstellen">
-            Standards
-          </button>
+        <div style="margin-bottom: 10px;">
+          <h2 style="margin: 0; font-size: 17px;">🏪 Supermarkt-Konfiguration</h2>
+          <p style="margin: 2px 0 0; font-size: 12px; color: var(--text-secondary);">
+            Lege für jeden Supermarkt fest, in welcher Reihenfolge die Waren im Markt angeordnet sind.
+          </p>
         </div>
 
         <!-- Store Selection & Rename/Delete -->
@@ -198,16 +220,24 @@
           <button type="button" class="btn btn-danger btn-sm" id="delete-store-btn">Löschen</button>
         </div>
 
-        <!-- Create New Supermarket -->
-        <form id="create-store-form" style="display: flex; gap: 8px; padding-top: 10px; border-top: 1px solid var(--border-color);">
-          <input
-            type="text"
-            id="new-store-name"
-            class="input-name"
-            placeholder="Neuen Markt anlegen (z. B. EDEKA Center)…"
-            required
-          />
-          <button type="submit" class="btn btn-secondary">+ Markt</button>
+        <!-- Create New Supermarket with Sorting Template Selection -->
+        <form id="create-store-form" class="create-store-form">
+          <div class="create-store-row">
+            <input
+              type="text"
+              id="new-store-name"
+              class="input-name"
+              placeholder="Neuen Markt anlegen (z. B. EDEKA Center)…"
+              required
+            />
+            <button type="submit" class="btn btn-primary">+ Markt anlegen</button>
+          </div>
+          <div class="create-store-template-row">
+            <label for="newStoreTemplateSelect" class="form-sub-label">Sortierung übernehmen von:</label>
+            <select id="newStoreTemplateSelect" class="select-input input-name">
+              <option value="default">Standard (Standard-Sortierung)</option>
+            </select>
+          </div>
         </form>
       </div>
 
@@ -220,23 +250,39 @@
           <span class="section-count" id="config-store-count">0 Positionen</span>
         </div>
         <p style="margin: 0 0 10px; font-size: 12px; color: var(--text-secondary);">
-          Position 1 ist direkt am Eingang (z. B. Obst &amp; Gemüse), die letzte Position kurz vor der Kasse.
+          Position 1 ist direkt am Eingang (z. B. Obst &amp; Gemüse), die letzte Position kurz vor der Kasse. Ziehe Waren am Griff <strong>☰</strong>, nutze <strong>⇄</strong> zum gezielten Verschieben hinter eine Ware oder <strong>↑/↓</strong>.
         </p>
 
-        <!-- Add New Known Item to Supermarket Order -->
-        <form id="add-store-item-form" style="display: flex; gap: 6px; margin-bottom: 12px;">
-          <input
-            type="text"
-            id="new-store-item-name"
-            class="input-name"
-            placeholder="Neue Ware in Markt-Reihenfolge aufnehmen…"
-            required
-          />
-          <select id="new-store-item-pos" class="input-qty" style="width: 115px;">
-            <option value="end">Am Ende</option>
-            <option value="start">Am Eingang (1.)</option>
-          </select>
-          <button type="submit" class="btn btn-primary btn-sm">+ Aufnehmen</button>
+        <!-- Add New Known Item to Supermarket Order with Exact Preceding Item Selection -->
+        <form id="add-store-item-form" class="store-add-item-form" autocomplete="off">
+          <div class="store-add-row">
+            <input
+              type="text"
+              id="new-store-item-name"
+              class="input-name"
+              placeholder="Neue Ware (z. B. Haferflocken)…"
+              required
+            />
+            <button type="submit" class="btn btn-primary btn-sm">+ Aufnehmen</button>
+          </div>
+          <div class="store-add-pos-row">
+            <input
+              type="text"
+              id="storeAddItemPreviousInput"
+              class="input-name input-sm"
+              list="storeExistingItemsDatalist"
+              placeholder="Vorige Ware eingeben/wählen (leer = am Ende, oder 'Anfang')"
+            />
+            <button
+              type="button"
+              class="btn btn-outline btn-sm"
+              id="btnInsertAtStoreStart"
+              title="Ganz am Anfang (Position 1 / Eingang) einfügen"
+            >
+              ⬆️ Pos. 1
+            </button>
+          </div>
+          <datalist id="storeExistingItemsDatalist"></datalist>
         </form>
 
         <ul class="store-order-list" id="store-order-list"></ul>
@@ -350,10 +396,90 @@
       </div>
     </div>
 
+    <!-- DIREKTES WAREN-VERSCHIEBEN MODAL (⇄ Button im Supermarkt-Konfigurator) -->
+    <div class="modal-backdrop" id="move-store-item-modal" role="dialog" aria-modal="true" aria-labelledby="move-item-modal-title">
+      <div class="modal-dialog">
+        <div class="modal-badge" style="background: var(--accent-blue-bg); color: var(--accent-blue);">⇄ Ware gezielt verschieben</div>
+        <h3 class="modal-title" id="move-item-modal-title">Ware an neue Position setzen</h3>
+        <div class="modal-body">
+          <p id="move-item-modal-subtitle" style="margin: 0 0 10px;">
+            Hinter welche Ware soll dieser Artikel verschoben werden?
+          </p>
+          <button
+            type="button"
+            class="btn btn-outline btn-sm"
+            id="move-item-to-start-btn"
+            style="width: 100%; margin-bottom: 10px; justify-content: center;"
+          >
+            ⬆️ Ganz an den Anfang (Position 1 – Eingang)
+          </button>
+          <label for="moveStoreItemPreviousInput" class="form-sub-label" style="display: block; margin-bottom: 6px;">
+            Oder vorige Ware eingeben / auswählen:
+          </label>
+          <input
+            type="text"
+            id="moveStoreItemPreviousInput"
+            class="input-name"
+            list="storeExistingItemsDatalist"
+            placeholder="Vorige Ware tippen oder unten antippen…"
+            style="width: 100%;"
+          />
+          <div class="move-picker-list" id="move-item-picker-list" aria-label="Vorige Ware auswählen"></div>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-primary" id="move-item-confirm-btn">
+            ⇄ Jetzt hinter gewählte Ware verschieben
+          </button>
+          <button type="button" class="btn btn-secondary" id="move-item-cancel-btn">
+            Abbrechen
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- EINKAUFSZETTEL NEU / UMBENENNEN MODAL -->
+    <div class="modal-backdrop" id="shopping-list-modal" role="dialog" aria-modal="true" aria-labelledby="shopping-list-modal-title">
+      <div class="modal-dialog">
+        <div class="modal-badge" style="background: var(--primary-light); color: var(--primary-dark);">📋 Einkaufszettel verwalten</div>
+        <h3 class="modal-title" id="shopping-list-modal-title">Neuen Einkaufszettel anlegen</h3>
+        <form id="shopping-list-modal-form" autocomplete="off">
+          <div class="modal-body">
+            <label for="shopping-list-modal-name" class="form-sub-label" style="display: block; margin-bottom: 6px;">
+              Name des Einkaufszettels:
+            </label>
+            <input
+              type="text"
+              id="shopping-list-modal-name"
+              class="input-name"
+              placeholder="z. B. Wocheneinkauf, Grillparty, Drogerie…"
+              style="width: 100%; margin-bottom: 12px;"
+              required
+            />
+            <div id="shopping-list-modal-store-group">
+              <label for="shopping-list-modal-store" class="form-sub-label" style="display: block; margin-bottom: 6px;">
+                Supermarkt für diesen Einkaufszettel:
+              </label>
+              <select id="shopping-list-modal-store" class="input-name select-input" style="width: 100%;"></select>
+            </div>
+          </div>
+          <div class="modal-actions">
+            <button type="submit" class="btn btn-primary" id="shopping-list-modal-confirm-btn">
+              ✅ Einkaufszettel speichern
+            </button>
+            <button type="button" class="btn btn-secondary" id="shopping-list-modal-cancel-btn">
+              Abbrechen
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
     <!-- Toast Notifications Container -->
     <div class="toast-container" id="toast-container" aria-live="polite"></div>
   </div>
 
+  <!-- Tesseract.js OCR Engine (CDN with automatic offline/dynamic fallback in ocr.js) -->
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js" defer></script>
   <!-- Core Domain & Business Logic Modules -->
   <script src="./src/core/models.js"></script>
   <script src="./src/core/optimizer.js"></script>

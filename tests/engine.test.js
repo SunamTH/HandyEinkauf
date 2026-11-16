@@ -343,6 +343,205 @@ async function main() {
     assert.strictEqual(decoded.supermarket.id, 'rewe');
   });
 
+  // 8. Supermarket Creation with Sorting Template (getDefaultItemOrder & createSupermarketWithSorting)
+  await runTest('11. getDefaultItemOrder & createSupermarketWithSorting adopt either default sorting or an existing store sorting', () => {
+    const stores = Core.getDefaultSupermarkets();
+    const rewe = stores.find((s) => s.id === 'rewe');
+    const aldi = stores.find((s) => s.id === 'aldi');
+
+    const defaultOrder = Core.getDefaultItemOrder();
+    assert.deepStrictEqual(defaultOrder, rewe.itemOrder);
+    // Ensure it returns a fresh copy
+    defaultOrder.push('Test-Mutation');
+    assert.notStrictEqual(defaultOrder.length, rewe.itemOrder.length);
+
+    // Create with 'default' sorting
+    const edekaDefault = Core.createSupermarketWithSorting({
+      name: 'EDEKA Center',
+      icon: '🟡',
+      color: '#f59e0b',
+      sourceSupermarketId: 'default',
+      supermarkets: stores
+    });
+    assert.strictEqual(edekaDefault.name, 'EDEKA Center');
+    assert.deepStrictEqual(edekaDefault.itemOrder, rewe.itemOrder);
+
+    // Create by adopting ALDI's sorting
+    const HoferAldi = Core.createSupermarketWithSorting({
+      name: 'HOFER',
+      icon: '🔵',
+      color: '#2563eb',
+      sourceSupermarketId: 'aldi',
+      supermarkets: stores
+    });
+    assert.deepStrictEqual(HoferAldi.itemOrder, aldi.itemOrder);
+    assert.strictEqual(HoferAldi.itemOrder[0], 'Brötchen'); // ALDI starts with Brötchen
+  });
+
+  // 9. Exact Item Insertion & Moving by Preceding Item (addSupermarketKnownItemAfter & moveSupermarketItemAfter)
+  await runTest('12. addSupermarketKnownItemAfter & moveSupermarketItemAfter position items accurately after a preceding item or at start', () => {
+    let store = Core.createSupermarket({
+      id: 'custom_store',
+      name: 'Mein Markt',
+      itemOrder: ['Äpfel', 'Bananen', 'Brötchen', 'Milch', 'Nudeln']
+    });
+
+    // 1) Insert 'Mango' right after 'Bananen'
+    const res1 = Core.addSupermarketKnownItemAfter(store, 'Mango', 'Bananen');
+    assert.strictEqual(res1.foundPrevious, true);
+    assert.strictEqual(res1.insertedAtIndex, 2);
+    assert.deepStrictEqual(res1.itemOrder, [
+      'Äpfel',
+      'Bananen',
+      'Mango',
+      'Brötchen',
+      'Milch',
+      'Nudeln'
+    ]);
+    assert.strictEqual(res1.supermarket, res1);
+    store = res1;
+
+    // 2) Insert 'Blumenstrauß' at the very beginning ('__START__')
+    const res2 = Core.addSupermarketKnownItemAfter(store, 'Blumenstrauß', '__START__');
+    assert.strictEqual(res2.foundPrevious, true);
+    assert.strictEqual(res2.insertedAtIndex, 0);
+    assert.strictEqual(res2.itemOrder[0], 'Blumenstrauß');
+    store = res2;
+
+    // 3) Append 'Kaugummi' at the end when previousItemName is empty
+    const res3 = Core.addSupermarketKnownItemAfter(store, 'Kaugummi', '');
+    assert.strictEqual(res3.foundPrevious, false);
+    assert.strictEqual(res3.insertedAtIndex, store.itemOrder.length);
+    assert.strictEqual(res3.itemOrder[res3.itemOrder.length - 1], 'Kaugummi');
+    store = res3;
+
+    // 4) Move existing item 'Nudeln' so it stands immediately after 'Brötchen'
+    const res4 = Core.moveSupermarketItemAfter(store, 'Nudeln', 'Brötchen');
+    assert.strictEqual(res4.foundPrevious, true);
+    const broetchenIdx = Core.indexOfNormalized(res4.itemOrder, 'Brötchen');
+    assert.strictEqual(res4.insertedAtIndex, broetchenIdx + 1);
+    assert.strictEqual(res4.itemOrder[broetchenIdx + 1], 'Nudeln');
+    store = res4;
+
+    // 5) Move item by index to '__START__'
+    const milchIdx = Core.indexOfNormalized(store.itemOrder, 'Milch');
+    const res5 = Core.moveSupermarketItemAfter(store, milchIdx, '__START__');
+    assert.strictEqual(res5.foundPrevious, true);
+    assert.strictEqual(res5.insertedAtIndex, 0);
+    assert.strictEqual(res5.itemOrder[0], 'Milch');
+  });
+
+  // 10. Real Photo OCR with Tesseract.js vs Non-Preset Safety
+  await runTest('13. recognizeImageShoppingList never returns fake preset items for real user photos and integrates with Tesseract.js', async () => {
+    // a) Non-preset user photo when Tesseract is not loaded must NOT return fake wochenende preset items
+    const originalTesseract = globalThis.Tesseract;
+    try {
+      delete globalThis.Tesseract;
+      const fakeUserPhotoDataUrl = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+      const errRes = await Core.recognizeImageShoppingList(fakeUserPhotoDataUrl);
+      assert.strictEqual(errRes.source, 'ocr-error');
+      assert.strictEqual(errRes.items.length, 0);
+      assert.strictEqual(errRes.presetId, null);
+      assert.ok(errRes.error && errRes.error.length > 0);
+
+      // Even a File-like object named "fruehstueck.jpg" must NOT return fake preset items without OCR
+      const fileObjRes = await Core.recognizeImageShoppingList({ name: 'fruehstueck.jpg' });
+      assert.strictEqual(fileObjRes.source, 'ocr-error');
+      assert.strictEqual(fileObjRes.items.length, 0);
+
+      // b) When Tesseract is loaded, recognizeImageShoppingList runs Tesseract.recognize('deu') and parses real OCR text
+      let capturedLang = null;
+      globalThis.Tesseract = {
+        recognize: async (_img, lang, options) => {
+          capturedLang = lang;
+          if (options && typeof options.logger === 'function') {
+            options.logger({ status: 'recognizing text', progress: 0.5 });
+            options.logger({ status: 'recognizing text', progress: 1.0 });
+          }
+          return {
+            data: {
+              text: '3x Haferflocken\n500g Quark\n2 Flaschen Mineralwasser',
+              confidence: 91
+            }
+          };
+        }
+      };
+
+      const realOcrRes = await Core.recognizeImageShoppingList(fakeUserPhotoDataUrl);
+      assert.strictEqual(capturedLang, 'deu');
+      assert.strictEqual(realOcrRes.source, 'tesseract-ocr');
+      assert.strictEqual(realOcrRes.items.length, 3);
+      assert.deepStrictEqual(
+        realOcrRes.items.map((i) => ({ name: i.name, quantity: i.quantity })),
+        [
+          { name: 'Haferflocken', quantity: '3x' },
+          { name: 'Quark', quantity: '500g' },
+          { name: 'Mineralwasser', quantity: '2 Flaschen' }
+        ]
+      );
+    } finally {
+      if (originalTesseract !== undefined) {
+        globalThis.Tesseract = originalTesseract;
+      } else {
+        delete globalThis.Tesseract;
+      }
+    }
+  });
+
+  // 11. Multi-List Management (create, rename, duplicate, switch, save, delete)
+  await runTest('14. LocalStorageRepository manages multiple named shopping lists (create, rename, switch, duplicate, delete)', () => {
+    const mem = Core.createMemoryStorage();
+    const repo = new Core.LocalStorageRepository(mem);
+
+    // Initial seed list ("Wocheneinkauf")
+    const initialLists = repo.loadShoppingLists();
+    assert.strictEqual(initialLists.length, 1);
+    assert.strictEqual(initialLists[0].name, 'Wocheneinkauf');
+
+    // Create a second named list ("Grillparty Samstag") for ALDI
+    const partyList = repo.createNewShoppingList({
+      name: 'Grillparty Samstag',
+      supermarketId: 'aldi',
+      items: [
+        { name: 'Bier', quantity: '1 Kasten' },
+        { name: 'Brötchen', quantity: '10 Stk.' }
+      ]
+    });
+    assert.strictEqual(partyList.name, 'Grillparty Samstag');
+    assert.strictEqual(partyList.supermarketId, 'aldi');
+    assert.strictEqual(repo.getActiveListId(), partyList.id);
+    assert.strictEqual(repo.loadShoppingLists().length, 2);
+
+    // Rename "Grillparty Samstag" -> "Geburtstags-Grillen"
+    const renamed = repo.renameShoppingList(partyList.id, 'Geburtstags-Grillen');
+    assert.strictEqual(renamed.name, 'Geburtstags-Grillen');
+    assert.strictEqual(repo.getActiveList().name, 'Geburtstags-Grillen');
+
+    // Duplicate list
+    const duplicated = repo.duplicateShoppingList(partyList.id, 'Grillen Backup');
+    assert.strictEqual(duplicated.name, 'Grillen Backup');
+    assert.notStrictEqual(duplicated.id, partyList.id);
+    assert.strictEqual(duplicated.items.length, 2);
+    assert.strictEqual(repo.loadShoppingLists().length, 3);
+
+    // Switch back to initial list ("Wocheneinkauf")
+    const switched = repo.switchShoppingList(initialLists[0].id);
+    assert.strictEqual(switched.id, initialLists[0].id);
+    assert.strictEqual(repo.getActiveList().name, 'Wocheneinkauf');
+
+    // Delete active list ("Wocheneinkauf") -> switches automatically to remaining list
+    const remainingAfterDelete = repo.deleteShoppingList(initialLists[0].id);
+    assert.strictEqual(remainingAfterDelete.length, 2);
+    assert.strictEqual(repo.getActiveListId(), remainingAfterDelete[0].id);
+
+    // Delete all remaining lists -> automatically creates a fresh empty default list
+    repo.deleteShoppingList(remainingAfterDelete[0].id);
+    const finalLists = repo.deleteShoppingList(remainingAfterDelete[1].id);
+    assert.strictEqual(finalLists.length, 1);
+    assert.strictEqual(finalLists[0].name, 'Mein Einkaufszettel');
+    assert.strictEqual(finalLists[0].items.length, 0);
+  });
+
   console.log('\n====================================================');
   console.log(`Result: ${passed} passed, ${failed} failed`);
   console.log('====================================================');
