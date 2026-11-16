@@ -8,10 +8,10 @@
     "bundle": "node scripts/bundle-standalone.js",
     "build": "node scripts/bundle-standalone.js",
     "serve": "npx serve . -l 8080",
-    "cap:init": "npx cap init SmartCart com.smartcart.einkaufsliste --web-dir .",
-    "cap:add:android": "npx cap add android",
+    "cap:init": "npx cap init SmartCart com.smartcart.einkaufsliste --web-dir dist",
+    "cap:add:android": "npx cap build && npx cap add android",
     "cap:add:ios": "npx cap add ios",
-    "cap:sync": "npx cap sync",
+    "cap:sync": "node scripts/bundle-standalone.js && npx cap sync",
     "cap:open:android": "npx cap open android",
     "cap:open:ios": "npx cap open ios"
   },
@@ -32,7 +32,6 @@
   },
   "dependencies": {
     "@capacitor/android": "^6.0.0",
-    "@capacitor/core": "^6.0.0",
-    "@capacitor/ios": "^6.0.0"
+    "@capacitor/core": "^6.0.0"
   }
 }

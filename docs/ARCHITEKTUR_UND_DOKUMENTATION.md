@@ -794,11 +794,17 @@ Alle Methoden von `LocalStorageRepository` können sowohl auf einer Instanz (`ne
 - **Was macht die Funktion?** Bettet das Web-Manifest als Base64-Data-URI, das gesamte CSS in einen `<style>`-Block und alle 6 JavaScript-Module (`models.js`, `optimizer.js`, `ocr.js`, `storage.js`, `share.js`, `app.js`) in der exakten Abhängigkeitsreihenfolge in einen einzigen `<script>`-Block vor `</body>` ein.
 - **Wie ist sie aktuell umgesetzt?** Nutzt Regex-Ersetzungen auf `htmlTemplate`, maskiert eventuelle `</script>`-Sequenzen innerhalb des JS-Codes als `<\/script>` und setzt `window.__SMARTCART_STANDALONE__ = true`.
 
-#### 3. `buildStandaloneApp()`
+#### 3. `copyDirRecursiveSync(srcDir, destDir)` & `syncWebAssetsToDist()`
+- **Parameter**: `srcDir` (`string`), `destDir` (`string`) bzw. keine Parameter.
+- **Rückgabewert**: `void`.
+- **Was macht die Funktion?** Kopiert die regulären Web-/PWA-Dateien (`index.html`, `manifest.json`, `sw.js` sowie rekursiv das Verzeichnis `src/`) nach `dist/`, damit `dist/` gleichzeitig als vollständiges `webDir` für Capacitor (Android/iOS APK-Build) dient.
+- **Wie ist sie aktuell umgesetzt?** Kopiert die Wurzeldateien per `fs.copyFileSync` und durchläuft `src/` rekursiv über `fs.readdirSync` und `fs.statSync`.
+
+#### 4. `buildStandaloneApp()`
 - **Parameter**: Keine.
 - **Rückgabewert**: `{ outputPath: string, sizeBytes: number, moduleCount: number }`.
-- **Was macht die Funktion?** Führt den gesamten Build-Prozess aus und schreibt `dist/SmartCart_Handy_App.html`.
-- **Wie ist sie aktuell umgesetzt?** Liest alle Quell-Assets über `readAssetFile`, ruft `inlineStylesAndScripts` auf, legt den Ordner `dist/` bei Bedarf mit `fs.mkdirSync` an, schreibt die Ausgabedatei mit `fs.writeFileSync` und gibt Dateigröße sowie Modulanzahl zurück.
+- **Was macht die Funktion?** Führt den gesamten Build-Prozess aus, schreibt `dist/SmartCart_Handy_App.html` und synchronisiert alle Web-Assets über `syncWebAssetsToDist()` nach `dist/`.
+- **Wie ist sie aktuell umgesetzt?** Liest alle Quell-Assets über `readAssetFile`, ruft `inlineStylesAndScripts` auf, legt den Ordner `dist/` bei Bedarf mit `fs.mkdirSync` an, schreibt die Ausgabedatei mit `fs.writeFileSync`, ruft `syncWebAssetsToDist()` auf und gibt Dateigröße sowie Modulanzahl zurück.
 
 ---
 

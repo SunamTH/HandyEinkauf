@@ -97,7 +97,54 @@ function inlineStylesAndScripts(htmlTemplate, cssContent, scriptBundles) {
 }
 
 /**
- * Erzeugt die fertige Einzeldatei `dist/SmartCart_Handy_App.html` und gibt Metadaten zurück.
+ * Kopiert ein Verzeichnis rekursiv (kompatibel mit allen Node.js-Versionen).
+ * @param {string} srcDir - Quellverzeichnis
+ * @param {string} destDir - Zielverzeichnis
+ */
+function copyDirRecursiveSync(srcDir, destDir) {
+  if (!fs.existsSync(srcDir)) return;
+  if (!fs.existsSync(destDir)) {
+    fs.mkdirSync(destDir, { recursive: true });
+  }
+  const entries = fs.readdirSync(srcDir);
+  for (const entry of entries) {
+    const srcPath = path.join(srcDir, entry);
+    const destPath = path.join(destDir, entry);
+    const stat = fs.statSync(srcPath);
+    if (stat.isDirectory()) {
+      copyDirRecursiveSync(srcPath, destPath);
+    } else {
+      fs.copyFileSync(srcPath, destPath);
+    }
+  }
+}
+
+/**
+ * Kopiert zusätzlich die regulären Web-/PWA-Dateien (`index.html`, `manifest.json`,
+ * `sw.js` sowie das Verzeichnis `src/`) nach `dist/`, damit `dist/` gleichzeitig
+ * als vollständiges `webDir` für Capacitor (Android/iOS APK-Build) dient.
+ */
+function syncWebAssetsToDist() {
+  if (!fs.existsSync(DIST_DIR)) {
+    fs.mkdirSync(DIST_DIR, { recursive: true });
+  }
+
+  const rootFiles = ['index.html', 'manifest.json', 'sw.js'];
+  for (const file of rootFiles) {
+    const srcPath = path.join(ROOT_DIR, file);
+    if (fs.existsSync(srcPath)) {
+      fs.copyFileSync(srcPath, path.join(DIST_DIR, file));
+    }
+  }
+
+  const srcDir = path.join(ROOT_DIR, 'src');
+  const distSrcDir = path.join(DIST_DIR, 'src');
+  copyDirRecursiveSync(srcDir, distSrcDir);
+}
+
+/**
+ * Erzeugt die fertige Einzeldatei `dist/SmartCart_Handy_App.html`, synchronisiert
+ * die Web-Assets für Capacitor nach `dist/` und gibt Metadaten zurück.
  * @returns {{ outputPath: string, sizeBytes: number, moduleCount: number }}
  */
 function buildStandaloneApp() {
@@ -116,6 +163,7 @@ function buildStandaloneApp() {
   }
 
   fs.writeFileSync(OUTPUT_FILE, finalHtml, 'utf8');
+  syncWebAssetsToDist();
   const stats = fs.statSync(OUTPUT_FILE);
 
   return {
@@ -130,7 +178,7 @@ if (require.main === module) {
     const result = buildStandaloneApp();
     const kb = (result.sizeBytes / 1024).toFixed(1);
     console.log(
-      `[SmartCart Bundler] Erfolgreich erstellt: ${result.outputPath} (${kb} KB, ${result.moduleCount} Module eingebettet)`
+      `[SmartCart Bundler] Erfolgreich erstellt: ${result.outputPath} (${kb} KB, ${result.moduleCount} Module eingebettet, Web-Assets nach dist/ synchronisiert)`
     );
   } catch (err) {
     console.error('[SmartCart Bundler] Fehler:', err.message);
@@ -141,5 +189,6 @@ if (require.main === module) {
 module.exports = {
   readAssetFile,
   inlineStylesAndScripts,
+  syncWebAssetsToDist,
   buildStandaloneApp
 };

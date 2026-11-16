@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#059669" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="SmartCart" />
+  <title>SmartCart – Intelligente Einkaufsliste</title>
+  <link rel="manifest" href="./manifest.json" />
+  <link rel="stylesheet" href="./src/ui/styles.css" />
+</head>
+<body>
+  <div class="app-shell" id="app">
+    <!-- Top App Header with Supermarket Selector -->
+    <header class="app-header">
+      <div class="header-top-row">
+        <div class="brand-title">
+          <div class="brand-logo" aria-hidden="true">🛒</div>
+          <div>
+            <h1>SmartCart</h1>
+            <p class="brand-subtitle" id="header-store-subtitle">Laufweg-optimierte Einkaufsliste</p>
+          </div>
+        </div>
+        <div class="header-stats-pill" id="header-progress-pill">0 / 0 erledigt</div>
+      </div>
+
+      <!-- Supermarket Selector Pills -->
+      <div class="store-selector-bar" id="store-selector-bar" role="tablist" aria-label="Supermarkt auswählen">
+        <!-- Populated dynamically by app.js -->
+      </div>
+    </header>
+
+    <!-- TAB 1: Einkaufszettel-Ansicht (Main Tab) -->
+    <main class="tab-view active" id="tab-list" role="tabpanel">
+      <!-- Live-Optimierung Toggle Header -->
+      <section class="card live-opt-bar" id="live-opt-card">
+        <div class="live-opt-info">
+          <div class="live-opt-title-row">
+            <span>⚡ Live-Optimierung</span>
+            <span class="status-badge on" id="live-opt-badge">Ein</span>
+          </div>
+          <p class="live-opt-desc" id="live-opt-desc">
+            Erkennt beim Abhaken Abweichungen und fragt, ob die Supermarkt-Reihenfolge angepasst werden soll.
+          </p>
+        </div>
+        <label class="toggle-switch" title="Live-Optimierung Ein/Aus">
+          <input type="checkbox" id="live-opt-toggle" checked />
+          <span class="toggle-slider"></span>
+        </label>
+      </section>
+
+      <!-- Quick Add Item Bar -->
+      <section class="card">
+        <form class="add-item-form" id="add-item-form" autocomplete="off">
+          <input
+            type="text"
+            id="add-item-name"
+            class="input-name"
+            placeholder="Ware hinzufügen (z. B. Milch, Äpfel)…"
+            required
+          />
+          <input
+            type="text"
+            id="add-item-qty"
+            class="input-qty"
+            placeholder="Menge"
+            aria-label="Menge (optional)"
+          />
+          <button type="submit" class="btn btn-primary" id="add-item-btn" title="Ware hinzufügen">
+            + Hinzu
+          </button>
+        </form>
+        <div class="quick-suggestions" id="quick-suggestions" aria-label="Schnellauswahl">
+          <!-- Populated dynamically from current store's known items -->
+        </div>
+      </section>
+
+      <!-- TOP SECTION: Bereits abgehakt (Erledigt) - Grayed out at top! -->
+      <section class="list-section" id="checked-section" style="display: none;">
+        <div class="section-header">
+          <div class="section-title">
+            <span>☑️ Bereits abgehakt (Erledigt)</span>
+            <span class="section-count" id="checked-count">0</span>
+          </div>
+          <button type="button" class="btn btn-outline btn-sm" id="clear-checked-btn" title="Alle erledigten Waren entfernen">
+            Erledigte löschen
+          </button>
+        </div>
+        <p style="font-size: 11.5px; color: var(--text-secondary); margin: 0 4px 8px;">
+          Antippen zum <strong>Rückgängig machen</strong> – die Ware wird wieder exakt an ihrer Supermarkt-Position einsortiert.
+        </p>
+        <ul class="shopping-items-list" id="checked-items-list"></ul>
+      </section>
+
+      <!-- BOTTOM SECTION: Noch einzukaufen (Optimierte Reihenfolge) -->
+      <section class="list-section" id="unchecked-section">
+        <div class="section-header">
+          <div class="section-title">
+            <span>🏃 Noch einzukaufen (Optimierte Reihenfolge)</span>
+            <span class="section-count" id="unchecked-count">0</span>
+          </div>
+          <button type="button" class="btn btn-outline btn-sm" id="seed-demo-list-btn" title="Beispiel-Einkaufswagen laden">
+            Demo-Liste
+          </button>
+        </div>
+        <ul class="shopping-items-list" id="unchecked-items-list"></ul>
+      </section>
+    </main>
+
+    <!-- TAB 2: Foto-Scanner / OCR ("Foto-Erkennung") -->
+    <section class="tab-view" id="tab-ocr" role="tabpanel">
+      <div class="card">
+        <h2 style="margin: 0 0 6px; font-size: 17px;">📷 Einkaufszettel abfotografieren</h2>
+        <p style="margin: 0 0 12px; font-size: 13px; color: var(--text-secondary); line-height: 1.4;">
+          Fotografiere deinen handgeschriebenen oder gedruckten Einkaufszettel. Alle erkannten Waren werden automatisch für <strong id="ocr-target-store-name">deinen Supermarkt</strong> sortiert!
+        </p>
+
+        <label class="camera-dropzone" id="camera-dropzone">
+          <input type="file" id="ocr-file-input" accept="image/*" capture="environment" />
+          <div style="font-size: 32px; margin-bottom: 6px;">📸</div>
+          <div style="font-weight: 800; font-size: 15px; color: var(--primary-dark);">
+            Kamera öffnen oder Foto auswählen
+          </div>
+          <div style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">
+            Unterstützt Handykamera, Galerie-Fotos &amp; Offline-Texterkennung
+          </div>
+        </label>
+
+        <div style="margin-top: 14px;">
+          <div style="font-size: 12px; font-weight: 700; color: var(--text-secondary); margin-bottom: 6px;">
+            Oder sofort testen mit einem Demo-Einkaufszettel-Foto:
+          </div>
+          <div class="demo-photos-grid">
+            <button type="button" class="demo-photo-btn" data-preset="wochenende">
+              <span style="font-size: 18px;">📝</span>
+              <span>Wocheneinkauf</span>
+            </button>
+            <button type="button" class="demo-photo-btn" data-preset="fruehstueck">
+              <span style="font-size: 18px;">🥐</span>
+              <span>Frühstück</span>
+            </button>
+            <button type="button" class="demo-photo-btn" data-preset="italienisch">
+              <span style="font-size: 18px;">🍕</span>
+              <span>Italienisch</span>
+            </button>
+          </div>
+        </div>
+
+        <div id="ocr-status-box" style="display: none; margin-top: 12px; padding: 10px; border-radius: 10px; background: var(--bg-muted); font-size: 13px; font-weight: 600;"></div>
+        <img id="ocr-preview-image" class="ocr-preview-img" alt="Vorschau Einkaufszettel" style="display: none;" />
+      </div>
+
+      <!-- Editable OCR Text & Detected Items Preview -->
+      <div class="card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+          <h3 style="margin: 0; font-size: 15px;">🔍 Erkannte Waren prüfen &amp; bearbeiten</h3>
+          <span class="section-count" id="ocr-detected-count">0 Waren</span>
+        </div>
+        <p style="margin: 0 0 8px; font-size: 12px; color: var(--text-secondary);">
+          Du kannst den erkannten Text hier jederzeit korrigieren oder eigene Zeilen einfügen (eine Ware pro Zeile, z. B. <code>2x Vollmilch</code>):
+        </p>
+        <textarea
+          id="ocr-raw-textarea"
+          class="code-box"
+          rows="5"
+          placeholder="Beispiel:&#10;2x Bananen&#10;500g Hackfleisch&#10;Vollmilch&#10;Spaghetti&#10;Tiefkühlpizza"
+        ></textarea>
+
+        <ul class="ocr-parsed-list" id="ocr-parsed-list"></ul>
+
+        <button type="button" class="btn btn-primary" id="ocr-import-btn" style="width: 100%; margin-top: 8px;">
+          ✅ Alle Waren optimiert zum Einkaufszettel hinzufügen
+        </button>
+      </div>
+    </section>
+
+    <!-- TAB 3: Supermarkt-Konfigurator ("Supermärkte") -->
+    <section class="tab-view" id="tab-stores" role="tabpanel">
+      <div class="card">
+        <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 10px;">
+          <div>
+            <h2 style="margin: 0; font-size: 17px;">🏪 Supermarkt-Konfiguration</h2>
+            <p style="margin: 2px 0 0; font-size: 12px; color: var(--text-secondary);">
+              Lege für jeden Supermarkt fest, in welcher Reihenfolge die Waren im Markt angeordnet sind.
+            </p>
+          </div>
+          <button type="button" class="btn btn-outline btn-sm" id="reset-stores-btn" title="Standard-Supermärkte wiederherstellen">
+            Standards
+          </button>
+        </div>
+
+        <!-- Store Selection & Rename/Delete -->
+        <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 12px;">
+          <select id="config-store-select" class="input-name" style="font-weight: 700;"></select>
+          <button type="button" class="btn btn-outline btn-sm" id="rename-store-btn">Umbenennen</button>
+          <button type="button" class="btn btn-danger btn-sm" id="delete-store-btn">Löschen</button>
+        </div>
+
+        <!-- Create New Supermarket -->
+        <form id="create-store-form" style="display: flex; gap: 8px; padding-top: 10px; border-top: 1px solid var(--border-color);">
+          <input
+            type="text"
+            id="new-store-name"
+            class="input-name"
+            placeholder="Neuen Markt anlegen (z. B. EDEKA Center)…"
+            required
+          />
+          <button type="submit" class="btn btn-secondary">+ Markt</button>
+        </form>
+      </div>
+
+      <!-- Walking Order Editor for Selected Supermarket -->
+      <div class="card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+          <h3 style="margin: 0; font-size: 15px;">
+            🧭 Laufreihenfolge in <span id="config-store-title">REWE</span>
+          </h3>
+          <span class="section-count" id="config-store-count">0 Positionen</span>
+        </div>
+        <p style="margin: 0 0 10px; font-size: 12px; color: var(--text-secondary);">
+          Position 1 ist direkt am Eingang (z. B. Obst &amp; Gemüse), die letzte Position kurz vor der Kasse.
+        </p>
+
+        <!-- Add New Known Item to Supermarket Order -->
+        <form id="add-store-item-form" style="display: flex; gap: 6px; margin-bottom: 12px;">
+          <input
+            type="text"
+            id="new-store-item-name"
+            class="input-name"
+            placeholder="Neue Ware in Markt-Reihenfolge aufnehmen…"
+            required
+          />
+          <select id="new-store-item-pos" class="input-qty" style="width: 115px;">
+            <option value="end">Am Ende</option>
+            <option value="start">Am Eingang (1.)</option>
+          </select>
+          <button type="submit" class="btn btn-primary btn-sm">+ Aufnehmen</button>
+        </form>
+
+        <ul class="store-order-list" id="store-order-list"></ul>
+      </div>
+    </section>
+
+    <!-- TAB 4: Teilen & Handy-Installation ("Teilen & Info") -->
+    <section class="tab-view" id="tab-share" role="tabpanel">
+      <!-- Native Share & Export/Import -->
+      <div class="card">
+        <h2 style="margin: 0 0 6px; font-size: 17px;">🤝 Einkaufsliste &amp; Märkte teilen</h2>
+        <p style="margin: 0 0 12px; font-size: 13px; color: var(--text-secondary); line-height: 1.4;">
+          Teile deinen aktuellen Einkaufszettel oder deine optimierten Supermarkt-Konfigurationen per WhatsApp, Telegram, AirDrop oder Share-Code.
+        </p>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px;">
+          <button type="button" class="btn btn-primary" id="native-share-list-btn">
+            📤 Liste teilen
+          </button>
+          <button type="button" class="btn btn-secondary" id="native-share-store-btn">
+            🏪 Markt-Reihenfolge teilen
+          </button>
+        </div>
+
+        <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+          <button type="button" class="btn btn-outline btn-sm" id="export-code-btn" style="flex: 1;">
+            📋 Share-Code erzeugen
+          </button>
+          <button type="button" class="btn btn-outline btn-sm" id="download-json-btn" style="flex: 1;">
+            💾 Backup-Datei (.json)
+          </button>
+        </div>
+
+        <textarea
+          id="share-code-textarea"
+          class="code-box"
+          rows="4"
+          placeholder="Hier erscheint dein Share-Code zum Kopieren – oder füge einen erhaltenen Share-Code / JSON hier ein, um ihn zu importieren…"
+        ></textarea>
+
+        <div style="display: flex; gap: 8px; margin-top: 8px;">
+          <button type="button" class="btn btn-secondary btn-sm" id="copy-share-code-btn" style="flex: 1;">
+            Code kopieren
+          </button>
+          <button type="button" class="btn btn-primary btn-sm" id="import-share-code-btn" style="flex: 1;">
+            📥 Code importieren
+          </button>
+        </div>
+      </div>
+
+      <!-- Phone Installation Guide (Android & iOS) -->
+      <div class="card">
+        <h3 style="margin: 0 0 8px; font-size: 15px;">📱 Auf dem Handy installieren &amp; weitergeben</h3>
+        <div style="font-size: 13px; color: var(--text-secondary); line-height: 1.5; display: flex; flex-direction: column; gap: 10px;">
+          <div style="background: var(--bg-muted); padding: 10px 12px; border-radius: 10px; border: 1px solid var(--border-color);">
+            <strong style="color: var(--text-main);">1. Sofort per WhatsApp / Datei teilen (Offline-Einzeldatei):</strong><br />
+            Die Datei <code>dist/SmartCart_Handy_App.html</code> enthält die komplette App in einer einzigen Datei. Einfach ans Handy senden und im Browser öffnen – funktioniert 100 % offline!
+          </div>
+          <div style="background: var(--bg-muted); padding: 10px 12px; border-radius: 10px; border: 1px solid var(--border-color);">
+            <strong style="color: var(--text-main);">2. Als App auf den Home-Bildschirm (PWA für Android &amp; iOS):</strong><br />
+            • <strong>Android (Chrome):</strong> Menü (⋮) → <em>„App installieren“</em> oder <em>„Zum Startbildschirm hinzufügen“</em>.<br />
+            • <strong>iPhone (Safari):</strong> Teilen-Symbol (⬆️) → <em>„Zum Home-Bildschirm“</em>.
+          </div>
+          <div style="background: var(--bg-muted); padding: 10px 12px; border-radius: 10px; border: 1px solid var(--border-color);">
+            <strong style="color: var(--text-main);">3. Native Android APK / iOS App (Capacitor):</strong><br />
+            Über <code>npx cap add android</code> bzw. GitHub Actions wird automatisch eine installierbare Android-<code>.apk</code> gebaut.
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Bottom Tab Navigation -->
+    <nav class="bottom-nav" aria-label="Hauptnavigation">
+      <button type="button" class="nav-tab active" data-tab="tab-list">
+        <span class="nav-icon">📝</span>
+        <span>Einkaufszettel</span>
+      </button>
+      <button type="button" class="nav-tab" data-tab="tab-ocr">
+        <span class="nav-icon">📷</span>
+        <span>Foto-Scanner</span>
+      </button>
+      <button type="button" class="nav-tab" data-tab="tab-stores">
+        <span class="nav-icon">🏪</span>
+        <span>Supermärkte</span>
+      </button>
+      <button type="button" class="nav-tab" data-tab="tab-share">
+        <span class="nav-icon">🤝</span>
+        <span>Teilen &amp; App</span>
+      </button>
+    </nav>
+
+    <!-- LIVE-OPTIMIERUNG MODAL DIALOG -->
+    <div class="modal-backdrop" id="live-opt-modal" role="dialog" aria-modal="true" aria-labelledby="live-opt-modal-title">
+      <div class="modal-dialog">
+        <div class="modal-badge">⚡ Live-Optimierung erkannt</div>
+        <h3 class="modal-title" id="live-opt-modal-title">Reihenfolge im Supermarkt anpassen?</h3>
+        <div class="modal-body">
+          <p id="live-opt-modal-text" style="margin: 0;">
+            Du hast eine Ware vor anderen offenen Waren abgehakt. Soll die Konfiguration für diesen Supermarkt automatisch angepasst werden?
+          </p>
+          <div class="modal-highlight-box" id="live-opt-modal-details"></div>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-primary" id="live-opt-confirm-btn">
+            ✅ Ja, Reihenfolge anpassen
+          </button>
+          <button type="button" class="btn btn-secondary" id="live-opt-cancel-btn">
+            Nein, nur abhaken
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toast Notifications Container -->
+    <div class="toast-container" id="toast-container" aria-live="polite"></div>
+  </div>
+
+  <!-- Core Domain & Business Logic Modules -->
+  <script src="./src/core/models.js"></script>
+  <script src="./src/core/optimizer.js"></script>
+  <script src="./src/core/ocr.js"></script>
+  <script src="./src/core/storage.js"></script>
+  <script src="./src/core/share.js"></script>
+  <!-- Mobile App UI Controller -->
+  <script src="./src/ui/app.js"></script>
+</body>
+</html>

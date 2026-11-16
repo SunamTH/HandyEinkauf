@@ -1,8 +1,7 @@
 {
   "appId": "com.smartcart.einkaufsliste",
   "appName": "SmartCart Einkaufsliste",
-  "webDir": ".",
-  "bundledWebRuntime": false,
+  "webDir": "dist",
   "server": {
     "androidScheme": "https"
   },

@@ -7,6 +7,9 @@ on:
     branches: [ main, master ]
   workflow_dispatch:
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 permissions:
   contents: write
   pages: write
@@ -23,7 +26,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
 
       - name: Run Core Engine Unit Tests
         run: node tests/engine.test.js
@@ -54,24 +57,22 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
 
-      - name: Setup Java JDK 17 for Android Gradle
-        uses: actions/setup-java@v4
+      - name: Setup Java JDK 21 for Android Gradle
+        uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
-          java-version: '17'
+          java-version: '21'
 
       - name: Prepare Web Assets in dist/
-        run: |
-          node scripts/bundle-standalone.js
-          cp index.html manifest.json sw.js dist/ 2>/dev/null || true
-          cp -r src dist/ 2>/dev/null || true
+        run: node scripts/bundle-standalone.js
 
       - name: Install Capacitor & Generate Android Project
         run: |
-          npm install --no-save @capacitor/core @capacitor/cli @capacitor/android
-          npx cap add android || true
+          npm install --no-save @capacitor/core@6 @capacitor/cli@6 @capacitor/android@6
+          rm -rf android
+          npx cap add android
           npx cap sync android
 
       - name: Build Debug APK with Gradle
