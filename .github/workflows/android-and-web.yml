@@ -1,0 +1,88 @@
+name: SmartCart Web, PWA & Android APK Build
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+jobs:
+  test-and-bundle:
+    name: Unit Tests & Standalone HTML Bundle
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Run Core Engine Unit Tests
+        run: node tests/engine.test.js
+
+      - name: Build Self-Contained Mobile HTML Bundle
+        run: node scripts/bundle-standalone.js
+
+      - name: Upload Standalone HTML App Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: SmartCart-Standalone-Handy-App
+          path: |
+            dist/SmartCart_Handy_App.html
+            index.html
+            manifest.json
+            sw.js
+            src/
+          retention-days: 30
+
+  build-android-apk:
+    name: Build Android APK (Capacitor + Gradle)
+    needs: test-and-bundle
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Setup Java JDK 17 for Android Gradle
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Prepare Web Assets in dist/
+        run: |
+          node scripts/bundle-standalone.js
+          cp index.html manifest.json sw.js dist/ 2>/dev/null || true
+          cp -r src dist/ 2>/dev/null || true
+
+      - name: Install Capacitor & Generate Android Project
+        run: |
+          npm install --no-save @capacitor/core @capacitor/cli @capacitor/android
+          npx cap add android || true
+          npx cap sync android
+
+      - name: Build Debug APK with Gradle
+        working-directory: ./android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug
+
+      - name: Upload Android APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: SmartCart-Android-Debug-APK
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 30

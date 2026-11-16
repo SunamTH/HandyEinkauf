@@ -1,0 +1,38 @@
+{
+  "name": "smartcart-einkaufsliste",
+  "version": "1.0.0",
+  "description": "Intelligente Einkaufslisten-App mit automatischer Supermarkt-Laufweg-Optimierung, Live-Anpassung und Foto/OCR-Erkennung (Android, iOS & Web PWA)",
+  "main": "index.html",
+  "scripts": {
+    "test": "node tests/engine.test.js",
+    "bundle": "node scripts/bundle-standalone.js",
+    "build": "node scripts/bundle-standalone.js",
+    "serve": "npx serve . -l 8080",
+    "cap:init": "npx cap init SmartCart com.smartcart.einkaufsliste --web-dir .",
+    "cap:add:android": "npx cap add android",
+    "cap:add:ios": "npx cap add ios",
+    "cap:sync": "npx cap sync",
+    "cap:open:android": "npx cap open android",
+    "cap:open:ios": "npx cap open ios"
+  },
+  "keywords": [
+    "einkaufsliste",
+    "supermarkt",
+    "optimierung",
+    "ocr",
+    "pwa",
+    "capacitor",
+    "android",
+    "ios"
+  ],
+  "author": "SmartCart Team",
+  "license": "MIT",
+  "devDependencies": {
+    "@capacitor/cli": "^6.0.0"
+  },
+  "dependencies": {
+    "@capacitor/android": "^6.0.0",
+    "@capacitor/core": "^6.0.0",
+    "@capacitor/ios": "^6.0.0"
+  }
+}

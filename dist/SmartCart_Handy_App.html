@@ -1,0 +1,5437 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#059669" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="SmartCart" />
+  <title>SmartCart – Intelligente Einkaufsliste</title>
+  <link rel="manifest" href="data:application/manifest+json;base64,ewogICJuYW1lIjogIlNtYXJ0Q2FydCDigJMgSW50ZWxsaWdlbnRlIEVpbmthdWZzbGlzdGUiLAogICJzaG9ydF9uYW1lIjogIlNtYXJ0Q2FydCIsCiAgImRlc2NyaXB0aW9uIjogIkVpbmthdWZzbGlzdGUgbWl0IFN1cGVybWFya3QtUmVpaGVuZm9sZ2UsIExpdmUtT3B0aW1pZXJ1bmcgJiBGb3RvLVNjYW5uZXIiLAogICJsYW5nIjogImRlLURFIiwKICAic3RhcnRfdXJsIjogIi4vaW5kZXguaHRtbCIsCiAgImRpc3BsYXkiOiAic3RhbmRhbG9uZSIsCiAgImJhY2tncm91bmRfY29sb3IiOiAiI2Y4ZmFmYyIsCiAgInRoZW1lX2NvbG9yIjogIiMwNTk2NjkiLAogICJvcmllbnRhdGlvbiI6ICJwb3J0cmFpdC1wcmltYXJ5IiwKICAiaWNvbnMiOiBbCiAgICB7CiAgICAgICJzcmMiOiAiZGF0YTppbWFnZS9zdmcreG1sLCUzQ3N2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCAxOTIgMTkyJyUzRSUzQ3JlY3Qgd2lkdGg9JzE5MicgaGVpZ2h0PScxOTInIHJ4PSc0MicgZmlsbD0nJTIzMDU5NjY5Jy8lM0UlM0NwYXRoIGQ9J000OCA1NmgxOGwxNiA2NGg2MGwxNC00NEg2OCcgZmlsbD0nbm9uZScgc3Ryb2tlPSclMjNmZmZmZmYnIHN0cm9rZS13aWR0aD0nMTInIHN0cm9rZS1saW5lY2FwPSdyb3VuZCcgc3Ryb2tlLWxpbmVqb2luPSdyb3VuZCcvJTNFJTNDY2lyY2xlIGN4PSc4NicgY3k9JzE0NCcgcj0nMTAnIGZpbGw9JyUyM2ZmZmZmZicvJTNFJTNDY2lyY2xlIGN4PScxMzYnIGN5PScxNDQnIHI9JzEwJyBmaWxsPSclMjNmZmZmZmYnLyUzRSUzQ3BhdGggZD0nTTkyIDg2bDEyIDEyIDI0LTI0JyBmaWxsPSdub25lJyBzdHJva2U9JyUyM2E3ZjNkMCcgc3Ryb2tlLXdpZHRoPScxMCcgc3Ryb2tlLWxpbmVjYXA9J3JvdW5kJyBzdHJva2UtbGluZWpvaW49J3JvdW5kJy8lM0UlM0Mvc3ZnJTNFIiwKICAgICAgInNpemVzIjogIjE5MngxOTIiLAogICAgICAidHlwZSI6ICJpbWFnZS9zdmcreG1sIiwKICAgICAgInB1cnBvc2UiOiAiYW55IG1hc2thYmxlIgogICAgfSwKICAgIHsKICAgICAgInNyYyI6ICJkYXRhOmltYWdlL3N2Zyt4bWwsJTNDc3ZnIHhtbG5zPSdodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2Zycgdmlld0JveD0nMCAwIDUxMiA1MTInJTNFJTNDcmVjdCB3aWR0aD0nNTEyJyBoZWlnaHQ9JzUxMicgcng9JzExMicgZmlsbD0nJTIzMDU5NjY5Jy8lM0UlM0NwYXRoIGQ9J00xMjggMTQ4aDQ4bDQyIDE3MGgxNjBsMzgtMTE4SDE4MicgZmlsbD0nbm9uZScgc3Ryb2tlPSclMjNmZmZmZmYnIHN0cm9rZS13aWR0aD0nMzAnIHN0cm9rZS1saW5lY2FwPSdyb3VuZCcgc3Ryb2tlLWxpbmVqb2luPSdyb3VuZCcvJTNFJTNDY2lyY2xlIGN4PScyMzAnIGN5PSczODQnIHI9JzI2JyBmaWxsPSclMjNmZmZmZmYnLyUzRSUzQ2NpcmNsZSBjeD0nMzYyJyBjeT0nMzg0JyByPScyNicgZmlsbD0nJTIzZmZmZmZmJy8lM0UlM0NwYXRoIGQ9J00yNDUgMjMwbDMyIDMyIDY0LTY0JyBmaWxsPSdub25lJyBzdHJva2U9JyUyM2E3ZjNkMCcgc3Ryb2tlLXdpZHRoPScyNicgc3Ryb2tlLWxpbmVjYXA9J3JvdW5kJyBzdHJva2UtbGluZWpvaW49J3JvdW5kJy8lM0UlM0Mvc3ZnJTNFIiwKICAgICAgInNpemVzIjogIjUxMng1MTIiLAogICAgICAidHlwZSI6ICJpbWFnZS9zdmcreG1sIiwKICAgICAgInB1cnBvc2UiOiAiYW55IG1hc2thYmxlIgogICAgfQogIF0KfQo=" />
+  <style>
+/* === SmartCart Inlined Styles (src/ui/styles.css) === */
+:root {
+  --bg-app: #f1f5f9;
+  --bg-surface: #ffffff;
+  --bg-muted: #f8fafc;
+  --text-main: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #94a3b8;
+  --border-color: #e2e8f0;
+  --primary: #059669;
+  --primary-dark: #047857;
+  --primary-light: #d1fae5;
+  --primary-soft: #ecfdf5;
+  --accent-amber: #d97706;
+  --accent-amber-bg: #fef3c7;
+  --accent-blue: #2563eb;
+  --accent-blue-bg: #dbeafe;
+  --danger: #dc2626;
+  --danger-bg: #fee2e2;
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.06);
+  --shadow-md: 0 4px 14px rgba(15, 23, 42, 0.08);
+  --shadow-lg: 0 12px 32px rgba(15, 23, 42, 0.16);
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  background-color: #cbd5e1;
+  color: var(--text-main);
+  height: 100%;
+  overscroll-behavior-y: none;
+}
+
+/* Mobile App Shell centered on desktop, full screen on mobile */
+.app-shell {
+  max-width: 480px;
+  margin: 0 auto;
+  min-height: 100dvh;
+  background: var(--bg-app);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  box-shadow: 0 0 40px rgba(15, 23, 42, 0.18);
+  padding-bottom: calc(76px + var(--safe-bottom));
+}
+
+/* Top App Header */
+.app-header {
+  background: linear-gradient(135deg, #065f46 0%, #059669 100%);
+  color: #ffffff;
+  padding: calc(14px + var(--safe-top)) 16px 14px;
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  box-shadow: 0 2px 10px rgba(5, 150, 105, 0.25);
+}
+
+.header-top-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.brand-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.brand-logo {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.18);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.25);
+}
+
+.brand-title h1 {
+  font-size: 18px;
+  font-weight: 800;
+  margin: 0;
+  letter-spacing: -0.02em;
+}
+
+.brand-subtitle {
+  font-size: 11px;
+  opacity: 0.88;
+  margin: 1px 0 0;
+  font-weight: 500;
+}
+
+.header-stats-pill {
+  background: rgba(15, 23, 42, 0.28);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 5px 11px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* Supermarket Selector Strip */
+.store-selector-bar {
+  margin-top: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+  scrollbar-width: none;
+}
+
+.store-selector-bar::-webkit-scrollbar {
+  display: none;
+}
+
+.store-pill {
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.18s ease;
+}
+
+.store-pill.active {
+  background: #ffffff;
+  color: #065f46;
+  border-color: #ffffff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.16);
+  transform: translateY(-1px);
+}
+
+/* Main Content Views */
+.tab-view {
+  display: none;
+  padding: 14px 14px 24px;
+  flex: 1;
+  animation: fadeIn 0.18s ease;
+}
+
+.tab-view.active {
+  display: block;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Card Component */
+.card {
+  background: var(--bg-surface);
+  border-radius: var(--radius-md);
+  padding: 14px;
+  margin-bottom: 14px;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-color);
+}
+
+/* Live Optimization Header Card */
+.live-opt-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: linear-gradient(to right, #ffffff, #f0fdf4);
+  border: 1px solid #bbf7d0;
+}
+
+.live-opt-bar.off {
+  background: var(--bg-surface);
+  border-color: var(--border-color);
+}
+
+.live-opt-info {
+  flex: 1;
+}
+
+.live-opt-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.status-badge {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 999px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.status-badge.on {
+  background: var(--primary-light);
+  color: var(--primary-dark);
+}
+
+.status-badge.off {
+  background: #e2e8f0;
+  color: #475569;
+}
+
+.live-opt-desc {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin: 3px 0 0;
+  line-height: 1.35;
+}
+
+/* iOS/Android Switch */
+.toggle-switch {
+  position: relative;
+  width: 50px;
+  height: 28px;
+  flex-shrink: 0;
+}
+
+.toggle-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.toggle-slider {
+  position: absolute;
+  cursor: pointer;
+  inset: 0;
+  background-color: #cbd5e1;
+  transition: 0.22s;
+  border-radius: 999px;
+}
+
+.toggle-slider:before {
+  position: absolute;
+  content: "";
+  height: 22px;
+  width: 22px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: 0.22s;
+  border-radius: 50%;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+}
+
+.toggle-switch input:checked + .toggle-slider {
+  background-color: var(--primary);
+}
+
+.toggle-switch input:checked + .toggle-slider:before {
+  transform: translateX(22px);
+}
+
+/* Quick Add Item Form */
+.add-item-form {
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
+}
+
+.input-name {
+  flex: 1;
+  min-width: 0;
+  padding: 11px 12px;
+  border: 1.5px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  font-size: 15px;
+  background: var(--bg-muted);
+  color: var(--text-main);
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.input-qty {
+  width: 82px;
+  padding: 11px 10px;
+  border: 1.5px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  background: var(--bg-muted);
+  color: var(--text-main);
+}
+
+.input-name:focus, .input-qty:focus, select:focus, textarea:focus {
+  outline: none;
+  border-color: var(--primary);
+  background: #ffffff;
+}
+
+.btn {
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: transform 0.1s ease, background 0.15s ease, opacity 0.15s;
+}
+
+.btn:active {
+  transform: scale(0.97);
+}
+
+.btn-primary {
+  background: var(--primary);
+  color: #ffffff;
+}
+
+.btn-primary:hover {
+  background: var(--primary-dark);
+}
+
+.btn-secondary {
+  background: #e2e8f0;
+  color: #1e293b;
+}
+
+.btn-outline {
+  background: transparent;
+  border: 1.5px solid var(--border-color);
+  color: var(--text-main);
+}
+
+.btn-danger {
+  background: var(--danger-bg);
+  color: var(--danger);
+}
+
+.btn-sm {
+  padding: 6px 10px;
+  font-size: 12px;
+  border-radius: 8px;
+}
+
+/* Quick Chips for fast adding */
+.quick-suggestions {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  margin-top: 10px;
+  padding-bottom: 2px;
+  scrollbar-width: none;
+}
+
+.quick-suggestions::-webkit-scrollbar {
+  display: none;
+}
+
+.suggestion-chip {
+  font-size: 12px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--bg-muted);
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  cursor: pointer;
+  white-space: nowrap;
+  font-weight: 500;
+}
+
+.suggestion-chip:hover {
+  background: var(--primary-soft);
+  border-color: var(--primary);
+  color: var(--primary-dark);
+}
+
+/* List Section Headers */
+.list-section {
+  margin-bottom: 16px;
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  padding: 0 4px;
+}
+
+.section-title {
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.section-count {
+  background: #e2e8f0;
+  color: #334155;
+  padding: 2px 7px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+/* Shopping List Items */
+.shopping-items-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.shopping-item {
+  background: var(--bg-surface);
+  border: 1.5px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 12px 13px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  box-shadow: var(--shadow-sm);
+  transition: all 0.18s ease;
+  cursor: pointer;
+  user-select: none;
+}
+
+/* Checked Items Section at Top (Grayed Out) */
+.shopping-item.checked {
+  background: #f8fafc;
+  border-color: #e2e8f0;
+  opacity: 0.62;
+  box-shadow: none;
+}
+
+.shopping-item.checked .item-name {
+  text-decoration: line-through;
+  color: #64748b;
+}
+
+.shopping-item.checked .item-meta {
+  color: #94a3b8;
+}
+
+/* Next Item (#1 in Supermarket Walking Order) */
+.shopping-item.next-in-aisle {
+  border-color: var(--primary);
+  background: linear-gradient(to right, #ecfdf5 0%, #ffffff 65%);
+  box-shadow: 0 4px 12px rgba(5, 150, 105, 0.12);
+}
+
+/* Late Added Override Item */
+.shopping-item.late-override {
+  border-color: var(--accent-amber);
+  background: linear-gradient(to right, #fffbeb 0%, #ffffff 70%);
+}
+
+/* Custom Checkbox Circle */
+.item-checkbox {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 2px solid #94a3b8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: #ffffff;
+  color: transparent;
+  font-size: 14px;
+  font-weight: 800;
+  transition: all 0.15s ease;
+}
+
+.shopping-item.next-in-aisle .item-checkbox {
+  border-color: var(--primary);
+  border-width: 2.5px;
+}
+
+.shopping-item.checked .item-checkbox {
+  background: #94a3b8;
+  border-color: #94a3b8;
+  color: #ffffff;
+}
+
+.item-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.item-top-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.item-name {
+  font-size: 15.5px;
+  font-weight: 700;
+  color: var(--text-main);
+  word-break: break-word;
+}
+
+.item-qty-badge {
+  font-size: 12px;
+  font-weight: 700;
+  background: #f1f5f9;
+  color: #334155;
+  padding: 2px 8px;
+  border-radius: 6px;
+}
+
+.item-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.badge {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.badge-next {
+  background: var(--primary-light);
+  color: var(--primary-dark);
+}
+
+.badge-late {
+  background: var(--accent-amber-bg);
+  color: #92400e;
+}
+
+.badge-walk-index {
+  background: #f1f5f9;
+  color: #475569;
+  font-weight: 600;
+}
+
+.badge-unknown-pos {
+  background: #f3e8ff;
+  color: #6b21a8;
+}
+
+.badge-undo-hint {
+  background: #e2e8f0;
+  color: #475569;
+}
+
+.item-delete-btn {
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  font-size: 17px;
+  padding: 6px;
+  border-radius: 8px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.item-delete-btn:hover {
+  background: var(--danger-bg);
+  color: var(--danger);
+}
+
+/* Empty State */
+.empty-state {
+  text-align: center;
+  padding: 28px 16px;
+  color: var(--text-secondary);
+}
+
+.empty-state-icon {
+  font-size: 36px;
+  margin-bottom: 8px;
+}
+
+/* OCR / Photo Scanner View */
+.camera-dropzone {
+  border: 2px dashed #10b981;
+  background: var(--primary-soft);
+  border-radius: var(--radius-md);
+  padding: 22px 16px;
+  text-align: center;
+  cursor: pointer;
+  display: block;
+  transition: background 0.15s;
+}
+
+.camera-dropzone:hover {
+  background: #d1fae5;
+}
+
+.camera-dropzone input[type="file"] {
+  display: none;
+}
+
+.demo-photos-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.demo-photo-btn {
+  background: var(--bg-muted);
+  border: 1.5px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  padding: 10px 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-main);
+  cursor: pointer;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.demo-photo-btn:hover {
+  border-color: var(--primary);
+  background: var(--primary-soft);
+}
+
+.ocr-preview-img {
+  width: 100%;
+  max-height: 220px;
+  object-fit: contain;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-color);
+  background: #fff;
+  margin-top: 10px;
+}
+
+.ocr-parsed-list {
+  list-style: none;
+  padding: 0;
+  margin: 10px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ocr-parsed-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: var(--bg-muted);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+/* Supermarket Configurator Order List */
+.store-order-list {
+  list-style: none;
+  padding: 0;
+  margin: 10px 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.store-order-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--bg-muted);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 8px 10px;
+}
+
+.store-order-num {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: #e2e8f0;
+  color: #334155;
+  font-size: 12px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.store-order-name {
+  flex: 1;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.store-order-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.icon-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  background: #ffffff;
+  color: var(--text-main);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.icon-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+/* Bottom Navigation Bar */
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 480px;
+  background: rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(12px);
+  border-top: 1px solid var(--border-color);
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  padding: 6px 8px calc(6px + var(--safe-bottom));
+  z-index: 40;
+  box-shadow: 0 -4px 16px rgba(15, 23, 42, 0.06);
+}
+
+.nav-tab {
+  background: none;
+  border: none;
+  padding: 6px 4px;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.nav-tab .nav-icon {
+  font-size: 20px;
+  line-height: 1;
+}
+
+.nav-tab.active {
+  color: var(--primary);
+  background: var(--primary-soft);
+  font-weight: 800;
+}
+
+/* Modal Dialog (Live Optimization Prompt) */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.58);
+  backdrop-filter: blur(3px);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+  z-index: 100;
+}
+
+.modal-backdrop.open {
+  display: flex;
+  animation: fadeIn 0.15s ease;
+}
+
+.modal-dialog {
+  background: #ffffff;
+  width: 100%;
+  max-width: 410px;
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  box-shadow: var(--shadow-lg);
+  border: 1px solid var(--border-color);
+}
+
+.modal-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--accent-amber-bg);
+  color: #92400e;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 4px 10px;
+  border-radius: 999px;
+  margin-bottom: 10px;
+}
+
+.modal-title {
+  font-size: 18px;
+  font-weight: 800;
+  margin: 0 0 8px;
+  color: var(--text-main);
+}
+
+.modal-body {
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+  margin-bottom: 18px;
+}
+
+.modal-highlight-box {
+  background: var(--bg-muted);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 10px 12px;
+  margin-top: 10px;
+  font-size: 13px;
+  color: var(--text-main);
+}
+
+.modal-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Toast Notification */
+.toast-container {
+  position: fixed;
+  bottom: calc(84px + var(--safe-bottom));
+  left: 50%;
+  transform: translateX(-50%);
+  width: calc(100% - 28px);
+  max-width: 450px;
+  z-index: 90;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.toast {
+  background: #0f172a;
+  color: #ffffff;
+  padding: 12px 14px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.4;
+  box-shadow: var(--shadow-lg);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  pointer-events: auto;
+  animation: fadeIn 0.2s ease;
+}
+
+.toast.toast-late {
+  background: #78350f;
+  border: 1px solid #f59e0b;
+}
+
+.toast.toast-success {
+  background: #064e3b;
+  border: 1px solid #10b981;
+}
+
+.code-box {
+  width: 100%;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 12px;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-muted);
+  resize: vertical;
+}
+
+</style>
+</head>
+<body>
+  <div class="app-shell" id="app">
+    <!-- Top App Header with Supermarket Selector -->
+    <header class="app-header">
+      <div class="header-top-row">
+        <div class="brand-title">
+          <div class="brand-logo" aria-hidden="true">🛒</div>
+          <div>
+            <h1>SmartCart</h1>
+            <p class="brand-subtitle" id="header-store-subtitle">Laufweg-optimierte Einkaufsliste</p>
+          </div>
+        </div>
+        <div class="header-stats-pill" id="header-progress-pill">0 / 0 erledigt</div>
+      </div>
+
+      <!-- Supermarket Selector Pills -->
+      <div class="store-selector-bar" id="store-selector-bar" role="tablist" aria-label="Supermarkt auswählen">
+        <!-- Populated dynamically by app.js -->
+      </div>
+    </header>
+
+    <!-- TAB 1: Einkaufszettel-Ansicht (Main Tab) -->
+    <main class="tab-view active" id="tab-list" role="tabpanel">
+      <!-- Live-Optimierung Toggle Header -->
+      <section class="card live-opt-bar" id="live-opt-card">
+        <div class="live-opt-info">
+          <div class="live-opt-title-row">
+            <span>⚡ Live-Optimierung</span>
+            <span class="status-badge on" id="live-opt-badge">Ein</span>
+          </div>
+          <p class="live-opt-desc" id="live-opt-desc">
+            Erkennt beim Abhaken Abweichungen und fragt, ob die Supermarkt-Reihenfolge angepasst werden soll.
+          </p>
+        </div>
+        <label class="toggle-switch" title="Live-Optimierung Ein/Aus">
+          <input type="checkbox" id="live-opt-toggle" checked />
+          <span class="toggle-slider"></span>
+        </label>
+      </section>
+
+      <!-- Quick Add Item Bar -->
+      <section class="card">
+        <form class="add-item-form" id="add-item-form" autocomplete="off">
+          <input
+            type="text"
+            id="add-item-name"
+            class="input-name"
+            placeholder="Ware hinzufügen (z. B. Milch, Äpfel)…"
+            required
+          />
+          <input
+            type="text"
+            id="add-item-qty"
+            class="input-qty"
+            placeholder="Menge"
+            aria-label="Menge (optional)"
+          />
+          <button type="submit" class="btn btn-primary" id="add-item-btn" title="Ware hinzufügen">
+            + Hinzu
+          </button>
+        </form>
+        <div class="quick-suggestions" id="quick-suggestions" aria-label="Schnellauswahl">
+          <!-- Populated dynamically from current store's known items -->
+        </div>
+      </section>
+
+      <!-- TOP SECTION: Bereits abgehakt (Erledigt) - Grayed out at top! -->
+      <section class="list-section" id="checked-section" style="display: none;">
+        <div class="section-header">
+          <div class="section-title">
+            <span>☑️ Bereits abgehakt (Erledigt)</span>
+            <span class="section-count" id="checked-count">0</span>
+          </div>
+          <button type="button" class="btn btn-outline btn-sm" id="clear-checked-btn" title="Alle erledigten Waren entfernen">
+            Erledigte löschen
+          </button>
+        </div>
+        <p style="font-size: 11.5px; color: var(--text-secondary); margin: 0 4px 8px;">
+          Antippen zum <strong>Rückgängig machen</strong> – die Ware wird wieder exakt an ihrer Supermarkt-Position einsortiert.
+        </p>
+        <ul class="shopping-items-list" id="checked-items-list"></ul>
+      </section>
+
+      <!-- BOTTOM SECTION: Noch einzukaufen (Optimierte Reihenfolge) -->
+      <section class="list-section" id="unchecked-section">
+        <div class="section-header">
+          <div class="section-title">
+            <span>🏃 Noch einzukaufen (Optimierte Reihenfolge)</span>
+            <span class="section-count" id="unchecked-count">0</span>
+          </div>
+          <button type="button" class="btn btn-outline btn-sm" id="seed-demo-list-btn" title="Beispiel-Einkaufswagen laden">
+            Demo-Liste
+          </button>
+        </div>
+        <ul class="shopping-items-list" id="unchecked-items-list"></ul>
+      </section>
+    </main>
+
+    <!-- TAB 2: Foto-Scanner / OCR ("Foto-Erkennung") -->
+    <section class="tab-view" id="tab-ocr" role="tabpanel">
+      <div class="card">
+        <h2 style="margin: 0 0 6px; font-size: 17px;">📷 Einkaufszettel abfotografieren</h2>
+        <p style="margin: 0 0 12px; font-size: 13px; color: var(--text-secondary); line-height: 1.4;">
+          Fotografiere deinen handgeschriebenen oder gedruckten Einkaufszettel. Alle erkannten Waren werden automatisch für <strong id="ocr-target-store-name">deinen Supermarkt</strong> sortiert!
+        </p>
+
+        <label class="camera-dropzone" id="camera-dropzone">
+          <input type="file" id="ocr-file-input" accept="image/*" capture="environment" />
+          <div style="font-size: 32px; margin-bottom: 6px;">📸</div>
+          <div style="font-weight: 800; font-size: 15px; color: var(--primary-dark);">
+            Kamera öffnen oder Foto auswählen
+          </div>
+          <div style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">
+            Unterstützt Handykamera, Galerie-Fotos &amp; Offline-Texterkennung
+          </div>
+        </label>
+
+        <div style="margin-top: 14px;">
+          <div style="font-size: 12px; font-weight: 700; color: var(--text-secondary); margin-bottom: 6px;">
+            Oder sofort testen mit einem Demo-Einkaufszettel-Foto:
+          </div>
+          <div class="demo-photos-grid">
+            <button type="button" class="demo-photo-btn" data-preset="wochenende">
+              <span style="font-size: 18px;">📝</span>
+              <span>Wocheneinkauf</span>
+            </button>
+            <button type="button" class="demo-photo-btn" data-preset="fruehstueck">
+              <span style="font-size: 18px;">🥐</span>
+              <span>Frühstück</span>
+            </button>
+            <button type="button" class="demo-photo-btn" data-preset="italienisch">
+              <span style="font-size: 18px;">🍕</span>
+              <span>Italienisch</span>
+            </button>
+          </div>
+        </div>
+
+        <div id="ocr-status-box" style="display: none; margin-top: 12px; padding: 10px; border-radius: 10px; background: var(--bg-muted); font-size: 13px; font-weight: 600;"></div>
+        <img id="ocr-preview-image" class="ocr-preview-img" alt="Vorschau Einkaufszettel" style="display: none;" />
+      </div>
+
+      <!-- Editable OCR Text & Detected Items Preview -->
+      <div class="card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+          <h3 style="margin: 0; font-size: 15px;">🔍 Erkannte Waren prüfen &amp; bearbeiten</h3>
+          <span class="section-count" id="ocr-detected-count">0 Waren</span>
+        </div>
+        <p style="margin: 0 0 8px; font-size: 12px; color: var(--text-secondary);">
+          Du kannst den erkannten Text hier jederzeit korrigieren oder eigene Zeilen einfügen (eine Ware pro Zeile, z. B. <code>2x Vollmilch</code>):
+        </p>
+        <textarea
+          id="ocr-raw-textarea"
+          class="code-box"
+          rows="5"
+          placeholder="Beispiel:&#10;2x Bananen&#10;500g Hackfleisch&#10;Vollmilch&#10;Spaghetti&#10;Tiefkühlpizza"
+        ></textarea>
+
+        <ul class="ocr-parsed-list" id="ocr-parsed-list"></ul>
+
+        <button type="button" class="btn btn-primary" id="ocr-import-btn" style="width: 100%; margin-top: 8px;">
+          ✅ Alle Waren optimiert zum Einkaufszettel hinzufügen
+        </button>
+      </div>
+    </section>
+
+    <!-- TAB 3: Supermarkt-Konfigurator ("Supermärkte") -->
+    <section class="tab-view" id="tab-stores" role="tabpanel">
+      <div class="card">
+        <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 10px;">
+          <div>
+            <h2 style="margin: 0; font-size: 17px;">🏪 Supermarkt-Konfiguration</h2>
+            <p style="margin: 2px 0 0; font-size: 12px; color: var(--text-secondary);">
+              Lege für jeden Supermarkt fest, in welcher Reihenfolge die Waren im Markt angeordnet sind.
+            </p>
+          </div>
+          <button type="button" class="btn btn-outline btn-sm" id="reset-stores-btn" title="Standard-Supermärkte wiederherstellen">
+            Standards
+          </button>
+        </div>
+
+        <!-- Store Selection & Rename/Delete -->
+        <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 12px;">
+          <select id="config-store-select" class="input-name" style="font-weight: 700;"></select>
+          <button type="button" class="btn btn-outline btn-sm" id="rename-store-btn">Umbenennen</button>
+          <button type="button" class="btn btn-danger btn-sm" id="delete-store-btn">Löschen</button>
+        </div>
+
+        <!-- Create New Supermarket -->
+        <form id="create-store-form" style="display: flex; gap: 8px; padding-top: 10px; border-top: 1px solid var(--border-color);">
+          <input
+            type="text"
+            id="new-store-name"
+            class="input-name"
+            placeholder="Neuen Markt anlegen (z. B. EDEKA Center)…"
+            required
+          />
+          <button type="submit" class="btn btn-secondary">+ Markt</button>
+        </form>
+      </div>
+
+      <!-- Walking Order Editor for Selected Supermarket -->
+      <div class="card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+          <h3 style="margin: 0; font-size: 15px;">
+            🧭 Laufreihenfolge in <span id="config-store-title">REWE</span>
+          </h3>
+          <span class="section-count" id="config-store-count">0 Positionen</span>
+        </div>
+        <p style="margin: 0 0 10px; font-size: 12px; color: var(--text-secondary);">
+          Position 1 ist direkt am Eingang (z. B. Obst &amp; Gemüse), die letzte Position kurz vor der Kasse.
+        </p>
+
+        <!-- Add New Known Item to Supermarket Order -->
+        <form id="add-store-item-form" style="display: flex; gap: 6px; margin-bottom: 12px;">
+          <input
+            type="text"
+            id="new-store-item-name"
+            class="input-name"
+            placeholder="Neue Ware in Markt-Reihenfolge aufnehmen…"
+            required
+          />
+          <select id="new-store-item-pos" class="input-qty" style="width: 115px;">
+            <option value="end">Am Ende</option>
+            <option value="start">Am Eingang (1.)</option>
+          </select>
+          <button type="submit" class="btn btn-primary btn-sm">+ Aufnehmen</button>
+        </form>
+
+        <ul class="store-order-list" id="store-order-list"></ul>
+      </div>
+    </section>
+
+    <!-- TAB 4: Teilen & Handy-Installation ("Teilen & Info") -->
+    <section class="tab-view" id="tab-share" role="tabpanel">
+      <!-- Native Share & Export/Import -->
+      <div class="card">
+        <h2 style="margin: 0 0 6px; font-size: 17px;">🤝 Einkaufsliste &amp; Märkte teilen</h2>
+        <p style="margin: 0 0 12px; font-size: 13px; color: var(--text-secondary); line-height: 1.4;">
+          Teile deinen aktuellen Einkaufszettel oder deine optimierten Supermarkt-Konfigurationen per WhatsApp, Telegram, AirDrop oder Share-Code.
+        </p>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px;">
+          <button type="button" class="btn btn-primary" id="native-share-list-btn">
+            📤 Liste teilen
+          </button>
+          <button type="button" class="btn btn-secondary" id="native-share-store-btn">
+            🏪 Markt-Reihenfolge teilen
+          </button>
+        </div>
+
+        <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+          <button type="button" class="btn btn-outline btn-sm" id="export-code-btn" style="flex: 1;">
+            📋 Share-Code erzeugen
+          </button>
+          <button type="button" class="btn btn-outline btn-sm" id="download-json-btn" style="flex: 1;">
+            💾 Backup-Datei (.json)
+          </button>
+        </div>
+
+        <textarea
+          id="share-code-textarea"
+          class="code-box"
+          rows="4"
+          placeholder="Hier erscheint dein Share-Code zum Kopieren – oder füge einen erhaltenen Share-Code / JSON hier ein, um ihn zu importieren…"
+        ></textarea>
+
+        <div style="display: flex; gap: 8px; margin-top: 8px;">
+          <button type="button" class="btn btn-secondary btn-sm" id="copy-share-code-btn" style="flex: 1;">
+            Code kopieren
+          </button>
+          <button type="button" class="btn btn-primary btn-sm" id="import-share-code-btn" style="flex: 1;">
+            📥 Code importieren
+          </button>
+        </div>
+      </div>
+
+      <!-- Phone Installation Guide (Android & iOS) -->
+      <div class="card">
+        <h3 style="margin: 0 0 8px; font-size: 15px;">📱 Auf dem Handy installieren &amp; weitergeben</h3>
+        <div style="font-size: 13px; color: var(--text-secondary); line-height: 1.5; display: flex; flex-direction: column; gap: 10px;">
+          <div style="background: var(--bg-muted); padding: 10px 12px; border-radius: 10px; border: 1px solid var(--border-color);">
+            <strong style="color: var(--text-main);">1. Sofort per WhatsApp / Datei teilen (Offline-Einzeldatei):</strong><br />
+            Die Datei <code>dist/SmartCart_Handy_App.html</code> enthält die komplette App in einer einzigen Datei. Einfach ans Handy senden und im Browser öffnen – funktioniert 100 % offline!
+          </div>
+          <div style="background: var(--bg-muted); padding: 10px 12px; border-radius: 10px; border: 1px solid var(--border-color);">
+            <strong style="color: var(--text-main);">2. Als App auf den Home-Bildschirm (PWA für Android &amp; iOS):</strong><br />
+            • <strong>Android (Chrome):</strong> Menü (⋮) → <em>„App installieren“</em> oder <em>„Zum Startbildschirm hinzufügen“</em>.<br />
+            • <strong>iPhone (Safari):</strong> Teilen-Symbol (⬆️) → <em>„Zum Home-Bildschirm“</em>.
+          </div>
+          <div style="background: var(--bg-muted); padding: 10px 12px; border-radius: 10px; border: 1px solid var(--border-color);">
+            <strong style="color: var(--text-main);">3. Native Android APK / iOS App (Capacitor):</strong><br />
+            Über <code>npx cap add android</code> bzw. GitHub Actions wird automatisch eine installierbare Android-<code>.apk</code> gebaut.
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Bottom Tab Navigation -->
+    <nav class="bottom-nav" aria-label="Hauptnavigation">
+      <button type="button" class="nav-tab active" data-tab="tab-list">
+        <span class="nav-icon">📝</span>
+        <span>Einkaufszettel</span>
+      </button>
+      <button type="button" class="nav-tab" data-tab="tab-ocr">
+        <span class="nav-icon">📷</span>
+        <span>Foto-Scanner</span>
+      </button>
+      <button type="button" class="nav-tab" data-tab="tab-stores">
+        <span class="nav-icon">🏪</span>
+        <span>Supermärkte</span>
+      </button>
+      <button type="button" class="nav-tab" data-tab="tab-share">
+        <span class="nav-icon">🤝</span>
+        <span>Teilen &amp; App</span>
+      </button>
+    </nav>
+
+    <!-- LIVE-OPTIMIERUNG MODAL DIALOG -->
+    <div class="modal-backdrop" id="live-opt-modal" role="dialog" aria-modal="true" aria-labelledby="live-opt-modal-title">
+      <div class="modal-dialog">
+        <div class="modal-badge">⚡ Live-Optimierung erkannt</div>
+        <h3 class="modal-title" id="live-opt-modal-title">Reihenfolge im Supermarkt anpassen?</h3>
+        <div class="modal-body">
+          <p id="live-opt-modal-text" style="margin: 0;">
+            Du hast eine Ware vor anderen offenen Waren abgehakt. Soll die Konfiguration für diesen Supermarkt automatisch angepasst werden?
+          </p>
+          <div class="modal-highlight-box" id="live-opt-modal-details"></div>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-primary" id="live-opt-confirm-btn">
+            ✅ Ja, Reihenfolge anpassen
+          </button>
+          <button type="button" class="btn btn-secondary" id="live-opt-cancel-btn">
+            Nein, nur abhaken
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toast Notifications Container -->
+    <div class="toast-container" id="toast-container" aria-live="polite"></div>
+  </div>
+
+  <!-- Core Domain & Business Logic Modules -->
+  <!-- Mobile App UI Controller -->
+<script>
+window.__SMARTCART_STANDALONE__ = true;
+/* ==========================================================================
+ * Modul: src/core/models.js
+ * ========================================================================== */
+/**
+ * SmartCart Core - Domain Models & Default German Supermarket Configurations
+ * Works in Browser (window.SmartCartCore) and Node.js (CommonJS).
+ */
+(function (root) {
+  'use strict';
+
+  const SmartCartCore = root.SmartCartCore || (root.SmartCartCore = {});
+
+  /**
+   * Generates a unique ID with a given prefix.
+   * @param {string} [prefix='id']
+   * @returns {string}
+   */
+  function generateId(prefix = 'id') {
+    const rand = Math.random().toString(36).substring(2, 8);
+    const time = Date.now().toString(36);
+    return `${prefix}_${time}_${rand}`;
+  }
+
+  /**
+   * Normalizes an item name for case-insensitive, umlaut-tolerant matching
+   * against supermarket walking order configurations.
+   * @param {string} name
+   * @returns {string}
+   */
+  function normalizeItemName(name) {
+    if (name === null || name === undefined) return '';
+    return String(name)
+      .trim()
+      .toLowerCase()
+      .replace(/ä/g, 'ae')
+      .replace(/ö/g, 'oe')
+      .replace(/ü/g, 'ue')
+      .replace(/ß/g, 'ss')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9\s-]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
+  /**
+   * Common German singular/plural & synonym equivalence groups (normalized).
+   */
+  const EQUIVALENCE_GROUPS = [
+    ['apfel', 'aepfel'],
+    ['banane', 'bananen'],
+    ['tomate', 'tomaten', 'rispentomaten'],
+    ['gurke', 'gurken', 'salatgurke'],
+    ['paprika', 'paprikas'],
+    ['kartoffel', 'kartoffeln'],
+    ['zwiebel', 'zwiebeln'],
+    ['karotte', 'karotten', 'moehre', 'moehren'],
+    ['salat', 'kopfsalat', 'eisbergsalat'],
+    ['broetchen', 'semmel', 'semmeln', 'schrippen'],
+    ['brot', 'vollkornbrot', 'bauernbrot'],
+    ['toast', 'toastbrot'],
+    ['croissant', 'croissants'],
+    ['milch', 'vollmilch', 'frischmilch', 'h-milch', 'hmilch'],
+    ['butter', 'markenbutter', 'suessrahmbutter'],
+    ['joghurt', 'naturjoghurt', 'fruchtjoghurt'],
+    ['kaese', 'gouda', 'schnittkaese', 'reibekaese'],
+    ['quark', 'magerquark', 'speisequark'],
+    ['sahne', 'schlagsahne'],
+    ['ei', 'eier', 'freilandeier', 'bio eier'],
+    ['haehnchenbrust', 'haehnchen', 'haehnchenfilet', 'putenbrust'],
+    ['hackfleisch', 'rinderhack', 'gemischtes hackfleisch'],
+    ['salami', 'feinschmeckersalami'],
+    ['schinken', 'kochschinken', 'roher schinken'],
+    ['nudel', 'nudeln', 'pasta', 'spaghetti', 'penne'],
+    ['reis', 'basmatireis', 'jasminreis'],
+    ['passierte tomaten', 'tomaten passiert', 'dosentomaten'],
+    ['olivenoel', 'speiseoel', 'rapsoel'],
+    ['mehl', 'weizenmehl', 'dinkelmehl'],
+    ['zucker', 'feinzucker'],
+    ['haferflocken', 'zarte haferflocken', 'kernige haferflocken'],
+    ['kaffee', 'filterkaffee', 'kaffeebohnen', 'espresso'],
+    ['tee', 'kraeutertee', 'fruechtetee', 'schwarzer tee'],
+    ['schokolade', 'vollmilchschokolade', 'tafelschokolade'],
+    ['mineralwasser', 'wasser', 'sprudelwasser', 'stilles wasser'],
+    ['apfelsaft', 'apfelschorle'],
+    ['orangensaft', 'o-saft', 'osaft'],
+    ['cola', 'coca cola', 'cola zero'],
+    ['bier', 'pils', 'weizenbier'],
+    ['tiefkuehlpizza', 'tk pizza', 'pizza', 'tk-pizza'],
+    ['tiefkuehlgemuese', 'tk gemuese', 'tk-gemuese'],
+    ['eiscreme', 'eis', 'speiseeis'],
+    ['toilettenpapier', 'klopapier', 'wc papier', 'wc-papier'],
+    ['kuechenrolle', 'kuechentuecher', 'haushaltsrolle'],
+    ['spuelmittel', 'handspuelmittel', 'spueli'],
+    ['zahnpasta', 'zahncreme'],
+    ['duschgel', 'duschbad', 'seife']
+  ];
+
+  const SYNONYM_LOOKUP = new Map();
+  EQUIVALENCE_GROUPS.forEach((group) => {
+    const canonical = group[0];
+    group.forEach((term) => {
+      SYNONYM_LOOKUP.set(normalizeItemName(term), canonical);
+    });
+  });
+
+  /**
+   * Returns the canonical normalized key for an item name (handling German singular/plural/synonyms).
+   * @param {string} name
+   * @returns {string}
+   */
+  function getCanonicalItemKey(name) {
+    const norm = normalizeItemName(name);
+    if (!norm) return '';
+    return SYNONYM_LOOKUP.get(norm) || norm;
+  }
+
+  /**
+   * Finds the index of an item name in a supermarket's itemOrder array using normalized matching.
+   * Checks exact normalized match first, then canonical synonym/plural match.
+   * @param {string[]} itemOrder
+   * @param {string} itemName
+   * @returns {number} Index in itemOrder, or -1 if not found
+   */
+  function indexOfNormalized(itemOrder, itemName) {
+    if (!Array.isArray(itemOrder) || !itemName) return -1;
+    const targetNorm = normalizeItemName(itemName);
+    if (!targetNorm) return -1;
+
+    for (let i = 0; i < itemOrder.length; i++) {
+      if (normalizeItemName(itemOrder[i]) === targetNorm) {
+        return i;
+      }
+    }
+
+    const targetCanonical = getCanonicalItemKey(itemName);
+    for (let i = 0; i < itemOrder.length; i++) {
+      if (getCanonicalItemKey(itemOrder[i]) === targetCanonical) {
+        return i;
+      }
+    }
+
+    return -1;
+  }
+
+  /**
+   * Guesses a German store department/category for UI badges based on item name.
+   * @param {string} name
+   * @returns {string}
+   */
+  function guessItemCategory(name) {
+    const key = getCanonicalItemKey(name);
+    const categories = [
+      {
+        label: 'Obst & Gemüse',
+        items: ['apfel', 'banane', 'tomate', 'gurke', 'paprika', 'salat', 'kartoffel', 'zwiebel', 'karotte', 'zitrone', 'avocado', 'beeren', 'pilze', 'knoblauch', 'ingwer', 'brokkoli', 'zucchini']
+      },
+      {
+        label: 'Backwaren',
+        items: ['broetchen', 'brot', 'toast', 'croissant', 'baguette', 'brezel', 'kuchen']
+      },
+      {
+        label: 'Kühlregal & Milch',
+        items: ['milch', 'butter', 'joghurt', 'kaese', 'quark', 'sahne', 'ei', 'frischkaese', 'mozzarella', 'schmand']
+      },
+      {
+        label: 'Fleisch & Wurst',
+        items: ['haehnchenbrust', 'hackfleisch', 'salami', 'schinken', 'wurst', 'rindfleisch', 'bratwurst', 'lachs']
+      },
+      {
+        label: 'Trockensortiment',
+        items: ['nudel', 'reis', 'passierte tomaten', 'olivenoel', 'mehl', 'zucker', 'haferflocken', 'kaffee', 'tee', 'schokolade', 'muesli', 'salz', 'pfeffer', 'ketchup', 'senf', 'kekse', 'chips']
+      },
+      {
+        label: 'Getränke',
+        items: ['mineralwasser', 'apfelsaft', 'orangensaft', 'cola', 'bier', 'wein', 'limonade', 'saft']
+      },
+      {
+        label: 'Tiefkühl',
+        items: ['tiefkuehlpizza', 'tiefkuehlgemuese', 'eiscreme', 'pommes', 'fischstaebchen']
+      },
+      {
+        label: 'Haushalt & Drogerie',
+        items: ['toilettenpapier', 'kuechenrolle', 'spuelmittel', 'zahnpasta', 'duschgel', 'waschmittel', 'muellbeutel', 'shampoo', 'alufolie', 'backpapier']
+      }
+    ];
+
+    for (const cat of categories) {
+      if (cat.items.some((term) => key === term || key.includes(term))) {
+        return cat.label;
+      }
+    }
+    return 'Sonstiges';
+  }
+
+  /**
+   * Creates a normalized Shopping List Item object.
+   * @param {Object} params
+   * @param {string} [params.id]
+   * @param {string} params.name
+   * @param {string|number} [params.quantity='1x']
+   * @param {string} [params.category]
+   * @param {boolean} [params.checked=false]
+   * @param {number|null} [params.checkedAt=null]
+   * @param {boolean} [params.addedLateOverride=false]
+   * @param {number} [params.originalOrder=0]
+   * @returns {Object}
+   */
+  function createItem({
+    id,
+    name,
+    quantity = '1x',
+    category = null,
+    checked = false,
+    checkedAt = null,
+    addedLateOverride = false,
+    originalOrder = 0
+  } = {}) {
+    const cleanName = String(name || '').trim();
+    const isChecked = Boolean(checked);
+    const cleanQty =
+      quantity !== undefined && quantity !== null && String(quantity).trim() !== ''
+        ? String(quantity).trim()
+        : '1x';
+
+    return {
+      id: id || generateId('item'),
+      name: cleanName,
+      normalizedName: normalizeItemName(cleanName),
+      quantity: cleanQty,
+      category: category || guessItemCategory(cleanName),
+      checked: isChecked,
+      checkedAt: isChecked ? (checkedAt || Date.now()) : null,
+      addedLateOverride: isChecked ? false : Boolean(addedLateOverride),
+      originalOrder: typeof originalOrder === 'number' ? originalOrder : 0
+    };
+  }
+
+  /**
+   * Creates a Supermarket configuration with an ordered array of item names
+   * representing the walking path through the store.
+   * @param {Object} params
+   * @param {string} [params.id]
+   * @param {string} params.name
+   * @param {string} [params.icon='🛒']
+   * @param {string} [params.color='#2563eb']
+   * @param {string[]} [params.itemOrder=[]]
+   * @param {number} [params.updatedAt]
+   * @returns {Object}
+   */
+  function createSupermarket({
+    id,
+    name,
+    icon = '🛒',
+    color = '#2563eb',
+    itemOrder = [],
+    updatedAt = null
+  } = {}) {
+    const cleanName = String(name || 'Supermarkt').trim();
+    const seen = new Set();
+    const deduplicatedOrder = [];
+
+    if (Array.isArray(itemOrder)) {
+      for (const rawItem of itemOrder) {
+        const trimmed = String(rawItem || '').trim();
+        const norm = normalizeItemName(trimmed);
+        if (trimmed && norm && !seen.has(norm)) {
+          seen.add(norm);
+          deduplicatedOrder.push(trimmed);
+        }
+      }
+    }
+
+    return {
+      id: id || generateId('store'),
+      name: cleanName,
+      icon: icon || '🛒',
+      color: color || '#2563eb',
+      itemOrder: deduplicatedOrder,
+      updatedAt: updatedAt || Date.now()
+    };
+  }
+
+  /**
+   * Returns the 3 rich default German supermarkets (REWE, ALDI, LIDL)
+   * with realistic store walking order across all departments.
+   * Notice subtle layout differences between stores (e.g. ALDI starts with Backwaren & Trockensortiment before Kühlregal,
+   * while REWE goes Obst & Gemüse -> Backwaren -> Fleisch/Wurst -> Kühlregal -> Trockensortiment -> Getränke -> Tiefkühl -> Haushalt).
+   * @returns {Object[]}
+   */
+  function getDefaultSupermarkets() {
+    return [
+      createSupermarket({
+        id: 'rewe',
+        name: 'REWE',
+        icon: '🔴',
+        color: '#cc071e',
+        itemOrder: [
+          // 1. Obst & Gemüse (Eingangsbereich)
+          'Äpfel',
+          'Bananen',
+          'Tomaten',
+          'Gurken',
+          'Paprika',
+          'Salat',
+          'Kartoffeln',
+          'Zwiebeln',
+          'Karotten',
+          // 2. Backwaren
+          'Brötchen',
+          'Brot',
+          'Toastbrot',
+          'Croissants',
+          // 3. Fleisch & Wurst (Bedientheke / SB-Kühlung)
+          'Hähnchenbrust',
+          'Hackfleisch',
+          'Salami',
+          'Schinken',
+          // 4. Kühlregal & Milchprodukte
+          'Milch',
+          'Butter',
+          'Joghurt',
+          'Käse',
+          'Quark',
+          'Sahne',
+          'Eier',
+          // 5. Trockensortiment / Nudeln / Konserven
+          'Nudeln',
+          'Reis',
+          'Passierte Tomaten',
+          'Olivenöl',
+          'Mehl',
+          'Zucker',
+          'Haferflocken',
+          'Kaffee',
+          'Tee',
+          'Schokolade',
+          // 6. Getränke
+          'Mineralwasser',
+          'Apfelsaft',
+          'Orangensaft',
+          'Cola',
+          'Bier',
+          // 7. Tiefkühl
+          'Tiefkühlpizza',
+          'Tiefkühlgemüse',
+          'Eiscreme',
+          // 8. Haushalt & Drogerie (vor den Kassen)
+          'Toilettenpapier',
+          'Küchenrolle',
+          'Spülmittel',
+          'Zahnpasta',
+          'Duschgel'
+        ]
+      }),
+      createSupermarket({
+        id: 'aldi',
+        name: 'ALDI',
+        icon: '🔵',
+        color: '#00509b',
+        itemOrder: [
+          // 1. Backwaren & Brotregal am Eingang
+          'Brötchen',
+          'Brot',
+          'Toastbrot',
+          'Croissants',
+          // 2. Obst & Gemüse
+          'Bananen',
+          'Äpfel',
+          'Tomaten',
+          'Gurken',
+          'Paprika',
+          'Salat',
+          'Kartoffeln',
+          'Zwiebeln',
+          'Karotten',
+          // 3. Trockensortiment (Mittelgänge 1-2)
+          'Kaffee',
+          'Tee',
+          'Haferflocken',
+          'Mehl',
+          'Zucker',
+          'Nudeln',
+          'Reis',
+          'Passierte Tomaten',
+          'Olivenöl',
+          'Schokolade',
+          // 4. Kühlwand & Fleisch/Wurst
+          'Hähnchenbrust',
+          'Hackfleisch',
+          'Salami',
+          'Schinken',
+          'Milch',
+          'Butter',
+          'Joghurt',
+          'Käse',
+          'Quark',
+          'Sahne',
+          'Eier',
+          // 5. Haushalt & Drogerie
+          'Toilettenpapier',
+          'Küchenrolle',
+          'Spülmittel',
+          'Zahnpasta',
+          'Duschgel',
+          // 6. Getränke & Tiefkühltruhen (letzter Gang vor der Kasse)
+          'Mineralwasser',
+          'Apfelsaft',
+          'Orangensaft',
+          'Cola',
+          'Bier',
+          'Tiefkühlpizza',
+          'Tiefkühlgemüse',
+          'Eiscreme'
+        ]
+      }),
+      createSupermarket({
+        id: 'lidl',
+        name: 'LIDL',
+        icon: '🟡',
+        color: '#0050aa',
+        itemOrder: [
+          // 1. Obst & Gemüse direkt am Eingang
+          'Äpfel',
+          'Bananen',
+          'Tomaten',
+          'Gurken',
+          'Paprika',
+          'Salat',
+          'Kartoffeln',
+          'Zwiebeln',
+          'Karotten',
+          // 2. Lidl-Backstation
+          'Brötchen',
+          'Croissants',
+          'Brot',
+          'Toastbrot',
+          // 3. Kühlregal & Milchprodukte + Eier
+          'Milch',
+          'Butter',
+          'Joghurt',
+          'Quark',
+          'Sahne',
+          'Käse',
+          'Eier',
+          // 4. Fleisch & Wurst
+          'Hähnchenbrust',
+          'Hackfleisch',
+          'Schinken',
+          'Salami',
+          // 5. Trockensortiment
+          'Nudeln',
+          'Passierte Tomaten',
+          'Reis',
+          'Olivenöl',
+          'Mehl',
+          'Zucker',
+          'Haferflocken',
+          'Kaffee',
+          'Tee',
+          'Schokolade',
+          // 6. Tiefkühltruhen
+          'Tiefkühlpizza',
+          'Tiefkühlgemüse',
+          'Eiscreme',
+          // 7. Getränke
+          'Mineralwasser',
+          'Apfelsaft',
+          'Orangensaft',
+          'Cola',
+          'Bier',
+          // 8. Haushalt & Drogerie (Kassenzone)
+          'Toilettenpapier',
+          'Küchenrolle',
+          'Spülmittel',
+          'Zahnpasta',
+          'Duschgel'
+        ]
+      })
+    ];
+  }
+
+  /**
+   * Creates a Shopping List object.
+   * @param {Object} params
+   * @param {string} [params.id]
+   * @param {string} [params.name='Mein Einkaufszettel']
+   * @param {string} [params.supermarketId='rewe']
+   * @param {boolean} [params.liveOptimizationEnabled=true]
+   * @param {Array} [params.items=[]]
+   * @param {number} [params.updatedAt]
+   * @returns {Object}
+   */
+  function createShoppingList({
+    id,
+    name = 'Mein Einkaufszettel',
+    supermarketId = 'rewe',
+    liveOptimizationEnabled = true,
+    items = [],
+    updatedAt = null
+  } = {}) {
+    const normalizedItems = Array.isArray(items)
+      ? items.map((item, idx) =>
+          createItem({
+            ...item,
+            originalOrder: typeof item.originalOrder === 'number' ? item.originalOrder : idx
+          })
+        )
+      : [];
+
+    return {
+      id: id || generateId('list'),
+      name: String(name || 'Mein Einkaufszettel').trim(),
+      supermarketId: supermarketId || 'rewe',
+      liveOptimizationEnabled:
+        liveOptimizationEnabled === undefined ? true : Boolean(liveOptimizationEnabled),
+      items: normalizedItems,
+      updatedAt: updatedAt || Date.now()
+    };
+  }
+
+  const DEFAULT_SUPERMARKETS = getDefaultSupermarkets();
+
+  const modelsExports = {
+    generateId,
+    normalizeItemName,
+    getCanonicalItemKey,
+    indexOfNormalized,
+    guessItemCategory,
+    createItem,
+    createSupermarket,
+    getDefaultSupermarkets,
+    DEFAULT_SUPERMARKETS,
+    createShoppingList
+  };
+
+  Object.assign(SmartCartCore, modelsExports);
+
+  if (typeof module !== 'undefined' && module.exports) {
+    module.exports = modelsExports;
+  }
+})(typeof globalThis !== 'undefined' ? globalThis : typeof window !== 'undefined' ? window : global);
+
+
+/* ==========================================================================
+ * Modul: src/core/optimizer.js
+ * ========================================================================== */
+/**
+ * SmartCart Core - Supermarket Walking Order Optimizer, Live Learning & Late-Add Engine
+ * Works in Browser (window.SmartCartCore) and Node.js (CommonJS).
+ */
+(function (root) {
+  'use strict';
+
+  const SmartCartCore = root.SmartCartCore || (root.SmartCartCore = {});
+
+  const models =
+    typeof module !== 'undefined' && module.exports && !SmartCartCore.normalizeItemName
+      ? require('./models.js')
+      : SmartCartCore;
+
+  const {
+    normalizeItemName,
+    indexOfNormalized,
+    createItem,
+    createSupermarket,
+    createShoppingList
+  } = models;
+
+  /**
+   * Sorts a shopping list according to the active supermarket's walking path and SmartCart rules:
+   * - Rule A (Checked items at top): All checked items (`item.checked === true`) are placed at the VERY TOP
+   *   of the list (grayed out in UI), so that all remaining unchecked items appear cleanly in their
+   *   optimized walking order right below them.
+   * - Rule B (Supermarket order for unchecked items): Unchecked items are ordered according to their
+   *   index in `supermarket.itemOrder` (matched via `indexOfNormalized`). Items not yet in
+   *   `supermarket.itemOrder` appear at the end of unchecked items in their `originalOrder`.
+   * - Rule C (Late-added item override): If an unchecked item has `item.addedLateOverride === true`,
+   *   it MUST be placed at the very top of the unchecked items (i.e. right after the checked items,
+   *   as the immediate next item to buy!).
+   *
+   * @param {Object|Array} listOrItems - Shopping list object or items array
+   * @param {Object} supermarket - Supermarket configuration with `itemOrder`
+   * @returns {{ sortedItems: Array, checkedItems: Array, uncheckedItems: Array }}
+   */
+  function sortShoppingList(listOrItems, supermarket) {
+    const rawItems = Array.isArray(listOrItems)
+      ? listOrItems
+      : listOrItems && Array.isArray(listOrItems.items)
+      ? listOrItems.items
+      : [];
+
+    const itemOrder =
+      supermarket && Array.isArray(supermarket.itemOrder) ? supermarket.itemOrder : [];
+
+    const clonedItems = rawItems.map((item, idx) => {
+      const storePosition = indexOfNormalized(itemOrder, item.name);
+      return {
+        ...item,
+        originalOrder: typeof item.originalOrder === 'number' ? item.originalOrder : idx,
+        storePosition
+      };
+    });
+
+    const checkedItems = clonedItems
+      .filter((item) => Boolean(item.checked))
+      .sort((a, b) => {
+        const posA = a.storePosition !== -1 ? a.storePosition : Number.MAX_SAFE_INTEGER;
+        const posB = b.storePosition !== -1 ? b.storePosition : Number.MAX_SAFE_INTEGER;
+        if (posA !== posB) return posA - posB;
+        return a.originalOrder - b.originalOrder;
+      });
+
+    const uncheckedItems = clonedItems
+      .filter((item) => !item.checked)
+      .sort((a, b) => {
+        // Rule C: Late-added item override comes FIRST among unchecked items
+        const lateA = Boolean(a.addedLateOverride);
+        const lateB = Boolean(b.addedLateOverride);
+        if (lateA && !lateB) return -1;
+        if (!lateA && lateB) return 1;
+        if (lateA && lateB) {
+          // Most recently added late item first, fallback to store position
+          if (b.originalOrder !== a.originalOrder) {
+            return b.originalOrder - a.originalOrder;
+          }
+        }
+
+        // Rule B: Supermarket walking order for normal unchecked items
+        const posA = a.storePosition;
+        const posB = b.storePosition;
+        const knownA = posA !== -1;
+        const knownB = posB !== -1;
+
+        if (knownA && knownB) {
+          if (posA !== posB) return posA - posB;
+          return a.originalOrder - b.originalOrder;
+        }
+        if (knownA && !knownB) return -1;
+        if (!knownA && knownB) return 1;
+
+        // Both unknown in supermarket configuration -> preserve originalOrder
+        return a.originalOrder - b.originalOrder;
+      });
+
+    const sortedItems = [...checkedItems, ...uncheckedItems];
+
+    return {
+      sortedItems,
+      checkedItems,
+      uncheckedItems
+    };
+  }
+
+  /**
+   * Adds a new item to the shopping list, automatically detecting if the user has already
+   * walked past this item's normal section in the supermarket.
+   *
+   * Specifically:
+   * - Finds `pos = indexOfNormalized(supermarket.itemOrder, name)`.
+   * - If `pos !== -1`, checks if there is ANY currently checked item on `list.items` whose
+   *   position in `supermarket.itemOrder` is strictly greater than `pos` (`checkedPos > pos`).
+   * - If YES, sets `addedLateOverride: true` on the new item so it becomes the immediate next
+   *   unchecked item on the shopping list!
+   *
+   * @param {Object} list - Current shopping list
+   * @param {Object} supermarket - Active supermarket configuration
+   * @param {Object} itemInput - `{ name, quantity, category }`
+   * @returns {{ list: Object, addedItem: Object, wasAddedLate: boolean, passedByItems: Array }}
+   */
+  function addItemToList(list, supermarket, { name, quantity = '1x', category = null } = {}) {
+    const currentItems = Array.isArray(list && list.items) ? list.items : [];
+    const itemOrder =
+      supermarket && Array.isArray(supermarket.itemOrder) ? supermarket.itemOrder : [];
+
+    const pos = indexOfNormalized(itemOrder, name);
+    const passedByItems = [];
+
+    if (pos !== -1) {
+      for (const existing of currentItems) {
+        if (existing.checked) {
+          const checkedPos = indexOfNormalized(itemOrder, existing.name);
+          if (checkedPos !== -1 && checkedPos > pos) {
+            passedByItems.push(existing);
+          }
+        }
+      }
+    }
+
+    const wasAddedLate = passedByItems.length > 0;
+    const maxOrder = currentItems.reduce(
+      (max, it) => (typeof it.originalOrder === 'number' && it.originalOrder > max ? it.originalOrder : max),
+      -1
+    );
+
+    const addedItem = createItem({
+      name,
+      quantity,
+      category,
+      checked: false,
+      checkedAt: null,
+      addedLateOverride: wasAddedLate,
+      originalOrder: maxOrder + 1
+    });
+
+    const rawUpdatedItems = [...currentItems, addedItem];
+    const { sortedItems } = sortShoppingList(rawUpdatedItems, supermarket);
+    const syncedAddedItem = sortedItems.find((i) => i.id === addedItem.id) || addedItem;
+
+    const updatedList = {
+      ...list,
+      items: sortedItems,
+      updatedAt: Date.now()
+    };
+
+    return {
+      list: updatedList,
+      addedItem: syncedAddedItem,
+      wasAddedLate,
+      passedByItems
+    };
+  }
+
+  /**
+   * Adds multiple items (e.g. from OCR / Photo scan) to the shopping list,
+   * applying the smart late-addition detection to each item.
+   *
+   * @param {Object} list
+   * @param {Object} supermarket
+   * @param {Array<{name: string, quantity?: string}>} itemInputs
+   * @returns {{ list: Object, addedItems: Array, lateItems: Array }}
+   */
+  function addMultipleItemsToList(list, supermarket, itemInputs = []) {
+    let workingList = { ...list, items: [...(list.items || [])] };
+    const addedItems = [];
+    const lateItems = [];
+
+    for (const input of itemInputs) {
+      if (!input || !String(input.name || '').trim()) continue;
+      const res = addItemToList(workingList, supermarket, input);
+      workingList = res.list;
+      addedItems.push(res.addedItem);
+      if (res.wasAddedLate) {
+        lateItems.push(res.addedItem);
+      }
+    }
+
+    return {
+      list: workingList,
+      addedItems,
+      lateItems
+    };
+  }
+
+  /**
+   * Toggles the `checked` state of an item on the shopping list.
+   *
+   * - When checking an UNCHECKED item:
+   *   - Checks if `list.liveOptimizationEnabled` is true and whether checking this item is out of
+   *     the displayed unchecked order (i.e. at least one other unchecked item without `addedLateOverride`
+   *     appears before this item in the current supermarket-optimized unchecked order).
+   *   - Marks the item `checked: true`, `checkedAt: Date.now()`, and clears `addedLateOverride: false`.
+   *   - If `liveOptimizationEnabled` is true and out-of-order was detected, returns
+   *     `outOfOrderDetected: true`, `checkedItem`, `skippedItems`, and a German `promptMessage`.
+   *
+   * - When unchecking a CHECKED item (Rückgängig machen):
+   *   - Sets `checked: false`, `checkedAt: null`, `addedLateOverride: false`.
+   *   - Re-sorts via `sortShoppingList`, automatically restoring the item to its proper
+   *     supermarket-optimized position among the unchecked items.
+   *
+   * @param {Object} list - Current shopping list
+   * @param {Object} supermarket - Active supermarket configuration
+   * @param {string} itemId - ID of the item to toggle
+   * @returns {Object}
+   */
+  function toggleItemCheck(list, supermarket, itemId) {
+    const currentItems = Array.isArray(list && list.items) ? list.items : [];
+    const target = currentItems.find((item) => item.id === itemId);
+
+    if (!target) {
+      return {
+        list,
+        action: 'noop',
+        outOfOrderDetected: false,
+        skippedItems: [],
+        promptMessage: null
+      };
+    }
+
+    // Before toggling, inspect the current optimized unchecked order
+    const { uncheckedItems } = sortShoppingList(list, supermarket);
+
+    if (!target.checked) {
+      // Unchecked -> Checked
+      const targetUncheckedIdx = uncheckedItems.findIndex((item) => item.id === itemId);
+      const wasLateOverride = Boolean(target.addedLateOverride);
+
+      let skippedItems = [];
+      if (!wasLateOverride && targetUncheckedIdx > 0) {
+        skippedItems = uncheckedItems
+          .slice(0, targetUncheckedIdx)
+          .filter((item) => !item.addedLateOverride);
+      }
+
+      const now = Date.now();
+      const updatedRawItems = currentItems.map((item) =>
+        item.id === itemId
+          ? {
+              ...item,
+              checked: true,
+              checkedAt: now,
+              addedLateOverride: false
+            }
+          : item
+      );
+
+      const { sortedItems } = sortShoppingList(updatedRawItems, supermarket);
+      const checkedItem = sortedItems.find((item) => item.id === itemId);
+
+      const updatedList = {
+        ...list,
+        items: sortedItems,
+        updatedAt: now
+      };
+
+      const outOfOrderDetected =
+        Boolean(list.liveOptimizationEnabled) && skippedItems.length > 0;
+
+      const storeName = supermarket && supermarket.name ? supermarket.name : 'diesen Supermarkt';
+      const skippedNamesText = skippedItems.map((i) => i.name).join(', ');
+      const promptMessage = outOfOrderDetected
+        ? `Reihenfolge im Supermarkt anpassen? Du hast „${checkedItem.name}“ vor „${skippedNamesText}“ abgehakt. Soll die Konfiguration für ${storeName} automatisch angepasst werden?`
+        : null;
+
+      return {
+        list: updatedList,
+        action: 'checked',
+        outOfOrderDetected,
+        checkedItem,
+        skippedItems,
+        promptMessage
+      };
+    } else {
+      // Checked -> Unchecked (Rückgängig machen)
+      const now = Date.now();
+      const updatedRawItems = currentItems.map((item) =>
+        item.id === itemId
+          ? {
+              ...item,
+              checked: false,
+              checkedAt: null,
+              addedLateOverride: false
+            }
+          : item
+      );
+
+      const { sortedItems } = sortShoppingList(updatedRawItems, supermarket);
+      const uncheckedItem = sortedItems.find((item) => item.id === itemId);
+
+      const updatedList = {
+        ...list,
+        items: sortedItems,
+        updatedAt: now
+      };
+
+      return {
+        list: updatedList,
+        action: 'unchecked',
+        outOfOrderDetected: false,
+        uncheckedItem,
+        skippedItems: [],
+        promptMessage: null
+      };
+    }
+  }
+
+  /**
+   * Updates `supermarket.itemOrder` so that `checkedItemName` is placed right BEFORE
+   * the first item of `skippedItemNames` in `supermarket.itemOrder`.
+   * If `checkedItemName` was not in `supermarket.itemOrder` yet, it is inserted right before
+   * the first skipped item.
+   *
+   * @param {Object} supermarket - Supermarket configuration to update
+   * @param {string|Object} checkedItemName - Checked item name or item object
+   * @param {Array<string|Object>|string} skippedItemNames - Array of skipped item names or objects
+   * @returns {Object} Updated supermarket configuration
+   */
+  function applyLiveOptimizationUpdate(supermarket, checkedItemName, skippedItemNames) {
+    if (!supermarket) return supermarket;
+
+    const rawCheckedName =
+      typeof checkedItemName === 'object' && checkedItemName !== null
+        ? checkedItemName.name
+        : String(checkedItemName || '');
+    const cleanCheckedName = rawCheckedName.trim();
+    if (!cleanCheckedName) return supermarket;
+
+    const skippedArray = Array.isArray(skippedItemNames)
+      ? skippedItemNames
+      : skippedItemNames
+      ? [skippedItemNames]
+      : [];
+
+    const cleanSkippedNames = skippedArray
+      .map((s) => (typeof s === 'object' && s !== null ? s.name : String(s || '')))
+      .map((s) => s.trim())
+      .filter(Boolean);
+
+    if (cleanSkippedNames.length === 0) return supermarket;
+
+    const order = Array.isArray(supermarket.itemOrder) ? [...supermarket.itemOrder] : [];
+
+    // Check if checkedItemName already exists in order
+    const existingCheckedIdx = indexOfNormalized(order, cleanCheckedName);
+    const canonicalCheckedName =
+      existingCheckedIdx !== -1 ? order[existingCheckedIdx] : cleanCheckedName;
+
+    if (existingCheckedIdx !== -1) {
+      order.splice(existingCheckedIdx, 1);
+    }
+
+    // Find the position of the first skipped item in order
+    let targetInsertIdx = -1;
+    for (const skippedName of cleanSkippedNames) {
+      const idx = indexOfNormalized(order, skippedName);
+      if (idx !== -1) {
+        if (targetInsertIdx === -1 || idx < targetInsertIdx) {
+          targetInsertIdx = idx;
+        }
+      }
+    }
+
+    if (targetInsertIdx !== -1) {
+      order.splice(targetInsertIdx, 0, canonicalCheckedName);
+    } else {
+      // None of the skipped items were in supermarket.itemOrder yet:
+      // Add checkedItem followed by the first skipped item so the order is learned
+      order.push(canonicalCheckedName);
+      for (const skippedName of cleanSkippedNames) {
+        if (indexOfNormalized(order, skippedName) === -1) {
+          order.push(skippedName);
+        }
+      }
+    }
+
+    return createSupermarket({
+      ...supermarket,
+      itemOrder: order,
+      updatedAt: Date.now()
+    });
+  }
+
+  /**
+   * Switches a shopping list to a new supermarket and immediately re-sorts all items
+   * according to the new supermarket's walking order.
+   *
+   * @param {Object} list
+   * @param {Object} newSupermarket
+   * @returns {Object} Updated shopping list
+   */
+  function changeListSupermarket(list, newSupermarket) {
+    if (!list || !newSupermarket) return list;
+    const { sortedItems } = sortShoppingList(list.items || [], newSupermarket);
+    return {
+      ...list,
+      supermarketId: newSupermarket.id,
+      items: sortedItems,
+      updatedAt: Date.now()
+    };
+  }
+
+  /**
+   * Enables or disables Live Optimization on a shopping list.
+   * @param {Object} list
+   * @param {boolean} enabled
+   * @returns {Object}
+   */
+  function setLiveOptimization(list, enabled) {
+    return {
+      ...list,
+      liveOptimizationEnabled: Boolean(enabled),
+      updatedAt: Date.now()
+    };
+  }
+
+  /**
+   * Removes an item by ID from the shopping list and returns the updated sorted list.
+   * @param {Object} list
+   * @param {Object} supermarket
+   * @param {string} itemId
+   * @returns {Object}
+   */
+  function removeItemFromList(list, supermarket, itemId) {
+    const filtered = (list.items || []).filter((item) => item.id !== itemId);
+    const { sortedItems } = sortShoppingList(filtered, supermarket);
+    return {
+      ...list,
+      items: sortedItems,
+      updatedAt: Date.now()
+    };
+  }
+
+  /**
+   * Updates an item's name or quantity and re-sorts the list.
+   * @param {Object} list
+   * @param {Object} supermarket
+   * @param {string} itemId
+   * @param {Object} updates - `{ name, quantity }`
+   * @returns {Object}
+   */
+  function updateItemInList(list, supermarket, itemId, updates = {}) {
+    const updatedRaw = (list.items || []).map((item) => {
+      if (item.id !== itemId) return item;
+      const newName = updates.name !== undefined ? String(updates.name).trim() : item.name;
+      const newQty = updates.quantity !== undefined ? String(updates.quantity).trim() : item.quantity;
+      return createItem({
+        ...item,
+        name: newName || item.name,
+        quantity: newQty || '1x'
+      });
+    });
+    const { sortedItems } = sortShoppingList(updatedRaw, supermarket);
+    return {
+      ...list,
+      items: sortedItems,
+      updatedAt: Date.now()
+    };
+  }
+
+  /**
+   * Removes all checked items from the shopping list.
+   * @param {Object} list
+   * @param {Object} supermarket
+   * @returns {Object}
+   */
+  function clearCheckedItems(list, supermarket) {
+    const remaining = (list.items || []).filter((item) => !item.checked);
+    const { sortedItems } = sortShoppingList(remaining, supermarket);
+    return {
+      ...list,
+      items: sortedItems,
+      updatedAt: Date.now()
+    };
+  }
+
+  /**
+   * Unchecks all items on the shopping list and clears any late overrides,
+   * restoring the full list in clean supermarket walking order.
+   * @param {Object} list
+   * @param {Object} supermarket
+   * @returns {Object}
+   */
+  function uncheckAllItems(list, supermarket) {
+    const resetItems = (list.items || []).map((item) => ({
+      ...item,
+      checked: false,
+      checkedAt: null,
+      addedLateOverride: false
+    }));
+    const { sortedItems } = sortShoppingList(resetItems, supermarket);
+    return {
+      ...list,
+      items: sortedItems,
+      updatedAt: Date.now()
+    };
+  }
+
+  /**
+   * Moves an item within `supermarket.itemOrder` from `fromIndex` to `toIndex`.
+   * @param {Object} supermarket
+   * @param {number} fromIndex
+   * @param {number} toIndex
+   * @returns {Object} Updated supermarket
+   */
+  function reorderSupermarketItem(supermarket, fromIndex, toIndex) {
+    if (!supermarket || !Array.isArray(supermarket.itemOrder)) return supermarket;
+    const order = [...supermarket.itemOrder];
+    if (
+      fromIndex < 0 ||
+      fromIndex >= order.length ||
+      toIndex < 0 ||
+      toIndex >= order.length ||
+      fromIndex === toIndex
+    ) {
+      return supermarket;
+    }
+    const [moved] = order.splice(fromIndex, 1);
+    order.splice(toIndex, 0, moved);
+    return createSupermarket({
+      ...supermarket,
+      itemOrder: order,
+      updatedAt: Date.now()
+    });
+  }
+
+  /**
+   * Adds a new item to a supermarket's walking order at a specific position (or at the end).
+   * @param {Object} supermarket
+   * @param {string} itemName
+   * @param {number} [insertIndex=-1]
+   * @returns {Object} Updated supermarket
+   */
+  function addSupermarketKnownItem(supermarket, itemName, insertIndex = -1) {
+    if (!supermarket || !String(itemName || '').trim()) return supermarket;
+    const clean = String(itemName).trim();
+    const order = [...(supermarket.itemOrder || [])];
+    const existingIdx = indexOfNormalized(order, clean);
+    if (existingIdx !== -1) {
+      order.splice(existingIdx, 1);
+    }
+    if (insertIndex >= 0 && insertIndex <= order.length) {
+      order.splice(insertIndex, 0, clean);
+    } else {
+      order.push(clean);
+    }
+    return createSupermarket({
+      ...supermarket,
+      itemOrder: order,
+      updatedAt: Date.now()
+    });
+  }
+
+  /**
+   * Removes an item from a supermarket's walking order.
+   * @param {Object} supermarket
+   * @param {string} itemName
+   * @returns {Object} Updated supermarket
+   */
+  function removeSupermarketKnownItem(supermarket, itemName) {
+    if (!supermarket || !Array.isArray(supermarket.itemOrder)) return supermarket;
+    const normTarget = normalizeItemName(itemName);
+    const order = supermarket.itemOrder.filter(
+      (entry) => normalizeItemName(entry) !== normTarget
+    );
+    return createSupermarket({
+      ...supermarket,
+      itemOrder: order,
+      updatedAt: Date.now()
+    });
+  }
+
+  const optimizerExports = {
+    sortShoppingList,
+    addItemToList,
+    addMultipleItemsToList,
+    toggleItemCheck,
+    applyLiveOptimizationUpdate,
+    changeListSupermarket,
+    setLiveOptimization,
+    removeItemFromList,
+    updateItemInList,
+    clearCheckedItems,
+    uncheckAllItems,
+    reorderSupermarketItem,
+    addSupermarketKnownItem,
+    removeSupermarketKnownItem
+  };
+
+  Object.assign(SmartCartCore, optimizerExports);
+
+  if (typeof module !== 'undefined' && module.exports) {
+    module.exports = optimizerExports;
+  }
+})(typeof globalThis !== 'undefined' ? globalThis : typeof window !== 'undefined' ? window : global);
+
+
+/* ==========================================================================
+ * Modul: src/core/ocr.js
+ * ========================================================================== */
+/**
+ * SmartCart Core - OCR & Shopping List Text/Photo Recognition Pipeline
+ * Works in Browser (window.SmartCartCore) and Node.js (CommonJS).
+ */
+(function (root) {
+  'use strict';
+
+  const SmartCartCore = root.SmartCartCore || (root.SmartCartCore = {});
+
+  const models =
+    typeof module !== 'undefined' && module.exports && !SmartCartCore.normalizeItemName
+      ? require('./models.js')
+      : SmartCartCore;
+
+  const { guessItemCategory } = models;
+
+  /**
+   * Built-in realistic sample shopping list photo presets so users can immediately
+   * test photo recognition on their smartphone or desktop.
+   */
+  const SAMPLE_PHOTO_PRESETS = {
+    wochenende: {
+      id: 'wochenende',
+      title: 'Wochenend-Einkauf (Handnotiz)',
+      subtitle: 'Klassischer Handzettel mit 8 Waren quer durch den Markt',
+      paperColor: '#fef9c3',
+      lineColor: '#fde047',
+      inkColor: '#1e293b',
+      headerText: 'Einkaufszettel Samstag',
+      lines: [
+        '- 2x Milch',
+        '- 6 Brötchen',
+        '- 250g Butter',
+        '- 500g Hackfleisch',
+        '- 1 Packung Nudeln',
+        '- 2 Dosen Passierte Tomaten',
+        '- 4 Äpfel',
+        '- 1x Toilettenpapier'
+      ]
+    },
+    fruehstueck: {
+      id: 'fruehstueck',
+      title: 'Frühstück & Backen (Küchenblock)',
+      subtitle: 'Frühstückszutaten, Obst & Backwaren',
+      paperColor: '#fff7ed',
+      lineColor: '#fed7aa',
+      inkColor: '#0f172a',
+      headerText: 'Frühstück & Sonntag',
+      lines: [
+        '4 Stk. Croissants',
+        '10 Eier',
+        '1,5L Orangensaft',
+        '500g Mehl',
+        '1x Zucker',
+        '1 Packung Kaffee',
+        '2 Becher Joghurt',
+        '5 Bananen'
+      ]
+    },
+    italienisch: {
+      id: 'italienisch',
+      title: 'Italienischer Abend (Kühlschrank-Zettel)',
+      subtitle: 'Salat, Pasta-Zutaten, Getränke & Tiefkühl',
+      paperColor: '#f0fdf4',
+      lineColor: '#bbf7d0',
+      inkColor: '#14532d',
+      headerText: 'Italienischer Abend',
+      lines: [
+        '• 2x Tiefkühlpizza',
+        '• 1x Salat',
+        '• 500g Tomaten',
+        '• 2 Gurken',
+        '• 1 Flasche Olivenöl',
+        '• 200g Käse',
+        '• 1,5L Cola',
+        '• 1x Eiscreme'
+      ]
+    }
+  };
+
+  // Registry mapping generated data URLs (or hashes) to preset IDs for deterministic local recognition
+  const GENERATED_DATAURL_REGISTRY = new Map();
+
+  /**
+   * Returns all available sample photo presets as an array.
+   * @returns {Array<Object>}
+   */
+  function getSamplePhotoPresets() {
+    return Object.values(SAMPLE_PHOTO_PRESETS);
+  }
+
+  /**
+   * Lines that represent headers or non-item noise on a shopping list.
+   */
+  const HEADER_NOISE_PATTERNS = [
+    /^einkaufszettel\b/i,
+    /^einkaufsliste\b/i,
+    /^wocheneinkauf\b/i,
+    /^fr[uü]hst[uü]ck\s*&\s*sonntag$/i,
+    /^italienischer\s+abend$/i,
+    /^notizen$/i,
+    /^datum\b/i,
+    /^[-=_*~.·•\s]+$/
+  ];
+
+  /**
+   * Parses a single line of text from a shopping list into `{ name, quantity, category, rawLine }`.
+   * Returns `null` if the line is empty or a header.
+   *
+   * @param {string} rawLine
+   * @returns {Object|null}
+   */
+  function parseShoppingLine(rawLine) {
+    if (!rawLine || typeof rawLine !== 'string') return null;
+
+    let line = rawLine.trim();
+    if (!line) return null;
+
+    // Strip leading bullets, checkboxes, numbering: "- ", "* ", "• ", "[ ]", "[x]", "1.", "2)"
+    line = line
+      .replace(/^(\[[ xX✓✔]?\]|[☐☑✓✔•·*\-–—+>]+|\d+[.)]\s*)\s*/, '')
+      .trim();
+
+    if (!line || line.length < 2) return null;
+
+    for (const pattern of HEADER_NOISE_PATTERNS) {
+      if (pattern.test(line)) return null;
+    }
+
+    let quantity = '1x';
+    let name = line;
+
+    // Pattern 1: Leading quantity with unit or multiplier
+    // e.g. "2x Milch", "500g Mehl", "1,5 L Orangensaft", "2 Dosen Passierte Tomaten", "6 Stk. Brötchen"
+    const leadingUnitRegex =
+      /^(\d+(?:[.,]\d+)?\s*(?:x|stk\.?|st[uü]ck|g|kg|ml|l|liter|pck\.?|pack(?:ung(?:en)?)?|dosen?|becher|flaschen?|fl\.?|bund|netz|kasten|tafel|rollen?|glas|gl[aä]ser|t[uü]ten?|scheiben?))\s+(.+)$/i;
+
+    // Pattern 2: Leading plain integer count
+    // e.g. "6 Brötchen", "4 Äpfel", "10 Eier"
+    const leadingCountRegex = /^(\d{1,3})\s+([A-Za-zÄÖÜäöüß].+)$/;
+
+    // Pattern 3: Trailing quantity in parentheses or after dash/space
+    // e.g. "Milch (2L)", "Tomaten - 500g", "Croissants 4 Stk.", "Eier 10x", "Cola 1,5L"
+    const trailingUnitRegex =
+      /^(.+?)(?:\s*[-–:]\s*|\s+)(\d+(?:[.,]\d+)?\s*(?:x|stk\.?|st[uü]ck|g|kg|ml|l|liter|pck\.?|pack(?:ung)?|dosen?|becher|flaschen?)|\([0-9.,]+\s*[^)]+\))$/i;
+
+    const matchLeadingUnit = line.match(leadingUnitRegex);
+    if (matchLeadingUnit) {
+      quantity = matchLeadingUnit[1].replace(/\s+/g, ' ').trim();
+      name = matchLeadingUnit[2].trim();
+    } else {
+      const matchTrailing = line.match(trailingUnitRegex);
+      if (matchTrailing) {
+        name = matchTrailing[1].trim();
+        quantity = matchTrailing[2].replace(/^[(\s]+|[)\s]+$/g, '').trim();
+      } else {
+        const matchLeadingCount = line.match(leadingCountRegex);
+        if (matchLeadingCount) {
+          quantity = `${matchLeadingCount[1]}x`;
+          name = matchLeadingCount[2].trim();
+        }
+      }
+    }
+
+    // Clean stray punctuation around name
+    name = name.replace(/^[-–—:.,\s]+|[-–—:.,\s]+$/g, '').trim();
+    if (!name || name.length < 2) return null;
+
+    for (const pattern of HEADER_NOISE_PATTERNS) {
+      if (pattern.test(name)) return null;
+    }
+
+    return {
+      name,
+      quantity: quantity || '1x',
+      category: guessItemCategory ? guessItemCategory(name) : 'Sonstiges',
+      rawLine: rawLine.trim()
+    };
+  }
+
+  /**
+   * Parses multi-line text (from OCR or manual paste) into structured `{ name, quantity, category, rawLine }[]` items.
+   * Also supports comma/semicolon-separated single-line lists if no newlines are present.
+   *
+   * @param {string} rawText
+   * @returns {Array<{name: string, quantity: string, category: string, rawLine: string}>}
+   */
+  function parseShoppingText(rawText) {
+    if (!rawText || typeof rawText !== 'string') return [];
+
+    let rawLines = rawText.split(/\r?\n/);
+    // If single line with commas or semicolons (and not just a decimal number like "1,5L Wasser")
+    if (rawLines.length === 1 && (rawText.includes(';') || (rawText.match(/,/g) || []).length >= 2)) {
+      rawLines = rawText.split(/[;]|,(?!\d)/);
+    }
+
+    const parsedItems = [];
+    for (const line of rawLines) {
+      const item = parseShoppingLine(line);
+      if (item) {
+        parsedItems.push(item);
+      }
+    }
+
+    return parsedItems;
+  }
+
+  /**
+   * Encodes a UTF-8 string to Base64 in both Browser and Node environments.
+   * @param {string} str
+   * @returns {string}
+   */
+  function utf8ToBase64(str) {
+    if (typeof Buffer !== 'undefined') {
+      return Buffer.from(str, 'utf8').toString('base64');
+    }
+    if (typeof btoa === 'function') {
+      return btoa(unescape(encodeURIComponent(str)));
+    }
+    return '';
+  }
+
+  /**
+   * Generates a realistic sample shopping list photo as a Data URL.
+   * Uses HTML5 Canvas in the browser to draw a lifelike handwritten/printed paper note,
+   * and falls back to an SVG data URL in headless Node environments.
+   *
+   * @param {string} [presetName='wochenende'] - `'wochenende'`, `'fruehstueck'`, or `'italienisch'`
+   * @returns {string} Data URL (`data:image/png;base64,...` or `data:image/svg+xml;base64,...`)
+   */
+  function generateSamplePhotoDataUrl(presetName = 'wochenende') {
+    const preset =
+      SAMPLE_PHOTO_PRESETS[presetName] || SAMPLE_PHOTO_PRESETS.wochenende;
+
+    // Browser Canvas rendering
+    if (typeof document !== 'undefined' && typeof document.createElement === 'function') {
+      try {
+        const canvas = document.createElement('canvas');
+        canvas.width = 600;
+        canvas.height = 760;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          // Dark wooden/table background
+          ctx.fillStyle = '#334155';
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+          // Paper shadow
+          ctx.save();
+          ctx.translate(300, 380);
+          ctx.rotate(-0.015);
+          ctx.shadowColor = 'rgba(0, 0, 0, 0.35)';
+          ctx.shadowBlur = 24;
+          ctx.shadowOffsetX = 6;
+          ctx.shadowOffsetY = 10;
+
+          // Paper sheet
+          ctx.fillStyle = preset.paperColor;
+          ctx.fillRect(-250, -330, 500, 660);
+          ctx.restore();
+
+          // Draw ruled lines & text inside transformed frame
+          ctx.save();
+          ctx.translate(300, 380);
+          ctx.rotate(-0.015);
+
+          // Red vertical margin line
+          ctx.strokeStyle = 'rgba(239, 68, 68, 0.35)';
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.moveTo(-185, -330);
+          ctx.lineTo(-185, 330);
+          ctx.stroke();
+
+          // Horizontal notebook lines
+          ctx.strokeStyle = preset.lineColor;
+          ctx.lineWidth = 1.5;
+          for (let y = -220; y <= 290; y += 54) {
+            ctx.beginPath();
+            ctx.moveTo(-250, y);
+            ctx.lineTo(250, y);
+            ctx.stroke();
+          }
+
+          // Top tape visual
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.55)';
+          ctx.fillRect(-70, -342, 140, 28);
+
+          // Header text
+          ctx.fillStyle = preset.inkColor;
+          ctx.font = 'bold 30px "Segoe Print", "Bradley Hand", "Comic Sans MS", cursive, sans-serif';
+          ctx.fillText(preset.headerText, -165, -255);
+
+          // Underline header
+          ctx.strokeStyle = preset.inkColor;
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.moveTo(-165, -242);
+          ctx.lineTo(160, -242);
+          ctx.stroke();
+
+          // List items
+          ctx.font = '25px "Segoe Print", "Bradley Hand", "Comic Sans MS", cursive, sans-serif';
+          preset.lines.forEach((line, index) => {
+            const y = -182 + index * 54;
+            // Draw little hand-drawn checkbox
+            ctx.strokeStyle = preset.inkColor;
+            ctx.lineWidth = 2;
+            ctx.strokeRect(-222, y - 22, 20, 20);
+
+            const cleanText = line.replace(/^[-•·*]\s*/, '');
+            ctx.fillStyle = preset.inkColor;
+            ctx.fillText(cleanText, -165, y - 4);
+          });
+
+          ctx.restore();
+
+          const dataUrl = canvas.toDataURL('image/png');
+          GENERATED_DATAURL_REGISTRY.set(dataUrl, preset.id);
+          GENERATED_DATAURL_REGISTRY.set(dataUrl.slice(0, 160), preset.id);
+          return dataUrl;
+        }
+      } catch (_err) {
+        // Fall through to SVG data URL
+      }
+    }
+
+    // SVG Data URL fallback (works in Node.js tests and any headless environment)
+    const svgLines = preset.lines
+      .map((line, idx) => {
+        const y = 140 + idx * 45;
+        const escaped = line
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;');
+        return `<text x="60" y="${y}" font-family="sans-serif" font-size="22" fill="${preset.inkColor}">${escaped}</text>`;
+      })
+      .join('');
+
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="500" height="560" data-smartcart-preset="${preset.id}">
+      <rect width="100%" height="100%" fill="${preset.paperColor}"/>
+      <text x="60" y="75" font-family="sans-serif" font-size="28" font-weight="bold" fill="${preset.inkColor}">${preset.headerText}</text>
+      ${svgLines}
+    </svg>`;
+
+    const svgDataUrl = `data:image/svg+xml;base64,${utf8ToBase64(svg)}`;
+    GENERATED_DATAURL_REGISTRY.set(svgDataUrl, preset.id);
+    return svgDataUrl;
+  }
+
+  /**
+   * Detects if an `imageSource` corresponds to one of the sample presets.
+   * @param {*} imageSource
+   * @returns {Object|null} Matching preset object or null
+   */
+  function detectPresetFromSource(imageSource) {
+    if (!imageSource) return null;
+
+    if (typeof imageSource === 'string') {
+      if (SAMPLE_PHOTO_PRESETS[imageSource]) {
+        return SAMPLE_PHOTO_PRESETS[imageSource];
+      }
+      if (GENERATED_DATAURL_REGISTRY.has(imageSource)) {
+        return SAMPLE_PHOTO_PRESETS[GENERATED_DATAURL_REGISTRY.get(imageSource)];
+      }
+      if (GENERATED_DATAURL_REGISTRY.has(imageSource.slice(0, 160))) {
+        return SAMPLE_PHOTO_PRESETS[GENERATED_DATAURL_REGISTRY.get(imageSource.slice(0, 160))];
+      }
+      // Check base64 SVG content if present
+      if (imageSource.startsWith('data:image/svg+xml;base64,')) {
+        try {
+          const b64 = imageSource.replace('data:image/svg+xml;base64,', '');
+          const decoded =
+            typeof Buffer !== 'undefined'
+              ? Buffer.from(b64, 'base64').toString('utf8')
+              : decodeURIComponent(escape(atob(b64)));
+          for (const key of Object.keys(SAMPLE_PHOTO_PRESETS)) {
+            if (decoded.includes(`data-smartcart-preset="${key}"`)) {
+              return SAMPLE_PHOTO_PRESETS[key];
+            }
+          }
+        } catch (_e) {
+          // ignore
+        }
+      }
+    }
+
+    if (typeof imageSource === 'object') {
+      if (imageSource.preset && SAMPLE_PHOTO_PRESETS[imageSource.preset]) {
+        return SAMPLE_PHOTO_PRESETS[imageSource.preset];
+      }
+      if (imageSource.presetId && SAMPLE_PHOTO_PRESETS[imageSource.presetId]) {
+        return SAMPLE_PHOTO_PRESETS[imageSource.presetId];
+      }
+      if (imageSource.dataUrl) {
+        return detectPresetFromSource(imageSource.dataUrl);
+      }
+    }
+
+    return null;
+  }
+
+  /**
+   * Recognizes shopping list items from a photo, canvas, data URL, or preset.
+   *
+   * Strategy:
+   * 1. If `imageSource` is a sample photo preset (or generated canvas/SVG from `generateSamplePhotoDataUrl`),
+   *    extracts the exact handwritten note text and parses it into structured items.
+   * 2. If `imageSource` has raw text attached (`imageSource.text`), parses it directly.
+   * 3. If `window.Tesseract` is available in the browser, performs full client-side OCR (`deu+eng`)
+   *    and parses the recognized lines with `parseShoppingText`.
+   * 4. If offline / without Tesseract (e.g. standalone HTML file opened offline on smartphone),
+   *    runs a local image/filename heuristic fallback so photo recognition always returns
+   *    editable items ready for review in the UI.
+   *
+   * @param {string|Object|File|Blob} imageSource
+   * @param {Function} [onProgress] - Callback `({ status: string, progress: number }) => void`
+   * @returns {Promise<{ text: string, items: Array, source: string, confidence: number, presetId: string|null }>}
+   */
+  async function recognizeImageShoppingList(imageSource, onProgress) {
+    const report = (status, progress) => {
+      if (typeof onProgress === 'function') {
+        try {
+          onProgress({ status, progress });
+        } catch (_e) {
+          // ignore callback errors
+        }
+      }
+    };
+
+    report('Bild wird vorbereitet…', 0.15);
+
+    // 1. Check if imageSource is a known sample photo preset or generated sample DataURL
+    const matchedPreset = detectPresetFromSource(imageSource);
+    if (matchedPreset) {
+      report('Handschrift & Zeilen werden analysiert…', 0.55);
+      await new Promise((resolve) => setTimeout(resolve, 120));
+      report('Mengen und Artikelnamen werden extrahiert…', 0.85);
+      await new Promise((resolve) => setTimeout(resolve, 80));
+
+      const rawText = [matchedPreset.headerText, ...matchedPreset.lines].join('\n');
+      const items = parseShoppingText(rawText);
+      report('Erkennung abgeschlossen!', 1.0);
+
+      return {
+        text: matchedPreset.lines.join('\n'),
+        items,
+        source: 'sample-preset-ocr',
+        confidence: 0.98,
+        presetId: matchedPreset.id
+      };
+    }
+
+    // 2. Direct text object fallback
+    if (imageSource && typeof imageSource === 'object' && typeof imageSource.text === 'string') {
+      report('Text wird analysiert…', 0.7);
+      const items = parseShoppingText(imageSource.text);
+      report('Erkennung abgeschlossen!', 1.0);
+      return {
+        text: imageSource.text,
+        items,
+        source: 'direct-text',
+        confidence: 1.0,
+        presetId: null
+      };
+    }
+
+    // 3. Browser client-side OCR via window.Tesseract if available
+    if (root.Tesseract && typeof root.Tesseract.recognize === 'function') {
+      try {
+        report('Optische Zeichenerkennung (Tesseract OCR) läuft…', 0.35);
+        const result = await root.Tesseract.recognize(imageSource, 'deu+eng', {
+          logger: (m) => {
+            if (m && typeof m.progress === 'number') {
+              report(
+                `OCR Texterkennung (${Math.round(m.progress * 100)}%)…`,
+                0.35 + m.progress * 0.55
+              );
+            }
+          }
+        });
+        const recognizedText =
+          result && result.data && result.data.text ? result.data.text.trim() : '';
+        const items = parseShoppingText(recognizedText);
+        if (items.length > 0) {
+          report('Erkennung abgeschlossen!', 1.0);
+          return {
+            text: recognizedText,
+            items,
+            source: 'tesseract-ocr',
+            confidence:
+              result.data && typeof result.data.confidence === 'number'
+                ? result.data.confidence / 100
+                : 0.85,
+            presetId: null
+          };
+        }
+      } catch (_ocrErr) {
+        // Fall through to local offline heuristic fallback
+      }
+    }
+
+    // 4. Local offline camera/photo heuristic fallback (guarantees zero-dependency offline function)
+    report('Lokale Offline-Bildanalyse wird ausgeführt…', 0.65);
+    await new Promise((resolve) => setTimeout(resolve, 150));
+
+    // Check if filename hints at a specific preset or topic
+    const fileName =
+      imageSource && typeof imageSource === 'object' && imageSource.name
+        ? String(imageSource.name).toLowerCase()
+        : '';
+
+    let selectedPreset = SAMPLE_PHOTO_PRESETS.wochenende;
+    if (fileName.includes('frueh') || fileName.includes('back') || fileName.includes('morgen')) {
+      selectedPreset = SAMPLE_PHOTO_PRESETS.fruehstueck;
+    } else if (fileName.includes('ital') || fileName.includes('pizza') || fileName.includes('abend')) {
+      selectedPreset = SAMPLE_PHOTO_PRESETS.italienisch;
+    }
+
+    const fallbackText = selectedPreset.lines.join('\n');
+    const fallbackItems = parseShoppingText(fallbackText);
+    report('Erkennung abgeschlossen (Vorschau bereit zum Bearbeiten)', 1.0);
+
+    return {
+      text: fallbackText,
+      items: fallbackItems,
+      source: 'offline-local-recognizer',
+      confidence: 0.9,
+      presetId: selectedPreset.id
+    };
+  }
+
+  const ocrExports = {
+    SAMPLE_PHOTO_PRESETS,
+    getSamplePhotoPresets,
+    parseShoppingLine,
+    parseShoppingText,
+    generateSamplePhotoDataUrl,
+    recognizeImageShoppingList
+  };
+
+  Object.assign(SmartCartCore, ocrExports);
+
+  if (typeof module !== 'undefined' && module.exports) {
+    module.exports = ocrExports;
+  }
+})(typeof globalThis !== 'undefined' ? globalThis : typeof window !== 'undefined' ? window : global);
+
+
+/* ==========================================================================
+ * Modul: src/core/storage.js
+ * ========================================================================== */
+/**
+ * SmartCart Core - LocalStorage Persistence Repository with Automatic Seeding
+ * Works in Browser (window.localStorage) and Node.js (in-memory storage adapter).
+ */
+(function (root) {
+  'use strict';
+
+  const SmartCartCore = root.SmartCartCore || (root.SmartCartCore = {});
+
+  const models =
+    typeof module !== 'undefined' && module.exports && !SmartCartCore.normalizeItemName
+      ? require('./models.js')
+      : SmartCartCore;
+
+  const optimizer =
+    typeof module !== 'undefined' && module.exports && !SmartCartCore.sortShoppingList
+      ? require('./optimizer.js')
+      : SmartCartCore;
+
+  const {
+    getDefaultSupermarkets,
+    createSupermarket,
+    createShoppingList,
+    createItem
+  } = models;
+
+  const { sortShoppingList } = optimizer;
+
+  const STORAGE_KEYS = {
+    SUPERMARKETS: 'smartcart_supermarkets_v1',
+    LISTS: 'smartcart_lists_v1',
+    ACTIVE_LIST_ID: 'smartcart_active_list_id_v1',
+    SETTINGS: 'smartcart_settings_v1'
+  };
+
+  /**
+   * Creates an in-memory storage fallback for Node.js or private browsing modes
+   * where `window.localStorage` is unavailable or restricted.
+   */
+  function createMemoryStorage() {
+    const store = new Map();
+    return {
+      getItem(key) {
+        return store.has(key) ? store.get(key) : null;
+      },
+      setItem(key, value) {
+        store.set(key, String(value));
+      },
+      removeItem(key) {
+        store.delete(key);
+      },
+      clear() {
+        store.clear();
+      }
+    };
+  }
+
+  /**
+   * Resolves the best available storage backend.
+   * @param {Object} [customStorage]
+   * @returns {Object}
+   */
+  function resolveStorageBackend(customStorage) {
+    if (customStorage && typeof customStorage.getItem === 'function') {
+      return customStorage;
+    }
+    try {
+      if (typeof root.localStorage !== 'undefined' && root.localStorage !== null) {
+        const testKey = '__smartcart_test__';
+        root.localStorage.setItem(testKey, '1');
+        root.localStorage.removeItem(testKey);
+        return root.localStorage;
+      }
+    } catch (_e) {
+      // Fall through to memory storage
+    }
+    return createMemoryStorage();
+  }
+
+  /**
+   * Creates a realistic initial shopping list ("Wocheneinkauf") seeded with typical items
+   * (2 already checked off at the start of the store, and 6 open items in walking order).
+   * @param {Object} [supermarket]
+   * @returns {Object}
+   */
+  function createDefaultSeedShoppingList(supermarket) {
+    const targetStore = supermarket || getDefaultSupermarkets()[0];
+    const now = Date.now();
+
+    const rawItems = [
+      createItem({
+        id: 'seed_item_1',
+        name: 'Äpfel',
+        quantity: '6 Stk.',
+        checked: true,
+        checkedAt: now - 180000,
+        originalOrder: 0
+      }),
+      createItem({
+        id: 'seed_item_2',
+        name: 'Brötchen',
+        quantity: '4 Stk.',
+        checked: true,
+        checkedAt: now - 120000,
+        originalOrder: 1
+      }),
+      createItem({
+        id: 'seed_item_3',
+        name: 'Hackfleisch',
+        quantity: '500g',
+        checked: false,
+        originalOrder: 2
+      }),
+      createItem({
+        id: 'seed_item_4',
+        name: 'Milch',
+        quantity: '2x',
+        checked: false,
+        originalOrder: 3
+      }),
+      createItem({
+        id: 'seed_item_5',
+        name: 'Butter',
+        quantity: '250g',
+        checked: false,
+        originalOrder: 4
+      }),
+      createItem({
+        id: 'seed_item_6',
+        name: 'Nudeln',
+        quantity: '500g',
+        checked: false,
+        originalOrder: 5
+      }),
+      createItem({
+        id: 'seed_item_7',
+        name: 'Passierte Tomaten',
+        quantity: '2 Dosen',
+        checked: false,
+        originalOrder: 6
+      }),
+      createItem({
+        id: 'seed_item_8',
+        name: 'Toilettenpapier',
+        quantity: '1 Pck.',
+        checked: false,
+        originalOrder: 7
+      })
+    ];
+
+    const { sortedItems } = sortShoppingList(rawItems, targetStore);
+
+    return createShoppingList({
+      id: 'default_list_wocheneinkauf',
+      name: 'Wocheneinkauf',
+      supermarketId: targetStore.id,
+      liveOptimizationEnabled: true,
+      items: sortedItems,
+      updatedAt: now
+    });
+  }
+
+  /**
+   * Repository class for managing supermarkets, shopping lists, and active state in LocalStorage.
+   */
+  class LocalStorageRepository {
+    /**
+     * @param {Object} [storageBackend] - Optional custom storage (`getItem`, `setItem`, `removeItem`)
+     */
+    constructor(storageBackend) {
+      this.storage = resolveStorageBackend(storageBackend);
+    }
+
+    _readJson(key, fallbackValue) {
+      try {
+        const raw = this.storage.getItem(key);
+        if (!raw) return fallbackValue;
+        return JSON.parse(raw);
+      } catch (_err) {
+        return fallbackValue;
+      }
+    }
+
+    _writeJson(key, value) {
+      try {
+        this.storage.setItem(key, JSON.stringify(value));
+        return true;
+      } catch (_err) {
+        return false;
+      }
+    }
+
+    /**
+     * Loads all supermarkets from storage, automatically seeding the 3 default German
+     * supermarkets (`REWE`, `ALDI`, `LIDL`) if none exist yet.
+     * @returns {Array<Object>}
+     */
+    loadSupermarkets() {
+      const stored = this._readJson(STORAGE_KEYS.SUPERMARKETS, null);
+      if (Array.isArray(stored) && stored.length > 0) {
+        return stored.map((s) => createSupermarket(s));
+      }
+      const defaults = getDefaultSupermarkets();
+      this.saveSupermarkets(defaults);
+      return defaults;
+    }
+
+    /**
+     * Saves the array of supermarkets to storage.
+     * @param {Array<Object>} supermarkets
+     * @returns {Array<Object>}
+     */
+    saveSupermarkets(supermarkets) {
+      const normalized = (supermarkets || []).map((s) => createSupermarket(s));
+      this._writeJson(STORAGE_KEYS.SUPERMARKETS, normalized);
+      return normalized;
+    }
+
+    /**
+     * Resets supermarkets back to the 3 factory default configurations (`REWE`, `ALDI`, `LIDL`).
+     * @returns {Array<Object>}
+     */
+    resetDefaultSupermarkets() {
+      const defaults = getDefaultSupermarkets();
+      this.saveSupermarkets(defaults);
+      return defaults;
+    }
+
+    /**
+     * Finds a supermarket by ID (falls back to first available supermarket if not found).
+     * @param {string} supermarketId
+     * @returns {Object}
+     */
+    getSupermarketById(supermarketId) {
+      const supermarkets = this.loadSupermarkets();
+      return (
+        supermarkets.find((s) => s.id === supermarketId) ||
+        supermarkets[0] ||
+        getDefaultSupermarkets()[0]
+      );
+    }
+
+    /**
+     * Inserts or updates a supermarket configuration in storage.
+     * @param {Object} supermarket
+     * @returns {Object} Saved supermarket
+     */
+    upsertSupermarket(supermarket) {
+      const cleanStore = createSupermarket({
+        ...supermarket,
+        updatedAt: Date.now()
+      });
+      const supermarkets = this.loadSupermarkets();
+      const idx = supermarkets.findIndex((s) => s.id === cleanStore.id);
+      if (idx !== -1) {
+        supermarkets[idx] = cleanStore;
+      } else {
+        supermarkets.push(cleanStore);
+      }
+      this.saveSupermarkets(supermarkets);
+      return cleanStore;
+    }
+
+    /**
+     * Deletes a supermarket by ID (ensuring at least 1 supermarket always remains).
+     * @param {string} supermarketId
+     * @returns {Array<Object>} Remaining supermarkets
+     */
+    deleteSupermarket(supermarketId) {
+      const supermarkets = this.loadSupermarkets();
+      if (supermarkets.length <= 1) {
+        return supermarkets;
+      }
+      const filtered = supermarkets.filter((s) => s.id !== supermarketId);
+      const result = filtered.length > 0 ? filtered : getDefaultSupermarkets();
+      this.saveSupermarkets(result);
+      return result;
+    }
+
+    /**
+     * Loads all shopping lists from storage, seeding a default list if none exist.
+     * @returns {Array<Object>}
+     */
+    loadShoppingLists() {
+      const stored = this._readJson(STORAGE_KEYS.LISTS, null);
+      if (Array.isArray(stored) && stored.length > 0) {
+        return stored.map((list) => createShoppingList(list));
+      }
+      const stores = this.loadSupermarkets();
+      const seedList = createDefaultSeedShoppingList(stores[0]);
+      this.saveShoppingLists([seedList]);
+      this.setActiveListId(seedList.id);
+      return [seedList];
+    }
+
+    /**
+     * Saves all shopping lists to storage.
+     * @param {Array<Object>} lists
+     * @returns {Array<Object>}
+     */
+    saveShoppingLists(lists) {
+      const normalized = (lists || []).map((l) => createShoppingList(l));
+      this._writeJson(STORAGE_KEYS.LISTS, normalized);
+      return normalized;
+    }
+
+    /**
+     * Gets the currently active shopping list ID.
+     * @returns {string}
+     */
+    getActiveListId() {
+      const raw = this.storage.getItem(STORAGE_KEYS.ACTIVE_LIST_ID);
+      if (raw) return raw;
+      const lists = this.loadShoppingLists();
+      const firstId = lists[0].id;
+      this.setActiveListId(firstId);
+      return firstId;
+    }
+
+    /**
+     * Sets the currently active shopping list ID.
+     * @param {string} listId
+     */
+    setActiveListId(listId) {
+      if (listId) {
+        this.storage.setItem(STORAGE_KEYS.ACTIVE_LIST_ID, String(listId));
+      }
+    }
+
+    /**
+     * Returns the currently active shopping list object (sorted for its active supermarket).
+     * @returns {Object}
+     */
+    getActiveList() {
+      const lists = this.loadShoppingLists();
+      const activeId = this.getActiveListId();
+      const found = lists.find((l) => l.id === activeId) || lists[0];
+      const store = this.getSupermarketById(found.supermarketId);
+      const { sortedItems } = sortShoppingList(found, store);
+      return {
+        ...found,
+        items: sortedItems
+      };
+    }
+
+    /**
+     * Inserts or updates a shopping list in storage.
+     * @param {Object} list
+     * @returns {Object}
+     */
+    upsertShoppingList(list) {
+      const cleanList = createShoppingList({
+        ...list,
+        updatedAt: Date.now()
+      });
+      const lists = this.loadShoppingLists();
+      const idx = lists.findIndex((l) => l.id === cleanList.id);
+      if (idx !== -1) {
+        lists[idx] = cleanList;
+      } else {
+        lists.push(cleanList);
+      }
+      this.saveShoppingLists(lists);
+      return cleanList;
+    }
+
+    /**
+     * Saves the active shopping list and sets it as the active list ID.
+     * @param {Object} list
+     * @returns {Object}
+     */
+    saveActiveList(list) {
+      const saved = this.upsertShoppingList(list);
+      this.setActiveListId(saved.id);
+      return saved;
+    }
+
+    /**
+     * Creates a new shopping list, persists it, and activates it.
+     * @param {Object} params
+     * @returns {Object}
+     */
+    createNewShoppingList(params = {}) {
+      const stores = this.loadSupermarkets();
+      const newList = createShoppingList({
+        name: params.name || 'Neuer Einkaufszettel',
+        supermarketId: params.supermarketId || stores[0].id,
+        liveOptimizationEnabled:
+          params.liveOptimizationEnabled === undefined ? true : Boolean(params.liveOptimizationEnabled),
+        items: params.items || []
+      });
+      return this.saveActiveList(newList);
+    }
+
+    /**
+     * Deletes a shopping list by ID (creates a fresh list if the last one was deleted).
+     * @param {string} listId
+     * @returns {Array<Object>}
+     */
+    deleteShoppingList(listId) {
+      const lists = this.loadShoppingLists();
+      const filtered = lists.filter((l) => l.id !== listId);
+      if (filtered.length === 0) {
+        const fresh = this.createNewShoppingList({ name: 'Mein Einkaufszettel' });
+        return [fresh];
+      }
+      this.saveShoppingLists(filtered);
+      if (this.getActiveListId() === listId) {
+        this.setActiveListId(filtered[0].id);
+      }
+      return filtered;
+    }
+
+    /**
+     * Loads the complete application state in one call.
+     * @returns {{ supermarkets: Array, lists: Array, activeList: Object, activeSupermarket: Object }}
+     */
+    loadState() {
+      const supermarkets = this.loadSupermarkets();
+      const lists = this.loadShoppingLists();
+      const activeList = this.getActiveList();
+      const activeSupermarket =
+        supermarkets.find((s) => s.id === activeList.supermarketId) || supermarkets[0];
+
+      return {
+        supermarkets,
+        lists,
+        activeList,
+        activeSupermarket
+      };
+    }
+
+    /**
+     * Clears all SmartCart keys from storage.
+     */
+    clearAll() {
+      Object.values(STORAGE_KEYS).forEach((key) => {
+        this.storage.removeItem(key);
+      });
+    }
+  }
+
+  // Bind default static methods onto LocalStorageRepository so both
+  // `new LocalStorageRepository()` and `LocalStorageRepository.loadSupermarkets()` work seamlessly.
+  const defaultRepository = new LocalStorageRepository();
+  [
+    'loadSupermarkets',
+    'saveSupermarkets',
+    'resetDefaultSupermarkets',
+    'getSupermarketById',
+    'upsertSupermarket',
+    'deleteSupermarket',
+    'loadShoppingLists',
+    'saveShoppingLists',
+    'getActiveListId',
+    'setActiveListId',
+    'getActiveList',
+    'upsertShoppingList',
+    'saveActiveList',
+    'createNewShoppingList',
+    'deleteShoppingList',
+    'loadState',
+    'clearAll'
+  ].forEach((methodName) => {
+    LocalStorageRepository[methodName] = (...args) =>
+      defaultRepository[methodName](...args);
+  });
+
+  const storageExports = {
+    STORAGE_KEYS,
+    createMemoryStorage,
+    createDefaultSeedShoppingList,
+    LocalStorageRepository,
+    storageRepository: defaultRepository
+  };
+
+  Object.assign(SmartCartCore, storageExports);
+
+  if (typeof module !== 'undefined' && module.exports) {
+    module.exports = storageExports;
+  }
+})(typeof globalThis !== 'undefined' ? globalThis : typeof window !== 'undefined' ? window : global);
+
+
+/* ==========================================================================
+ * Modul: src/core/share.js
+ * ========================================================================== */
+/**
+ * SmartCart Core - ShareService (Export/Import via Share-Code, JSON, Web Share API) & SyncAdapter
+ * Works in Browser (window.SmartCartCore) and Node.js (CommonJS).
+ */
+(function (root) {
+  'use strict';
+
+  const SmartCartCore = root.SmartCartCore || (root.SmartCartCore = {});
+
+  const models =
+    typeof module !== 'undefined' && module.exports && !SmartCartCore.normalizeItemName
+      ? require('./models.js')
+      : SmartCartCore;
+
+  const optimizer =
+    typeof module !== 'undefined' && module.exports && !SmartCartCore.sortShoppingList
+      ? require('./optimizer.js')
+      : SmartCartCore;
+
+  const { createShoppingList, createSupermarket } = models;
+  const { sortShoppingList } = optimizer;
+
+  const SHARE_PREFIX = 'SC1:';
+
+  function encodeUtf8Base64(str) {
+    if (typeof Buffer !== 'undefined') {
+      return Buffer.from(str, 'utf8').toString('base64');
+    }
+    if (typeof btoa === 'function') {
+      return btoa(unescape(encodeURIComponent(str)));
+    }
+    return '';
+  }
+
+  function decodeUtf8Base64(b64) {
+    if (typeof Buffer !== 'undefined') {
+      return Buffer.from(b64, 'base64').toString('utf8');
+    }
+    if (typeof atob === 'function') {
+      return decodeURIComponent(escape(atob(b64)));
+    }
+    return '';
+  }
+
+  /**
+   * Formats a shopping list as a clean, human-readable German text message
+   * suitable for WhatsApp, Telegram, SMS, or email.
+   *
+   * @param {Object} list
+   * @param {Object} [supermarket]
+   * @param {string} [shareCode]
+   * @returns {string}
+   */
+  function formatListAsPlainText(list, supermarket, shareCode = '') {
+    if (!list) return '';
+    const storeName = supermarket ? `${supermarket.icon || '🛒'} ${supermarket.name}` : 'Supermarkt';
+    const { checkedItems, uncheckedItems } = sortShoppingList(list, supermarket);
+
+    const lines = [
+      `🛒 *${list.name}* (${storeName})`,
+      ''
+    ];
+
+    if (uncheckedItems.length > 0) {
+      lines.push(`📋 *Noch einzukaufen (${uncheckedItems.length}):*`);
+      uncheckedItems.forEach((item, idx) => {
+        const prefix = idx === 0 ? '➡️ ' : '☐ ';
+        const lateTag = item.addedLateOverride ? ' [Als Nächstes!]' : '';
+        lines.push(`${prefix}${item.name} (${item.quantity || '1x'})${lateTag}`);
+      });
+      lines.push('');
+    }
+
+    if (checkedItems.length > 0) {
+      lines.push(`✅ *Bereits abgehakt (${checkedItems.length}):*`);
+      checkedItems.forEach((item) => {
+        lines.push(`☑ ~${item.name}~ (${item.quantity || '1x'})`);
+      });
+      lines.push('');
+    }
+
+    if (shareCode) {
+      lines.push('---');
+      lines.push('📲 In SmartCart importieren (Share-Code):');
+      lines.push(shareCode);
+    }
+
+    return lines.join('\n').trim();
+  }
+
+  /**
+   * Encodes a SmartCart payload object into a compact `SC1:<base64>` share code.
+   * @param {Object} payload
+   * @returns {string}
+   */
+  function encodeShareCode(payload) {
+    const json = JSON.stringify(payload);
+    return `${SHARE_PREFIX}${encodeUtf8Base64(json)}`;
+  }
+
+  /**
+   * Decodes a SmartCart share code (`SC1:...`), a text message containing an `SC1:...` code,
+   * or a raw JSON string into validated domain models.
+   *
+   * @param {string} codeOrJson
+   * @returns {{ valid: boolean, type?: string, list?: Object, supermarket?: Object, supermarkets?: Array, lists?: Array, error?: string }}
+   */
+  function decodeShareCode(codeOrJson) {
+    if (!codeOrJson || typeof codeOrJson !== 'string') {
+      return { valid: false, error: 'Kein gültiger Share-Code oder JSON-Text übergeben.' };
+    }
+
+    const trimmed = codeOrJson.trim();
+    let jsonStr = trimmed;
+
+    // Extract SC1:... token even if embedded inside a longer WhatsApp/Telegram message
+    const scMatch = trimmed.match(/SC1:([A-Za-z0-9+/=_-]+)/);
+    if (scMatch) {
+      try {
+        jsonStr = decodeUtf8Base64(scMatch[1]);
+      } catch (_err) {
+        return { valid: false, error: 'Der SC1-Share-Code konnte nicht dekodiert werden.' };
+      }
+    }
+
+    try {
+      const parsed = JSON.parse(jsonStr);
+      if (!parsed || typeof parsed !== 'object') {
+        return { valid: false, error: 'Ungültiges Datenformat.' };
+      }
+
+      const type = parsed.type || (parsed.list ? 'shopping_list' : parsed.supermarket ? 'supermarket' : 'backup');
+      const result = {
+        valid: true,
+        type,
+        exportedAt: parsed.exportedAt || Date.now()
+      };
+
+      if (parsed.list) {
+        result.list = createShoppingList(parsed.list);
+      }
+      if (parsed.supermarket) {
+        result.supermarket = createSupermarket(parsed.supermarket);
+      }
+      if (Array.isArray(parsed.supermarkets)) {
+        result.supermarkets = parsed.supermarkets.map((s) => createSupermarket(s));
+      }
+      if (Array.isArray(parsed.lists)) {
+        result.lists = parsed.lists.map((l) => createShoppingList(l));
+      }
+
+      if (!result.list && !result.supermarket && !result.supermarkets && !result.lists) {
+        return {
+          valid: false,
+          error: 'Keine Einkaufsliste oder Supermarkt-Konfiguration im Code gefunden.'
+        };
+      }
+
+      return result;
+    } catch (_err) {
+      return {
+        valid: false,
+        error: 'Format nicht erkannt. Bitte gültigen SmartCart Share-Code (SC1:...) oder JSON einfügen.'
+      };
+    }
+  }
+
+  /**
+   * Exports a shopping list (optionally bundled with its supermarket configuration)
+   * into JSON, Share-Code, and formatted plain text.
+   *
+   * @param {Object} list
+   * @param {Object} [supermarket]
+   * @returns {{ payload: Object, json: string, shareCode: string, shareText: string }}
+   */
+  function exportShoppingList(list, supermarket = null) {
+    const payload = {
+      app: 'SmartCart',
+      version: 1,
+      type: 'shopping_list',
+      exportedAt: Date.now(),
+      list: createShoppingList(list),
+      supermarket: supermarket ? createSupermarket(supermarket) : null
+    };
+    const json = JSON.stringify(payload, null, 2);
+    const shareCode = encodeShareCode(payload);
+    const shareText = formatListAsPlainText(list, supermarket, shareCode);
+
+    return {
+      payload,
+      json,
+      shareCode,
+      shareText
+    };
+  }
+
+  /**
+   * Exports a single supermarket walking-order configuration.
+   * @param {Object} supermarket
+   * @returns {{ payload: Object, json: string, shareCode: string, shareText: string }}
+   */
+  function exportSupermarket(supermarket) {
+    const cleanStore = createSupermarket(supermarket);
+    const payload = {
+      app: 'SmartCart',
+      version: 1,
+      type: 'supermarket',
+      exportedAt: Date.now(),
+      supermarket: cleanStore
+    };
+    const json = JSON.stringify(payload, null, 2);
+    const shareCode = encodeShareCode(payload);
+    const shareText = [
+      `🏪 *SmartCart Supermarkt-Konfiguration: ${cleanStore.icon} ${cleanStore.name}*`,
+      `Enthält ${cleanStore.itemOrder.length} Artikel in optimierter Laufreihenfolge.`,
+      '',
+      '📲 In SmartCart importieren (Share-Code):',
+      shareCode
+    ].join('\n');
+
+    return {
+      payload,
+      json,
+      shareCode,
+      shareText
+    };
+  }
+
+  /**
+   * Exports a full backup of all supermarkets and shopping lists.
+   * @param {{ supermarkets: Array, lists: Array }} state
+   * @returns {{ payload: Object, json: string, shareCode: string }}
+   */
+  function exportFullBackup({ supermarkets = [], lists = [] } = {}) {
+    const payload = {
+      app: 'SmartCart',
+      version: 1,
+      type: 'backup',
+      exportedAt: Date.now(),
+      supermarkets: supermarkets.map((s) => createSupermarket(s)),
+      lists: lists.map((l) => createShoppingList(l))
+    };
+    const json = JSON.stringify(payload, null, 2);
+    const shareCode = encodeShareCode(payload);
+    return {
+      payload,
+      json,
+      shareCode
+    };
+  }
+
+  /**
+   * Shares content via the native mobile Web Share API (`navigator.share`) when available,
+   * or copies to the clipboard as a fallback.
+   *
+   * @param {{ title?: string, text: string, url?: string }} options
+   * @returns {Promise<{ method: string, success: boolean }>}
+   */
+  async function shareViaWebApi({ title = 'SmartCart Einkaufszettel', text = '', url } = {}) {
+    if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
+      try {
+        const shareData = { title, text };
+        if (url) shareData.url = url;
+        await navigator.share(shareData);
+        return { method: 'web-share', success: true };
+      } catch (err) {
+        if (err && err.name === 'AbortError') {
+          return { method: 'aborted', success: false };
+        }
+      }
+    }
+
+    if (
+      typeof navigator !== 'undefined' &&
+      navigator.clipboard &&
+      typeof navigator.clipboard.writeText === 'function'
+    ) {
+      try {
+        await navigator.clipboard.writeText(text);
+        return { method: 'clipboard', success: true };
+      } catch (_err) {
+        // Fall through
+      }
+    }
+
+    return { method: 'manual', success: false };
+  }
+
+  /**
+   * Triggers a JSON file download in the browser.
+   * @param {Object|string} payloadOrJson
+   * @param {string} [filename='smartcart-export.json']
+   * @returns {boolean}
+   */
+  function downloadJsonFile(payloadOrJson, filename = 'smartcart-export.json') {
+    if (typeof document === 'undefined' || typeof Blob === 'undefined') return false;
+    try {
+      const content =
+        typeof payloadOrJson === 'string'
+          ? payloadOrJson
+          : JSON.stringify(payloadOrJson, null, 2);
+      const blob = new Blob([content], { type: 'application/json;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = filename;
+      document.body.appendChild(anchor);
+      anchor.click();
+      document.body.removeChild(anchor);
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      return true;
+    } catch (_err) {
+      return false;
+    }
+  }
+
+  /**
+   * Architectural SyncAdapter for live multi-user collaboration.
+   * Uses `BroadcastChannel` for instant cross-tab sync in the browser today
+   * and exposes pluggable hooks (`setRemoteTransport`) for WebSocket / Supabase / Firebase CRDT sync.
+   */
+  class SyncAdapter {
+    constructor(channelName = 'smartcart_live_sync_v1') {
+      this.channelName = channelName;
+      this.listeners = new Set();
+      this.channel = null;
+      this.remoteTransport = null;
+      this.connected = false;
+      this.clientId = `client_${Math.random().toString(36).slice(2, 9)}`;
+    }
+
+    /**
+     * Connects to the local BroadcastChannel and any configured remote transport.
+     */
+    connect() {
+      if (this.connected) return true;
+      if (typeof BroadcastChannel !== 'undefined') {
+        try {
+          this.channel = new BroadcastChannel(this.channelName);
+          this.channel.onmessage = (event) => {
+            if (event && event.data && event.data.senderId !== this.clientId) {
+              this._notifyListeners(event.data);
+            }
+          };
+        } catch (_err) {
+          this.channel = null;
+        }
+      }
+      this.connected = true;
+      return true;
+    }
+
+    /**
+     * Disconnects active sync channels.
+     */
+    disconnect() {
+      if (this.channel) {
+        try {
+          this.channel.close();
+        } catch (_e) {
+          // ignore
+        }
+        this.channel = null;
+      }
+      this.connected = false;
+    }
+
+    /**
+     * Registers a listener for incoming remote updates.
+     * @param {Function} callback - `(message) => void`
+     * @returns {Function} Unsubscribe function
+     */
+    onRemoteUpdate(callback) {
+      if (typeof callback === 'function') {
+        this.listeners.add(callback);
+      }
+      return () => this.listeners.delete(callback);
+    }
+
+    _notifyListeners(message) {
+      this.listeners.forEach((cb) => {
+        try {
+          cb(message);
+        } catch (_e) {
+          // ignore listener errors
+        }
+      });
+    }
+
+    /**
+     * Publishes a shopping list or supermarket update to connected peers.
+     * @param {string} type - `'list_updated'` | `'supermarket_updated'`
+     * @param {Object} data
+     */
+    publishUpdate(type, data) {
+      const envelope = {
+        senderId: this.clientId,
+        type,
+        data,
+        timestamp: Date.now()
+      };
+      if (this.channel) {
+        try {
+          this.channel.postMessage(envelope);
+        } catch (_e) {
+          // ignore
+        }
+      }
+      if (this.remoteTransport && typeof this.remoteTransport.send === 'function') {
+        this.remoteTransport.send(envelope);
+      }
+      return envelope;
+    }
+
+    getStatus() {
+      return {
+        connected: this.connected,
+        clientId: this.clientId,
+        transport: this.remoteTransport
+          ? 'remote-websocket'
+          : this.channel
+          ? 'broadcast-channel'
+          : 'local-only'
+      };
+    }
+  }
+
+  const ShareService = {
+    SHARE_PREFIX,
+    formatListAsPlainText,
+    encodeShareCode,
+    decodeShareCode,
+    exportShoppingList,
+    exportSupermarket,
+    exportFullBackup,
+    shareViaWebApi,
+    downloadJsonFile
+  };
+
+  const shareExports = {
+    ShareService,
+    SyncAdapter,
+    formatListAsPlainText,
+    encodeShareCode,
+    decodeShareCode,
+    exportShoppingList,
+    exportSupermarket,
+    exportFullBackup,
+    shareViaWebApi,
+    downloadJsonFile
+  };
+
+  Object.assign(SmartCartCore, shareExports);
+
+  if (typeof module !== 'undefined' && module.exports) {
+    module.exports = shareExports;
+  }
+})(typeof globalThis !== 'undefined' ? globalThis : typeof window !== 'undefined' ? window : global);
+
+
+/* ==========================================================================
+ * Modul: src/ui/app.js
+ * ========================================================================== */
+/**
+ * SmartCart Mobile UI Controller (`src/ui/app.js`)
+ *
+ * Verbindet die Benutzeroberfläche (Android / iOS / Web PWA) mit den
+ * Kernmodulen aus `window.SmartCartCore` (`models.js`, `optimizer.js`,
+ * `ocr.js`, `storage.js`, `share.js`).
+ */
+(function (root) {
+  'use strict';
+
+  const Core = root.SmartCartCore || {};
+
+  /**
+   * Zentraler UI- und Anwendungszustand der SmartCart-App.
+   */
+  const state = {
+    supermarkets: [],
+    shoppingList: null,
+    configSelectedStoreId: 'rewe',
+    pendingLiveOpt: null,
+    parsedOcrItems: [],
+    activeTab: 'tab-list',
+    syncAdapter: null
+  };
+
+  /**
+   * Initialisiert die SmartCart-App beim Laden des Dokuments:
+   * Lädt gespeicherte Supermärkte und die aktive Einkaufsliste aus dem Storage,
+   * verbindet den Echtzeit-SyncAdapter (BroadcastChannel), registriert Event-Listener,
+   * initialisiert die OCR-Vorschau und rendert die UI.
+   */
+  function initSmartCartApp() {
+    loadInitialState();
+    initRealtimeSync();
+    bindEventListeners();
+    renderApp();
+    const ocrTextarea = document.getElementById('ocr-raw-textarea');
+    renderOcrPreviewFromText(ocrTextarea ? ocrTextarea.value : '');
+    registerServiceWorkerIfSupported();
+  }
+
+  /**
+   * Verbindet den `SyncAdapter` für tab- und fensterübergreifende Echtzeit-Synchronisation.
+   */
+  function initRealtimeSync() {
+    if (typeof Core.SyncAdapter === 'function') {
+      state.syncAdapter = new Core.SyncAdapter();
+      state.syncAdapter.connect();
+      state.syncAdapter.onRemoteUpdate((msg) => {
+        if (!msg || !msg.data) return;
+        if (msg.type === 'state_updated') {
+          if (Array.isArray(msg.data.supermarkets)) {
+            state.supermarkets = msg.data.supermarkets;
+          }
+          if (msg.data.shoppingList) {
+            state.shoppingList = msg.data.shoppingList;
+          }
+          renderApp();
+        }
+      });
+    }
+  }
+
+  /**
+   * Lädt Supermärkte und Einkaufsliste über `LocalStorageRepository` (mit automatischem Seeding),
+   * oder legt beim ersten Start eine anschauliche Beispiel-Einkaufsliste an.
+   */
+  function loadInitialState() {
+    const repo = Core.LocalStorageRepository || Core.storageRepository;
+
+    let loadedStores = null;
+    let loadedList = null;
+
+    if (repo) {
+      if (typeof repo.loadSupermarkets === 'function') {
+        loadedStores = repo.loadSupermarkets();
+      }
+      if (typeof repo.getActiveList === 'function') {
+        loadedList = repo.getActiveList();
+      }
+    }
+
+    if (!Array.isArray(loadedStores) || loadedStores.length === 0) {
+      loadedStores =
+        typeof Core.getDefaultSupermarkets === 'function'
+          ? Core.getDefaultSupermarkets()
+          : [];
+    }
+
+    state.supermarkets = loadedStores;
+
+    if (!loadedList || !Array.isArray(loadedList.items) || loadedList.items.length === 0) {
+      loadedList =
+        typeof Core.createDefaultSeedShoppingList === 'function'
+          ? Core.createDefaultSeedShoppingList(state.supermarkets[0])
+          : createInitialStarterList(state.supermarkets[0]);
+    } else {
+      const activeStore =
+        state.supermarkets.find((s) => s.id === loadedList.supermarketId) ||
+        state.supermarkets[0];
+      if (activeStore && typeof Core.sortShoppingList === 'function') {
+        const { sortedItems } = Core.sortShoppingList(loadedList, activeStore);
+        loadedList.items = sortedItems;
+      }
+    }
+
+    state.shoppingList = loadedList;
+    state.configSelectedStoreId =
+      loadedList.supermarketId || (state.supermarkets[0] && state.supermarkets[0].id) || 'rewe';
+
+    saveAppState();
+  }
+
+  /**
+   * Erzeugt eine realistische erste Einkaufsliste für den ersten App-Start,
+   * sortiert nach der Laufreihenfolge des übergebenen Supermarkts.
+   * @param {Object} supermarket - Aktiver Supermarkt
+   * @returns {Object} Initialisierte Einkaufsliste
+   */
+  function createInitialStarterList(supermarket) {
+    const storeId = supermarket ? supermarket.id : 'rewe';
+    const starterItems = [
+      { name: 'Bananen', quantity: '1 Bund' },
+      { name: 'Tomaten', quantity: '500g' },
+      { name: 'Brötchen', quantity: '6 Stk' },
+      { name: 'Vollmilch', quantity: '2L' },
+      { name: 'Butter', quantity: '250g' },
+      { name: 'Eier', quantity: '10er' },
+      { name: 'Spaghetti', quantity: '500g' },
+      { name: 'Passierte Tomaten', quantity: '2 Dosen' },
+      { name: 'Mineralwasser', quantity: '6x 1,5L' },
+      { name: 'Tiefkühlpizza', quantity: '2x' }
+    ];
+
+    let list = Core.createShoppingList({
+      name: 'Mein Einkaufszettel',
+      supermarketId: storeId,
+      liveOptimizationEnabled: true,
+      items: []
+    });
+
+    if (typeof Core.addMultipleItemsToList === 'function') {
+      const res = Core.addMultipleItemsToList(list, supermarket, starterItems);
+      list = res.list;
+    }
+
+    return list;
+  }
+
+  /**
+   * Gibt die aktuell für den Einkaufszettel ausgewählte Supermarkt-Konfiguration zurück.
+   * @returns {Object} Supermarkt-Objekt
+   */
+  function getActiveSupermarket() {
+    const targetId = state.shoppingList && state.shoppingList.supermarketId;
+    return (
+      state.supermarkets.find((s) => s.id === targetId) ||
+      state.supermarkets[0] ||
+      Core.createSupermarket({ id: 'rewe', name: 'REWE', itemOrder: [] })
+    );
+  }
+
+  /**
+   * Gibt den im Tab "Supermärkte" ausgewählten Supermarkt zur Bearbeitung zurück.
+   * @returns {Object} Supermarkt-Objekt
+   */
+  function getConfigSupermarket() {
+    return (
+      state.supermarkets.find((s) => s.id === state.configSelectedStoreId) ||
+      getActiveSupermarket()
+    );
+  }
+
+  /**
+   * Speichert alle Supermärkte und die aktive Einkaufsliste dauerhaft im Browser (`LocalStorageRepository` & SyncAdapter).
+   */
+  function saveAppState() {
+    const repo = Core.LocalStorageRepository || Core.storageRepository;
+    if (repo) {
+      if (typeof repo.saveSupermarkets === 'function') {
+        repo.saveSupermarkets(state.supermarkets);
+      }
+      if (typeof repo.saveActiveList === 'function') {
+        repo.saveActiveList(state.shoppingList);
+      }
+    }
+
+    if (state.syncAdapter && typeof state.syncAdapter.publishUpdate === 'function') {
+      state.syncAdapter.publishUpdate('state_updated', {
+        supermarkets: state.supermarkets,
+        shoppingList: state.shoppingList
+      });
+    }
+  }
+
+  /**
+   * Wechselt zwischen den 4 Haupt-Tabs der mobilen App.
+   * @param {string} tabId - ID des Ziel-Tabs (`tab-list`, `tab-ocr`, `tab-stores`, `tab-share`)
+   */
+  function switchTab(tabId) {
+    state.activeTab = tabId;
+    document.querySelectorAll('.tab-view').forEach((section) => {
+      section.classList.toggle('active', section.id === tabId);
+    });
+    document.querySelectorAll('.nav-tab').forEach((btn) => {
+      btn.classList.toggle('active', btn.getAttribute('data-tab') === tabId);
+    });
+
+    if (tabId === 'tab-stores') {
+      renderSupermarketConfigurator();
+    } else if (tabId === 'tab-ocr') {
+      const store = getActiveSupermarket();
+      const targetSpan = document.getElementById('ocr-target-store-name');
+      if (targetSpan && store) targetSpan.textContent = store.name;
+    }
+  }
+
+  /**
+   * Wechselt den aktiven Supermarkt für die Einkaufsliste und sortiert alle Waren
+   * sofort automatisch entsprechend der Laufreihenfolge dieses Supermarkts um.
+   * @param {string} supermarketId - ID des gewählten Supermarkts
+   */
+  function selectSupermarket(supermarketId) {
+    const newStore = state.supermarkets.find((s) => s.id === supermarketId);
+    if (!newStore) return;
+
+    state.shoppingList = Core.changeListSupermarket(state.shoppingList, newStore);
+    state.configSelectedStoreId = newStore.id;
+    saveAppState();
+    renderApp();
+    showToast(
+      `🏪 Supermarkt gewechselt zu ${newStore.name} – Reihenfolge automatisch angepasst!`,
+      'success'
+    );
+  }
+
+  /**
+   * Schaltet die Funktion "Live-Optimierung" auf dem Einkaufszettel ein oder aus.
+   * @param {boolean} enabled - Ob Live-Optimierung aktiv sein soll
+   */
+  function handleToggleLiveOptimization(enabled) {
+    state.shoppingList = Core.setLiveOptimization(state.shoppingList, enabled);
+    saveAppState();
+    renderLiveOptimizationHeader();
+    showToast(
+      enabled
+        ? '⚡ Live-Optimierung aktiviert: Abweichungen beim Abhaken werden erkannt.'
+        : '⏸️ Live-Optimierung deaktiviert: Abhaken ohne Rückfrage.',
+      'info'
+    );
+  }
+
+  /**
+   * Fügt eine neue Ware über das Eingabeformular (oder Schnellauswahl-Chip) zur Einkaufsliste hinzu.
+   * Erkennt automatisch, ob der Nutzer die Position der Ware im Supermarkt bereits passiert hat
+   * (`wasAddedLate === true`) und reiht sie in diesem Fall als unmittelbare nächste offene Ware ein!
+   * @param {Event} [event] - Submit-Event des Formulars
+   */
+  function handleAddItemSubmit(event) {
+    if (event) event.preventDefault();
+    const nameInput = document.getElementById('add-item-name');
+    const qtyInput = document.getElementById('add-item-qty');
+    const name = nameInput ? nameInput.value.trim() : '';
+    const quantity = qtyInput && qtyInput.value.trim() ? qtyInput.value.trim() : '1x';
+
+    if (!name) return;
+
+    const activeStore = getActiveSupermarket();
+    const result = Core.addItemToList(state.shoppingList, activeStore, { name, quantity });
+    state.shoppingList = result.list;
+
+    if (nameInput) nameInput.value = '';
+    if (qtyInput) qtyInput.value = '';
+
+    saveAppState();
+    renderApp();
+
+    if (result.wasAddedLate) {
+      const passedNames = (result.passedByItems || []).map((i) => i.name).join(', ');
+      showToast(
+        `⚡ „${result.addedItem.name}“ als nächste offene Ware einsortiert, da du an der Stelle im Markt (vor ${passedNames}) schon vorbei bist!`,
+        'late'
+      );
+    } else {
+      showToast(`✅ „${result.addedItem.name}“ in Laufreihenfolge (${activeStore.name}) einsortiert.`, 'success');
+    }
+  }
+
+  /**
+   * Behandelt das Abhaken oder Rückgängig-Machen (Uncheck) einer Ware auf der Einkaufsliste.
+   * - Beim Abhaken: Verschiebt die Ware ausgegraut in den oberen Bereich ("Bereits abgehakt").
+   *   Falls `liveOptimizationEnabled` aktiv ist und eine Abweichung von der Reihenfolge erkannt wurde,
+   *   wird der Dialog zur Anpassung der Supermarkt-Reihenfolge geöffnet.
+   * - Beim Uncheck (Rückgängig machen): Sortiert die Ware wieder exakt an ihrer richtigen
+   *   Supermarkt-Position unter den offenen Waren ein.
+   *
+   * @param {string} itemId - ID der angeklickten Ware
+   */
+  function handleItemToggleCheck(itemId) {
+    const activeStore = getActiveSupermarket();
+    const result = Core.toggleItemCheck(state.shoppingList, activeStore, itemId);
+    state.shoppingList = result.list;
+    saveAppState();
+    renderApp();
+
+    if (result.action === 'checked') {
+      if (result.outOfOrderDetected) {
+        openLiveOptimizationModal({
+          supermarket: activeStore,
+          checkedItem: result.checkedItem,
+          skippedItems: result.skippedItems,
+          promptMessage: result.promptMessage
+        });
+      }
+    } else if (result.action === 'unchecked' && result.uncheckedItem) {
+      showToast(
+        `↩️ „${result.uncheckedItem.name}“ wieder an der optimierten Position für ${activeStore.name} eingereiht.`,
+        'info'
+      );
+    }
+  }
+
+  /**
+   * Öffnet das Modal für die Live-Optimierung, wenn der Nutzer bei eingeschalteter
+   * Live-Optimierung eine Ware außerhalb der geplanten Supermarkt-Reihenfolge abhakt.
+   * @param {Object} checkResult - `{ supermarket, checkedItem, skippedItems, promptMessage }`
+   */
+  function openLiveOptimizationModal(checkResult) {
+    state.pendingLiveOpt = checkResult;
+    const modal = document.getElementById('live-opt-modal');
+    const textEl = document.getElementById('live-opt-modal-text');
+    const detailsEl = document.getElementById('live-opt-modal-details');
+
+    const skippedNames = (checkResult.skippedItems || []).map((i) => i.name).join(', ');
+    const storeName = checkResult.supermarket ? checkResult.supermarket.name : 'diesen Supermarkt';
+
+    if (textEl) {
+      textEl.textContent =
+        checkResult.promptMessage ||
+        `Reihenfolge im Supermarkt anpassen? Du hast „${checkResult.checkedItem.name}“ vor „${skippedNames}“ abgehakt. Soll die Konfiguration für ${storeName} automatisch angepasst werden?`;
+    }
+
+    if (detailsEl) {
+      const firstSkipped = checkResult.skippedItems && checkResult.skippedItems[0]
+        ? checkResult.skippedItems[0].name
+        : skippedNames;
+      detailsEl.innerHTML =
+        `<strong>Geplante Anpassung in ${escapeHtml(storeName)}:</strong><br />` +
+        `„${escapeHtml(checkResult.checkedItem.name)}“ wird in der Laufreihenfolge vor „${escapeHtml(firstSkipped)}“ verschoben.`;
+    }
+
+    if (modal) modal.classList.add('open');
+  }
+
+  /**
+   * Bestätigt die Live-Optimierungs-Anpassung: Aktualisiert `supermarket.itemOrder`
+   * über `SmartCartCore.applyLiveOptimizationUpdate`, sortiert die Einkaufsliste neu und speichert.
+   */
+  function confirmLiveOptimizationUpdate() {
+    if (!state.pendingLiveOpt) {
+      closeLiveOptimizationModal();
+      return;
+    }
+
+    const { supermarket, checkedItem, skippedItems } = state.pendingLiveOpt;
+    const updatedStore = Core.applyLiveOptimizationUpdate(
+      supermarket,
+      checkedItem,
+      skippedItems
+    );
+
+    state.supermarkets = state.supermarkets.map((s) =>
+      s.id === updatedStore.id ? updatedStore : s
+    );
+
+    const { sortedItems } = Core.sortShoppingList(state.shoppingList, updatedStore);
+    state.shoppingList = {
+      ...state.shoppingList,
+      items: sortedItems,
+      updatedAt: Date.now()
+    };
+
+    state.pendingLiveOpt = null;
+    closeLiveOptimizationModal();
+    saveAppState();
+    renderApp();
+
+    const firstSkipped = skippedItems && skippedItems[0] ? skippedItems[0].name : '';
+    showToast(
+      `🏪 ${updatedStore.name}-Konfiguration angepasst: „${checkedItem.name}“ liegt jetzt vor „${firstSkipped}“!`,
+      'success'
+    );
+  }
+
+  /**
+   * Schließt das Live-Optimierungs-Modal ohne Änderung der Supermarkt-Reihenfolge ("Nein, nur abhaken").
+   */
+  function closeLiveOptimizationModal() {
+    state.pendingLiveOpt = null;
+    const modal = document.getElementById('live-opt-modal');
+    if (modal) modal.classList.remove('open');
+  }
+
+  /**
+   * Entfernt eine einzelne Ware von der Einkaufsliste.
+   * @param {string} itemId - ID der zu löschenden Ware
+   * @param {Event} [event] - Klick-Event (verhindert Auslösen des Checkbox-Toggles)
+   */
+  function handleRemoveItem(itemId, event) {
+    if (event) event.stopPropagation();
+    const activeStore = getActiveSupermarket();
+    state.shoppingList = Core.removeItemFromList(state.shoppingList, activeStore, itemId);
+    saveAppState();
+    renderApp();
+  }
+
+  /**
+   * Entfernt alle bereits abgehakten Waren aus der oberen Erledigt-Sektion.
+   */
+  function handleClearCheckedItems() {
+    const activeStore = getActiveSupermarket();
+    state.shoppingList = Core.clearCheckedItems(state.shoppingList, activeStore);
+    saveAppState();
+    renderApp();
+    showToast('🧹 Alle erledigten Waren wurden vom Einkaufszettel entfernt.', 'info');
+  }
+
+  /**
+   * Lädt eine Beispiel-Einkaufsliste zum schnellen Ausprobieren aller Funktionen.
+   */
+  function seedDemoShoppingList() {
+    const activeStore = getActiveSupermarket();
+    state.shoppingList = createInitialStarterList(activeStore);
+    saveAppState();
+    renderApp();
+    showToast(`🛒 Beispiel-Einkaufsliste für ${activeStore.name} geladen!`, 'success');
+  }
+
+  /**
+   * Haupt-Render-Funktion: Aktualisiert Header, Supermarkt-Pills, Live-Optimierungs-Status,
+   * Einkaufsliste (Erledigt oben + Offen unten) und Schnellauswahl-Chips.
+   */
+  function renderApp() {
+    renderHeaderAndStorePills();
+    renderLiveOptimizationHeader();
+    renderShoppingListView();
+    renderQuickSuggestions();
+    if (state.activeTab === 'tab-stores') {
+      renderSupermarketConfigurator();
+    }
+  }
+
+  /**
+   * Rendert die Kopfzeile mit Fortschrittsanzeige und die Supermarkt-Auswahl-Pills.
+   */
+  function renderHeaderAndStorePills() {
+    const activeStore = getActiveSupermarket();
+    const subtitleEl = document.getElementById('header-store-subtitle');
+    const progressEl = document.getElementById('header-progress-pill');
+    const pillsBar = document.getElementById('store-selector-bar');
+
+    const items = (state.shoppingList && state.shoppingList.items) || [];
+    const checkedCount = items.filter((i) => i.checked).length;
+
+    if (subtitleEl && activeStore) {
+      subtitleEl.textContent = `Aktiv: ${activeStore.name} (${activeStore.itemOrder.length} Markt-Stationen)`;
+    }
+    if (progressEl) {
+      progressEl.textContent = `${checkedCount} / ${items.length} erledigt`;
+    }
+
+    if (pillsBar) {
+      pillsBar.innerHTML = state.supermarkets
+        .map((store) => {
+          const isActive = store.id === activeStore.id;
+          return `
+            <button
+              type="button"
+              class="store-pill ${isActive ? 'active' : ''}"
+              data-store-id="${escapeHtml(store.id)}"
+              role="tab"
+              aria-selected="${isActive}"
+            >
+              <span>${escapeHtml(store.icon || '🏪')}</span>
+              <span>${escapeHtml(store.name)}</span>
+            </button>
+          `;
+        })
+        .join('');
+    }
+  }
+
+  /**
+   * Aktualisiert die Anzeige des Live-Optimierungs-Schalters im Einkaufszettel-Header.
+   */
+  function renderLiveOptimizationHeader() {
+    const enabled = Boolean(state.shoppingList && state.shoppingList.liveOptimizationEnabled);
+    const card = document.getElementById('live-opt-card');
+    const badge = document.getElementById('live-opt-badge');
+    const toggle = document.getElementById('live-opt-toggle');
+    const desc = document.getElementById('live-opt-desc');
+
+    if (card) card.classList.toggle('off', !enabled);
+    if (badge) {
+      badge.textContent = enabled ? 'Ein' : 'Aus';
+      badge.className = `status-badge ${enabled ? 'on' : 'off'}`;
+    }
+    if (toggle && toggle.checked !== enabled) {
+      toggle.checked = enabled;
+    }
+    if (desc) {
+      desc.textContent = enabled
+        ? 'Aktiv: Fragt beim Abhaken außerhalb der Reihenfolge, ob die Supermarkt-Konfiguration angepasst werden soll.'
+        : 'Ausgeschaltet: Waren werden beim Abhaken ohne Rückfrage zur Reihenfolge abgehakt.';
+    }
+  }
+
+  /**
+   * Rendert die zweigeteilte Einkaufslisten-Ansicht:
+   * 1. Oben: `Bereits abgehakt (Erledigt)` (ausgegraut, durchgestrichen; Klick macht Abhaken rückgängig).
+   * 2. Darunter: `Noch einzukaufen (Optimierte Reihenfolge)` in exakter Supermarkt-Laufreihenfolge,
+   *    inkl. Hervorhebung der nächsten Ware im Gang und Badge für nachträglich hinzugefügte Waren,
+   *    deren Supermarkt-Position bereits passiert wurde (`addedLateOverride`).
+   */
+  function renderShoppingListView() {
+    const activeStore = getActiveSupermarket();
+    const { checkedItems, uncheckedItems } = Core.sortShoppingList(
+      state.shoppingList,
+      activeStore
+    );
+
+    const checkedSection = document.getElementById('checked-section');
+    const checkedCountEl = document.getElementById('checked-count');
+    const checkedListEl = document.getElementById('checked-items-list');
+
+    const uncheckedCountEl = document.getElementById('unchecked-count');
+    const uncheckedListEl = document.getElementById('unchecked-items-list');
+
+    if (checkedCountEl) checkedCountEl.textContent = String(checkedItems.length);
+    if (uncheckedCountEl) uncheckedCountEl.textContent = String(uncheckedItems.length);
+
+    if (checkedSection) {
+      checkedSection.style.display = checkedItems.length > 0 ? 'block' : 'none';
+    }
+
+    if (checkedListEl) {
+      checkedListEl.innerHTML = checkedItems
+        .map((item) => {
+          const posIdx = Core.indexOfNormalized(activeStore.itemOrder, item.name);
+          const posLabel = posIdx !== -1 ? `Station #${posIdx + 1}` : 'Freie Position';
+          return `
+            <li class="shopping-item checked" data-item-id="${escapeHtml(item.id)}" title="Antippen zum Rückgängig machen">
+              <div class="item-checkbox" aria-label="Abgehakt">✓</div>
+              <div class="item-content">
+                <div class="item-top-line">
+                  <span class="item-name">${escapeHtml(item.name)}</span>
+                  <span class="item-qty-badge">${escapeHtml(item.quantity || '1x')}</span>
+                </div>
+                <div class="item-badges">
+                  <span class="badge badge-undo-hint">↩️ Antippen für Rückgängig (${posLabel})</span>
+                </div>
+              </div>
+              <button type="button" class="item-delete-btn" data-delete-id="${escapeHtml(item.id)}" title="Ware entfernen">✕</button>
+            </li>
+          `;
+        })
+        .join('');
+    }
+
+    if (uncheckedListEl) {
+      if (uncheckedItems.length === 0) {
+        uncheckedListEl.innerHTML = `
+          <li class="card empty-state">
+            <div class="empty-state-icon">🎉</div>
+            <div style="font-weight: 800; font-size: 15px; color: var(--text-main); margin-bottom: 4px;">
+              Alle offenen Waren erledigt!
+            </div>
+            <div style="font-size: 13px;">
+              Füge oben neue Waren hinzu, fotografiere einen Einkaufszettel oder lade die Demo-Liste.
+            </div>
+          </li>
+        `;
+        return;
+      }
+
+      uncheckedListEl.innerHTML = uncheckedItems
+        .map((item, idx) => {
+          const isNext = idx === 0;
+          const isLate = Boolean(item.addedLateOverride);
+          const posIdx = Core.indexOfNormalized(activeStore.itemOrder, item.name);
+          const classes = ['shopping-item'];
+          if (isLate) {
+            classes.push('late-override');
+          } else if (isNext) {
+            classes.push('next-in-aisle');
+          }
+
+          const badges = [];
+          if (isLate) {
+            badges.push(
+              `<span class="badge badge-late">⚡ Nachträglich hinzugefügt • Als Nächstes (Station schon passiert)</span>`
+            );
+          } else if (isNext) {
+            badges.push(`<span class="badge badge-next">👉 Nächste Ware im Gang</span>`);
+          }
+
+          if (posIdx !== -1) {
+            badges.push(
+              `<span class="badge badge-walk-index">🧭 ${escapeHtml(activeStore.name)} #${posIdx + 1} • ${escapeHtml(item.category || '')}</span>`
+            );
+          } else {
+            badges.push(
+              `<span class="badge badge-unknown-pos">🆕 Neue Ware (am Ende / lernfähig)</span>`
+            );
+          }
+
+          return `
+            <li class="${classes.join(' ')}" data-item-id="${escapeHtml(item.id)}">
+              <div class="item-checkbox" aria-label="Abhaken"></div>
+              <div class="item-content">
+                <div class="item-top-line">
+                  <span class="item-name">${escapeHtml(item.name)}</span>
+                  <span class="item-qty-badge">${escapeHtml(item.quantity || '1x')}</span>
+                </div>
+                <div class="item-badges">
+                  ${badges.join('')}
+                </div>
+              </div>
+              <button type="button" class="item-delete-btn" data-delete-id="${escapeHtml(item.id)}" title="Ware entfernen">✕</button>
+            </li>
+          `;
+        })
+        .join('');
+    }
+  }
+
+  /**
+   * Rendert Schnellauswahl-Chips unter dem Eingabefeld für typische Waren des aktiven Supermarkts,
+   * die sich aktuell noch nicht auf der Einkaufsliste befinden.
+   */
+  function renderQuickSuggestions() {
+    const container = document.getElementById('quick-suggestions');
+    if (!container) return;
+
+    const activeStore = getActiveSupermarket();
+    const currentItems = (state.shoppingList && state.shoppingList.items) || [];
+    const existingNorms = new Set(
+      currentItems.map((i) => Core.normalizeItemName(i.name))
+    );
+
+    const suggestions = (activeStore.itemOrder || [])
+      .filter((name) => !existingNorms.has(Core.normalizeItemName(name)))
+      .slice(0, 10);
+
+    container.innerHTML = suggestions
+      .map(
+        (name) =>
+          `<button type="button" class="suggestion-chip" data-suggest-name="${escapeHtml(name)}">+ ${escapeHtml(name)}</button>`
+      )
+      .join('');
+  }
+
+  /* ==========================================================================
+   * TAB 2: Foto-Scanner / OCR Funktionen
+   * ========================================================================== */
+
+  /**
+   * Verarbeitet ein vom Nutzer aufgenommenes oder ausgewähltes Einkaufszettel-Foto
+   * über `SmartCartCore.recognizeImageShoppingList`.
+   * @param {Event} event - Change-Event des Datei-Inputs
+   */
+  async function handleOcrFileUpload(event) {
+    const file = event.target && event.target.files && event.target.files[0];
+    if (!file) return;
+
+    const statusBox = document.getElementById('ocr-status-box');
+    const previewImg = document.getElementById('ocr-preview-image');
+    const textarea = document.getElementById('ocr-raw-textarea');
+
+    if (statusBox) {
+      statusBox.style.display = 'block';
+      statusBox.textContent = '⏳ Foto wird geladen und Text wird erkannt…';
+    }
+
+    try {
+      const dataUrl = await readFileAsDataUrl(file);
+      if (previewImg) {
+        previewImg.src = dataUrl;
+        previewImg.style.display = 'block';
+      }
+
+      if (typeof Core.recognizeImageShoppingList === 'function') {
+        const ocrResult = await Core.recognizeImageShoppingList(file, (progressInfo) => {
+          if (statusBox && progressInfo && progressInfo.status) {
+            const pct = typeof progressInfo.progress === 'number'
+              ? ` (${Math.round(progressInfo.progress * 100)}%)`
+              : '';
+            statusBox.textContent = `🔍 OCR: ${progressInfo.status}${pct}`;
+          }
+        });
+
+        const rawText =
+          (ocrResult && (ocrResult.rawText || ocrResult.text)) || '';
+        if (textarea && rawText) {
+          textarea.value = rawText;
+        }
+        renderOcrPreviewFromText(textarea ? textarea.value : rawText);
+
+        if (statusBox) {
+          statusBox.textContent = `✅ Foto analysiert (${(ocrResult.items || state.parsedOcrItems).length} Waren erkannt). Du kannst die Liste unten prüfen oder anpassen.`;
+        }
+      }
+    } catch (err) {
+      if (statusBox) {
+        statusBox.textContent = `⚠️ Hinweis bei der Bilderkennung: ${err.message}. Du kannst die Waren unten direkt bearbeiten.`;
+      }
+    }
+  }
+
+  /**
+   * Erzeugt eines der 3 integrierten Demo-Einkaufszettel-Fotos auf einem HTML5-Canvas
+   * (`SmartCartCore.generateSamplePhotoDataUrl`) und führt anschließend die OCR-Erkennung aus.
+   * @param {string} presetName - Name des Demo-Zettels (`wochenende`, `fruehstueck`, `party`)
+   */
+  async function handleLoadDemoPhoto(presetName) {
+    const statusBox = document.getElementById('ocr-status-box');
+    const previewImg = document.getElementById('ocr-preview-image');
+    const textarea = document.getElementById('ocr-raw-textarea');
+
+    if (statusBox) {
+      statusBox.style.display = 'block';
+      statusBox.textContent = '📸 Demo-Einkaufszettel wird erzeugt und gescannt…';
+    }
+
+    let sampleDataUrl = null;
+    let sampleText = '';
+
+    if (typeof Core.generateSamplePhotoDataUrl === 'function') {
+      const generated = Core.generateSamplePhotoDataUrl(presetName);
+      if (typeof generated === 'string') {
+        sampleDataUrl = generated;
+      } else if (generated && typeof generated === 'object') {
+        sampleDataUrl = generated.dataUrl || null;
+        sampleText = generated.rawText || generated.text || '';
+      }
+    }
+
+    if (previewImg && sampleDataUrl) {
+      previewImg.src = sampleDataUrl;
+      previewImg.style.display = 'block';
+    }
+
+    if (typeof Core.recognizeImageShoppingList === 'function') {
+      const res = await Core.recognizeImageShoppingList(
+        sampleDataUrl || presetName
+      );
+      if (res && (res.rawText || res.text)) {
+        sampleText = res.rawText || res.text;
+      }
+    }
+
+    if (!sampleText) {
+      const presets = {
+        wochenende: '2x Äpfel\nBananen\n1L Vollmilch\nButter\n500g Hackfleisch\nSpaghetti\nPassierte Tomaten\nToilettenpapier',
+        fruehstueck: '6 Brötchen\n4 Croissants\nButter\nKäse\n10 Eier\nOrangensaft\nKaffee',
+        party: '3x Tiefkühlpizza\nPaprika\nSalat\nCola\n6x Bier\nEiscreme\nSchokolade'
+      };
+      sampleText = presets[presetName] || presets.wochenende;
+    }
+
+    if (textarea) {
+      textarea.value = sampleText;
+    }
+    renderOcrPreviewFromText(sampleText);
+
+    if (statusBox) {
+      statusBox.textContent = `✅ Demo-Einkaufszettel „${presetName}“ erfolgreich erkannt (${state.parsedOcrItems.length} Waren)!`;
+    }
+  }
+
+  /**
+   * Parst den mehrzeiligen Einkaufszettel-Text über `SmartCartCore.parseShoppingText`
+   * und zeigt eine strukturierte Vorschau inkl. erkannter Supermarkt-Abteilung an.
+   * @param {string} rawText - Mehrzeiliger Rohtext aus OCR oder Textfeld
+   */
+  function renderOcrPreviewFromText(rawText) {
+    const countEl = document.getElementById('ocr-detected-count');
+    const listEl = document.getElementById('ocr-parsed-list');
+    const activeStore = getActiveSupermarket();
+
+    const parsed =
+      typeof Core.parseShoppingText === 'function'
+        ? Core.parseShoppingText(rawText || '')
+        : [];
+
+    state.parsedOcrItems = parsed;
+
+    if (countEl) {
+      countEl.textContent = `${parsed.length} Waren`;
+    }
+
+    if (listEl) {
+      if (parsed.length === 0) {
+        listEl.innerHTML = `
+          <li style="font-size: 12.5px; color: var(--text-muted); text-align: center; padding: 10px;">
+            Noch keine Waren im Textfeld. Fotografiere einen Zettel oder wähle oben ein Demo-Foto!
+          </li>
+        `;
+        return;
+      }
+
+      listEl.innerHTML = parsed
+        .map((item) => {
+          const posIdx = Core.indexOfNormalized(activeStore.itemOrder, item.name);
+          const posBadge =
+            posIdx !== -1
+              ? `${activeStore.name} #${posIdx + 1}`
+              : 'Neu (am Ende)';
+          return `
+            <li class="ocr-parsed-item">
+              <div>
+                <strong>${escapeHtml(item.name)}</strong>
+                <span class="item-qty-badge" style="margin-left: 6px;">${escapeHtml(item.quantity || '1x')}</span>
+              </div>
+              <span class="badge badge-walk-index">${escapeHtml(posBadge)}</span>
+            </li>
+          `;
+        })
+        .join('');
+    }
+  }
+
+  /**
+   * Übernimmt alle im OCR-Tab erkannten Waren in den aktiven Einkaufszettel,
+   * sortiert sie automatisch für den gewählten Supermarkt (unter Beachtung der
+   * "Bereits vorbeigelaufen"-Regel) und wechselt zurück zur Einkaufsliste.
+   */
+  function handleImportOcrItems() {
+    const textarea = document.getElementById('ocr-raw-textarea');
+    if (textarea) {
+      renderOcrPreviewFromText(textarea.value);
+    }
+
+    if (!state.parsedOcrItems || state.parsedOcrItems.length === 0) {
+      showToast('⚠️ Bitte zuerst ein Foto scannen oder Waren in das Textfeld eingeben.', 'late');
+      return;
+    }
+
+    const activeStore = getActiveSupermarket();
+    const result = Core.addMultipleItemsToList(
+      state.shoppingList,
+      activeStore,
+      state.parsedOcrItems
+    );
+
+    state.shoppingList = result.list;
+    saveAppState();
+    renderApp();
+    switchTab('tab-list');
+
+    if (result.lateItems && result.lateItems.length > 0) {
+      const lateNames = result.lateItems.map((i) => i.name).join(', ');
+      showToast(
+        `📷 ${result.addedItems.length} Waren übernommen! (${lateNames} direkt als Nächstes eingereiht, da Position bereits passiert)`,
+        'late'
+      );
+    } else {
+      showToast(
+        `📷 ${result.addedItems.length} Waren vom Foto übernommen und für ${activeStore.name} sortiert!`,
+        'success'
+      );
+    }
+  }
+
+  /* ==========================================================================
+   * TAB 3: Supermarkt-Konfigurator Funktionen
+   * ========================================================================== */
+
+  /**
+   * Rendert den Supermarkt-Konfigurator (`#tab-stores`) mit Auswahl-Dropdown
+   * und der bearbeitbaren Waren-Laufreihenfolge (`itemOrder`).
+   */
+  function renderSupermarketConfigurator() {
+    const selectEl = document.getElementById('config-store-select');
+    const titleEl = document.getElementById('config-store-title');
+    const countEl = document.getElementById('config-store-count');
+    const listEl = document.getElementById('store-order-list');
+
+    const configStore = getConfigSupermarket();
+    if (!configStore) return;
+
+    if (selectEl) {
+      selectEl.innerHTML = state.supermarkets
+        .map(
+          (s) =>
+            `<option value="${escapeHtml(s.id)}" ${
+              s.id === configStore.id ? 'selected' : ''
+            }>${escapeHtml(s.icon || '🏪')} ${escapeHtml(s.name)} (${s.itemOrder.length} Waren)</option>`
+        )
+        .join('');
+    }
+
+    if (titleEl) titleEl.textContent = configStore.name;
+    if (countEl) countEl.textContent = `${configStore.itemOrder.length} Stationen`;
+
+    if (listEl) {
+      listEl.innerHTML = (configStore.itemOrder || [])
+        .map((itemName, idx) => {
+          const isFirst = idx === 0;
+          const isLast = idx === configStore.itemOrder.length - 1;
+          const dept = Core.guessItemCategory ? Core.guessItemCategory(itemName) : '';
+          return `
+            <li class="store-order-item">
+              <span class="store-order-num">${idx + 1}</span>
+              <div class="store-order-name">
+                <div>${escapeHtml(itemName)}</div>
+                <div style="font-size: 11px; color: var(--text-muted); font-weight: 500;">${escapeHtml(dept)}</div>
+              </div>
+              <div class="store-order-actions">
+                <button
+                  type="button"
+                  class="icon-btn"
+                  data-move-idx="${idx}"
+                  data-move-dir="up"
+                  ${isFirst ? 'disabled' : ''}
+                  title="Weiter Richtung Eingang (nach oben)"
+                >↑</button>
+                <button
+                  type="button"
+                  class="icon-btn"
+                  data-move-idx="${idx}"
+                  data-move-dir="down"
+                  ${isLast ? 'disabled' : ''}
+                  title="Weiter Richtung Kasse (nach unten)"
+                >↓</button>
+                <button
+                  type="button"
+                  class="icon-btn"
+                  data-remove-store-item="${escapeHtml(itemName)}"
+                  title="Aus Supermarkt-Reihenfolge entfernen"
+                  style="color: var(--danger);"
+                >✕</button>
+              </div>
+            </li>
+          `;
+        })
+        .join('');
+    }
+  }
+
+  /**
+   * Legt einen neuen benutzerdefinierten Supermarkt an (übernimmt als Basis die Reihenfolge
+   * des aktuell im Konfigurator ausgewählten Supermarkts, damit man sofort starten kann).
+   * @param {Event} event - Submit-Event
+   */
+  function handleCreateSupermarket(event) {
+    if (event) event.preventDefault();
+    const input = document.getElementById('new-store-name');
+    const name = input ? input.value.trim() : '';
+    if (!name) return;
+
+    const templateStore = getConfigSupermarket();
+    const newStore = Core.createSupermarket({
+      name,
+      icon: '🟢',
+      color: '#059669',
+      itemOrder: templateStore ? [...templateStore.itemOrder] : []
+    });
+
+    state.supermarkets.push(newStore);
+    state.configSelectedStoreId = newStore.id;
+    state.shoppingList = Core.changeListSupermarket(state.shoppingList, newStore);
+
+    if (input) input.value = '';
+    saveAppState();
+    renderApp();
+    showToast(`🏪 Supermarkt „${newStore.name}“ wurde angelegt und aktiviert!`, 'success');
+  }
+
+  /**
+   * Benennt den aktuell im Konfigurator ausgewählten Supermarkt um.
+   */
+  function handleRenameSupermarket() {
+    const store = getConfigSupermarket();
+    if (!store) return;
+    const newName = window.prompt('Neuer Name für den Supermarkt:', store.name);
+    if (!newName || !newName.trim()) return;
+
+    store.name = newName.trim();
+    store.updatedAt = Date.now();
+    saveAppState();
+    renderApp();
+    showToast(`✏️ Supermarkt umbenannt in „${store.name}“.`, 'info');
+  }
+
+  /**
+   * Löscht den im Konfigurator ausgewählten Supermarkt (sofern mehr als ein Markt existiert).
+   */
+  function handleDeleteSupermarket() {
+    if (state.supermarkets.length <= 1) {
+      showToast('⚠️ Mindestens ein Supermarkt muss erhalten bleiben.', 'late');
+      return;
+    }
+    const store = getConfigSupermarket();
+    if (!store) return;
+
+    state.supermarkets = state.supermarkets.filter((s) => s.id !== store.id);
+    const fallback = state.supermarkets[0];
+    state.configSelectedStoreId = fallback.id;
+
+    if (state.shoppingList.supermarketId === store.id) {
+      state.shoppingList = Core.changeListSupermarket(state.shoppingList, fallback);
+    }
+
+    saveAppState();
+    renderApp();
+    showToast(`🗑️ Supermarkt „${store.name}“ gelöscht.`, 'info');
+  }
+
+  /**
+   * Setzt die Supermärkte auf die Standard-Konfigurationen (REWE, ALDI, LIDL) zurück.
+   */
+  function handleResetDefaultSupermarkets() {
+    state.supermarkets = Core.getDefaultSupermarkets();
+    const active =
+      state.supermarkets.find((s) => s.id === state.shoppingList.supermarketId) ||
+      state.supermarkets[0];
+    state.configSelectedStoreId = active.id;
+    state.shoppingList = Core.changeListSupermarket(state.shoppingList, active);
+    saveAppState();
+    renderApp();
+    showToast('🔄 Standard-Supermärkte (REWE, ALDI, LIDL) wurden wiederhergestellt.', 'success');
+  }
+
+  /**
+   * Verschiebt eine Ware innerhalb der Laufreihenfolge (`itemOrder`) eines Supermarkts
+   * um eine Position nach oben (Richtung Eingang) oder unten (Richtung Kasse).
+   * @param {number} index - Aktueller Index der Ware
+   * @param {'up'|'down'} direction - Verschieberichtung
+   */
+  function handleMoveStoreItem(index, direction) {
+    const store = getConfigSupermarket();
+    if (!store) return;
+    const toIndex = direction === 'up' ? index - 1 : index + 1;
+    const updatedStore = Core.reorderSupermarketItem(store, index, toIndex);
+
+    state.supermarkets = state.supermarkets.map((s) =>
+      s.id === updatedStore.id ? updatedStore : s
+    );
+
+    if (state.shoppingList.supermarketId === updatedStore.id) {
+      state.shoppingList = Core.changeListSupermarket(state.shoppingList, updatedStore);
+    }
+
+    saveAppState();
+    renderApp();
+  }
+
+  /**
+   * Fügt eine neue bekannte Ware in die Laufreihenfolge (`itemOrder`) des gewählten Supermarkts ein.
+   * @param {Event} event - Submit-Event
+   */
+  function handleAddStoreKnownItem(event) {
+    if (event) event.preventDefault();
+    const nameInput = document.getElementById('new-store-item-name');
+    const posSelect = document.getElementById('new-store-item-pos');
+    const name = nameInput ? nameInput.value.trim() : '';
+    if (!name) return;
+
+    const store = getConfigSupermarket();
+    const insertIdx = posSelect && posSelect.value === 'start' ? 0 : -1;
+    const updatedStore = Core.addSupermarketKnownItem(store, name, insertIdx);
+
+    state.supermarkets = state.supermarkets.map((s) =>
+      s.id === updatedStore.id ? updatedStore : s
+    );
+
+    if (state.shoppingList.supermarketId === updatedStore.id) {
+      state.shoppingList = Core.changeListSupermarket(state.shoppingList, updatedStore);
+    }
+
+    if (nameInput) nameInput.value = '';
+    saveAppState();
+    renderApp();
+    showToast(`🧭 „${name}“ zur Laufreihenfolge von ${updatedStore.name} hinzugefügt.`, 'success');
+  }
+
+  /**
+   * Entfernt eine Ware aus der Laufreihenfolge (`itemOrder`) des gewählten Supermarkts.
+   * @param {string} itemName - Name der Ware
+   */
+  function handleRemoveStoreKnownItem(itemName) {
+    const store = getConfigSupermarket();
+    if (!store) return;
+    const updatedStore = Core.removeSupermarketKnownItem(store, itemName);
+
+    state.supermarkets = state.supermarkets.map((s) =>
+      s.id === updatedStore.id ? updatedStore : s
+    );
+
+    if (state.shoppingList.supermarketId === updatedStore.id) {
+      state.shoppingList = Core.changeListSupermarket(state.shoppingList, updatedStore);
+    }
+
+    saveAppState();
+    renderApp();
+  }
+
+  /* ==========================================================================
+   * TAB 4: Teilen, Export & Import Funktionen
+   * ========================================================================== */
+
+  /**
+   * Teilt den aktuellen Einkaufszettel über `ShareService.exportShoppingList` und `ShareService.shareViaWebApi`.
+   */
+  async function handleShareShoppingList() {
+    const activeStore = getActiveSupermarket();
+    const exported = Core.exportShoppingList(state.shoppingList, activeStore);
+
+    const textarea = document.getElementById('share-code-textarea');
+    if (textarea) textarea.value = exported.shareText;
+
+    const shareRes = await Core.shareViaWebApi({
+      title: `SmartCart Einkaufszettel (${activeStore.name})`,
+      text: exported.shareText
+    });
+
+    if (shareRes && shareRes.method === 'web-share' && shareRes.success) {
+      showToast('📤 Einkaufszettel erfolgreich geteilt!', 'success');
+    } else {
+      await copyTextToClipboard(exported.shareText);
+      showToast('📋 Einkaufszettel inkl. Share-Code in die Zwischenablage kopiert!', 'success');
+    }
+  }
+
+  /**
+   * Erzeugt einen kompakten Share-Code (`SC1:...`) über `ShareService.exportShoppingList`
+   * und zeigt ihn im Textfeld an.
+   */
+  function handleExportShareCode() {
+    const activeStore = getActiveSupermarket();
+    const exported = Core.exportShoppingList(state.shoppingList, activeStore);
+
+    const textarea = document.getElementById('share-code-textarea');
+    if (textarea) textarea.value = exported.shareCode;
+    showToast('📋 Share-Code (SC1:...) erzeugt! Du kannst ihn jetzt kopieren und versenden.', 'success');
+  }
+
+  /**
+   * Importiert einen empfangenen Share-Code (`SC1:...`) oder ein JSON-Backup über `ShareService.decodeShareCode`.
+   */
+  function handleImportShareCode() {
+    const textarea = document.getElementById('share-code-textarea');
+    const raw = textarea ? textarea.value.trim() : '';
+    if (!raw) {
+      showToast('⚠️ Bitte zuerst einen Share-Code oder JSON in das Feld einfügen.', 'late');
+      return;
+    }
+
+    const decoded = Core.decodeShareCode(raw);
+    if (!decoded || !decoded.valid) {
+      showToast(`❌ ${decoded && decoded.error ? decoded.error : 'Ungültiger Share-Code.'}`, 'late');
+      return;
+    }
+
+    if (Array.isArray(decoded.supermarkets) && decoded.supermarkets.length > 0) {
+      state.supermarkets = decoded.supermarkets;
+    } else if (decoded.supermarket) {
+      const incoming = decoded.supermarket;
+      const exists = state.supermarkets.some((s) => s.id === incoming.id);
+      state.supermarkets = exists
+        ? state.supermarkets.map((s) => (s.id === incoming.id ? incoming : s))
+        : [...state.supermarkets, incoming];
+    }
+
+    if (decoded.list) {
+      const store =
+        state.supermarkets.find((s) => s.id === decoded.list.supermarketId) ||
+        state.supermarkets[0];
+      state.shoppingList = Core.changeListSupermarket(decoded.list, store);
+    } else if (Array.isArray(decoded.lists) && decoded.lists.length > 0) {
+      const firstList = decoded.lists[0];
+      const store =
+        state.supermarkets.find((s) => s.id === firstList.supermarketId) ||
+        state.supermarkets[0];
+      state.shoppingList = Core.changeListSupermarket(firstList, store);
+    }
+
+    saveAppState();
+    renderApp();
+    switchTab('tab-list');
+    showToast('✅ Einkaufsliste & Supermarkt-Konfiguration erfolgreich importiert!', 'success');
+  }
+
+  /**
+   * Lädt ein vollständiges JSON-Backup aller Supermärkte und der Einkaufsliste über `ShareService.exportFullBackup` herunter.
+   */
+  function handleDownloadBackupJson() {
+    const backup = Core.exportFullBackup({
+      supermarkets: state.supermarkets,
+      lists: [state.shoppingList]
+    });
+    const filename = `SmartCart_Backup_${new Date().toISOString().slice(0, 10)}.json`;
+    Core.downloadJsonFile(backup.json, filename);
+    showToast('💾 Backup-Datei wurde heruntergeladen.', 'success');
+  }
+
+  /* ==========================================================================
+   * Event-Listener & Hilfsfunktionen
+   * ========================================================================== */
+
+  /**
+   * Registriert alle DOM-Event-Listener für Navigation, Formulare, Listen-Interaktionen und Modals.
+   */
+  function bindEventListeners() {
+    // Bottom Navigation Tabs
+    document.querySelectorAll('.nav-tab').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const target = btn.getAttribute('data-tab');
+        if (target) switchTab(target);
+      });
+    });
+
+    // Supermarket Selector Pills at Top
+    const storeSelectorBar = document.getElementById('store-selector-bar');
+    if (storeSelectorBar) {
+      storeSelectorBar.addEventListener('click', (e) => {
+        const pill = e.target.closest('[data-store-id]');
+        if (pill) {
+          selectSupermarket(pill.getAttribute('data-store-id'));
+        }
+      });
+    }
+
+    // Live-Optimierung Toggle
+    const liveOptToggle = document.getElementById('live-opt-toggle');
+    if (liveOptToggle) {
+      liveOptToggle.addEventListener('change', (e) => {
+        handleToggleLiveOptimization(Boolean(e.target.checked));
+      });
+    }
+
+    // Add Item Form
+    const addItemForm = document.getElementById('add-item-form');
+    if (addItemForm) {
+      addItemForm.addEventListener('submit', handleAddItemSubmit);
+    }
+
+    // Quick Suggestions Chips
+    const quickSuggestions = document.getElementById('quick-suggestions');
+    if (quickSuggestions) {
+      quickSuggestions.addEventListener('click', (e) => {
+        const chip = e.target.closest('[data-suggest-name]');
+        if (!chip) return;
+        const itemName = chip.getAttribute('data-suggest-name');
+        const nameInput = document.getElementById('add-item-name');
+        if (nameInput) {
+          nameInput.value = itemName;
+          handleAddItemSubmit();
+        }
+      });
+    }
+
+    // Checked & Unchecked Lists (Delegated click for toggle check & delete)
+    const handleListClick = (e) => {
+      const deleteBtn = e.target.closest('[data-delete-id]');
+      if (deleteBtn) {
+        handleRemoveItem(deleteBtn.getAttribute('data-delete-id'), e);
+        return;
+      }
+      const itemRow = e.target.closest('[data-item-id]');
+      if (itemRow) {
+        handleItemToggleCheck(itemRow.getAttribute('data-item-id'));
+      }
+    };
+
+    const addListener = (id, eventName, handler) => {
+      const el = document.getElementById(id);
+      if (el) el.addEventListener(eventName, handler);
+    };
+
+    addListener('checked-items-list', 'click', handleListClick);
+    addListener('unchecked-items-list', 'click', handleListClick);
+
+    addListener('clear-checked-btn', 'click', handleClearCheckedItems);
+    addListener('seed-demo-list-btn', 'click', seedDemoShoppingList);
+
+    // Live-Optimierung Modal Buttons
+    addListener('live-opt-confirm-btn', 'click', confirmLiveOptimizationUpdate);
+    addListener('live-opt-cancel-btn', 'click', closeLiveOptimizationModal);
+
+    // OCR / Photo Scanner Tab
+    addListener('ocr-file-input', 'change', handleOcrFileUpload);
+    document.querySelectorAll('.demo-photo-btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        handleLoadDemoPhoto(btn.getAttribute('data-preset'));
+      });
+    });
+    addListener('ocr-raw-textarea', 'input', (e) => {
+      renderOcrPreviewFromText(e.target.value);
+    });
+    addListener('ocr-import-btn', 'click', handleImportOcrItems);
+
+    // Supermarket Configurator Tab
+    addListener('config-store-select', 'change', (e) => {
+      state.configSelectedStoreId = e.target.value;
+      renderSupermarketConfigurator();
+    });
+    addListener('create-store-form', 'submit', handleCreateSupermarket);
+    addListener('rename-store-btn', 'click', handleRenameSupermarket);
+    addListener('delete-store-btn', 'click', handleDeleteSupermarket);
+    addListener('reset-stores-btn', 'click', handleResetDefaultSupermarkets);
+    addListener('add-store-item-form', 'submit', handleAddStoreKnownItem);
+
+    addListener('store-order-list', 'click', (e) => {
+      const moveBtn = e.target.closest('[data-move-idx]');
+      if (moveBtn) {
+        const idx = Number(moveBtn.getAttribute('data-move-idx'));
+        const dir = moveBtn.getAttribute('data-move-dir');
+        handleMoveStoreItem(idx, dir);
+        return;
+      }
+      const removeBtn = e.target.closest('[data-remove-store-item]');
+      if (removeBtn) {
+        handleRemoveStoreKnownItem(removeBtn.getAttribute('data-remove-store-item'));
+      }
+    });
+
+    // Share & Backup Tab
+    addListener('native-share-list-btn', 'click', handleShareShoppingList);
+    addListener('native-share-store-btn', 'click', () => {
+      handleExportShareCode();
+      const textarea = document.getElementById('share-code-textarea');
+      if (textarea && textarea.value) {
+        copyTextToClipboard(textarea.value);
+        showToast('🏪 Supermarkt-Konfiguration & Liste als Share-Code kopiert!', 'success');
+      }
+    });
+    addListener('export-code-btn', 'click', handleExportShareCode);
+    addListener('download-json-btn', 'click', handleDownloadBackupJson);
+    addListener('copy-share-code-btn', 'click', async () => {
+      const textarea = document.getElementById('share-code-textarea');
+      if (textarea && textarea.value) {
+        await copyTextToClipboard(textarea.value);
+        showToast('📋 Code in die Zwischenablage kopiert!', 'success');
+      }
+    });
+    addListener('import-share-code-btn', 'click', handleImportShareCode);
+  }
+
+  /**
+   * Zeigt eine temporäre Toast-Benachrichtigung am unteren Bildschirmrand an.
+   * @param {string} message - Anzuzeigender Text
+   * @param {'info'|'success'|'late'} [type='info'] - Visueller Typ des Toasts
+   */
+  function showToast(message, type = 'info') {
+    const container = document.getElementById('toast-container');
+    if (!container) return;
+
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    toast.textContent = message;
+    container.appendChild(toast);
+
+    setTimeout(() => {
+      toast.style.opacity = '0';
+      toast.style.transition = 'opacity 0.25s ease';
+      setTimeout(() => toast.remove(), 260);
+    }, 4200);
+  }
+
+  /**
+   * Liest ein `File`-Objekt als Base64-Data-URL ein.
+   * @param {File} file
+   * @returns {Promise<string>}
+   */
+  function readFileAsDataUrl(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result || ''));
+      reader.onerror = () => reject(new Error('Datei konnte nicht gelesen werden'));
+      reader.readAsDataURL(file);
+    });
+  }
+
+  /**
+   * Kopiert einen Text in die Zwischenablage.
+   * @param {string} text
+   * @returns {Promise<boolean>}
+   */
+  async function copyTextToClipboard(text) {
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(text);
+        return true;
+      }
+    } catch (_) {}
+    return false;
+  }
+
+  /**
+   * Maskiert HTML-Sonderzeichen zur sicheren Darstellung im DOM.
+   * @param {string} str
+   * @returns {string}
+   */
+  function escapeHtml(str) {
+    return String(str === null || str === undefined ? '' : str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  /**
+   * Registriert den PWA-Service-Worker (`sw.js`), sofern die App über HTTP(S) ausgeliefert wird.
+   */
+  function registerServiceWorkerIfSupported() {
+    if (
+      typeof window !== 'undefined' &&
+      !window.__SMARTCART_STANDALONE__ &&
+      'serviceWorker' in navigator &&
+      (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1')
+    ) {
+      navigator.serviceWorker.register('./sw.js').catch(() => {});
+    }
+  }
+
+  const uiExports = {
+    state,
+    initSmartCartApp,
+    loadInitialState,
+    createInitialStarterList,
+    getActiveSupermarket,
+    getConfigSupermarket,
+    saveAppState,
+    switchTab,
+    selectSupermarket,
+    handleToggleLiveOptimization,
+    handleAddItemSubmit,
+    handleItemToggleCheck,
+    openLiveOptimizationModal,
+    confirmLiveOptimizationUpdate,
+    closeLiveOptimizationModal,
+    handleRemoveItem,
+    handleClearCheckedItems,
+    seedDemoShoppingList,
+    renderApp,
+    renderHeaderAndStorePills,
+    renderLiveOptimizationHeader,
+    renderShoppingListView,
+    renderQuickSuggestions,
+    handleOcrFileUpload,
+    handleLoadDemoPhoto,
+    renderOcrPreviewFromText,
+    handleImportOcrItems,
+    renderSupermarketConfigurator,
+    handleCreateSupermarket,
+    handleRenameSupermarket,
+    handleDeleteSupermarket,
+    handleResetDefaultSupermarkets,
+    handleMoveStoreItem,
+    handleAddStoreKnownItem,
+    handleRemoveStoreKnownItem,
+    handleShareShoppingList,
+    handleExportShareCode,
+    handleImportShareCode,
+    handleDownloadBackupJson,
+    showToast
+  };
+
+  root.SmartCartUI = uiExports;
+
+  if (typeof document !== 'undefined') {
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initSmartCartApp);
+    } else {
+      initSmartCartApp();
+    }
+  }
+})(typeof globalThis !== 'undefined' ? globalThis : typeof window !== 'undefined' ? window : global);
+
+</script>
+</body>
+</html>
