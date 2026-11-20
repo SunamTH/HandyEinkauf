@@ -2165,7 +2165,7 @@
 
   /**
    * Teilt den aktuellen Einkaufszettel als `.smartcart.json`-Datei über das OS-Share-Sheet
-   * (z. B. WhatsApp, Mail, Messenger). Falls direktes Datei-Teilen vom Browser nicht unterstützt wird,
+   * (z. B. WhatsApp, Mail, Messenger). Falls direktes Datei-Teilen aktuell nicht verfügbar ist,
    * wird die Datei automatisch gespeichert, damit sie manuell versendet werden kann.
    */
   async function handleShareShoppingListFile() {
@@ -2184,7 +2184,7 @@
       showToast(`📤 Datei „${res.filename}“ erfolgreich geteilt!`, 'success');
     } else if (res.fallbackSaved) {
       showToast(
-        `💾 Direktes Datei-Teilen wird von diesem Browser nicht unterstützt – „${res.filename}“ wurde stattdessen gespeichert und kann per WhatsApp/Mail versendet werden.`,
+        `💾 Direktes Datei-Teilen ist hier aktuell nicht verfügbar – „${res.filename}“ wurde stattdessen gespeichert und kann per WhatsApp/Mail versendet werden.`,
         'info'
       );
     } else {

@@ -1,6 +1,6 @@
 # 📐 SmartCart – Gesamtarchitektur, Algorithmen & Vollständige Funktionsreferenz
 
-**Version:** `1.1.0`
+**Version:** `1.1.1`
 
 Dieses Dokument beschreibt die technische Gesamtarchitektur, die mathematisch-logischen Algorithmen der Supermarkt-Laufweg-Optimierung (inklusive Spezifikations-Matching, Behandlung unbekannter Waren, Drag-and-Drop Auto-Scroll und rein dateibasiertem Listen-Export/-Import) sowie **jedes einzelne Modul und jede einzelne Funktion** der SmartCart Einkaufslisten-App (Aufgabe, Parameter, Rückgabewerte und konkrete technische Umsetzung). Darüber hinaus enthält es die Roadmap zur Weiterentwicklung (Echtzeit-Kollaboration, Store-Deployment) sowie die Anleitung für das GitHub-Projekt.
 
@@ -44,8 +44,8 @@ SmartCart folgt einer strikten **Clean-Architecture-Trennung** zwischen einer ko
 flowchart TB
     subgraph CrossPlatform["📱 Cross-Platform Auslieferung (Android, iOS & Web)"]
         Standalone["dist/SmartCart_Handy_App.html<br/>(Eigenständige Einzeldatei inkl. Tesseract CDN)"]
-        PWA["PWA (index.html + manifest.json + sw.js v2)<br/>(Offline-fähig, Home-Screen-App)"]
-        Capacitor["Capacitor Native Runtime<br/>(Android APK & iOS App Wrapper)"]
+        PWA["PWA (index.html + manifest.json + sw.js v3)<br/>(Offline-fähig, Home-Screen-App)"]
+        Capacitor["Capacitor 6 Native Runtime<br/>(Android APK inkl. @capacitor/share & @capacitor/filesystem)"]
     end
 
     subgraph UILayer["🎨 Mobile UI Layer (src/ui/)"]
@@ -92,7 +92,7 @@ flowchart TB
    - `ShareService` realisiert den **ausschließlich dateibasierten** Export und Import von Einkaufslisten im Format `.smartcart.json` (Format-Version 2, abwärtskompatibel zu v1-Dateien). Exportierte Dateien werden auf dem Gerät gespeichert (`saveShoppingListFile` via Capacitor Filesystem oder Browser-Blob-Download) oder direkt als Datei über WhatsApp, E-Mail und Messenger geteilt (`shareShoppingListFile` via Capacitor Share+Filesystem oder Web Share API Level 2 `navigator.share({ files })` mit `canShare`-Prüfung). Alle älteren Share-Methoden (`SC1:`-Codes, Text-/Zwischenablage-Share, separates Markt-/Backup-Share) wurden vollständig entfernt.
    - `SyncAdapter` synchronisiert Änderungen im selben Browser weiterhin über die `BroadcastChannel`-API zwischen offenen Tabs/Fenstern und stellt Transport-Hooks (`remoteTransport`) für zukünftige Echtzeit-Synchronisation bereit.
 5. **Mobile UI, PWA & Capacitor Cross-Platform Layer ([`src/ui/app.js`](file:///home/manus/.gemini/antigravity/scratch/smartcart-app/src/ui/app.js), [`src/ui/styles.css`](file:///home/manus/.gemini/antigravity/scratch/smartcart-app/src/ui/styles.css), [`scripts/bundle-standalone.js`](file:///home/manus/.gemini/antigravity/scratch/smartcart-app/scripts/bundle-standalone.js))**
-   - Ein ohne externe Frameworks geschriebener, schneller Mobile-Controller mit 4 Hauptansichten (*Einkaufszettel*, *Foto-Scanner*, *Supermärkte*, *Export / Import*), prominenter Einkaufszettel-Verwaltungsleiste, Spezifikations-Eingabe- und Bearbeitungs-Modals (`#edit-item-modal`, `#edit-store-item-modal`), Long-Press-Geste für unbekannte Waren (`bindUnknownItemLongPress`), Touch-/Maus-Drag-and-Drop mit automatischem Rand-Scrollen (`requestAnimationFrame`), nativer Kamera-Anbindung, Service-Worker-Caching (`sw.js`, `smartcart-pwa-v2`) und Capacitor-Konfiguration (`capacitor.config.json`) für Android und iOS.
+   - Ein ohne externe Frameworks geschriebener, schneller Mobile-Controller mit 4 Hauptansichten (*Einkaufszettel*, *Foto-Scanner*, *Supermärkte*, *Export / Import*), prominenter Einkaufszettel-Verwaltungsleiste, Spezifikations-Eingabe- und Bearbeitungs-Modals (`#edit-item-modal`, `#edit-store-item-modal`), Long-Press-Geste für unbekannte Waren (`bindUnknownItemLongPress`), Touch-/Maus-Drag-and-Drop mit automatischem Rand-Scrollen (`requestAnimationFrame`), nativer Kamera-Anbindung, Service-Worker-Caching (`sw.js`, `smartcart-pwa-v3`) und Capacitor-6-Konfiguration (`capacitor.config.json`, `@capacitor/share`, `@capacitor/filesystem`) für Android und iOS.
 
 ---
 
@@ -291,11 +291,11 @@ Um Einkaufslisten sauber und plattformübergreifend zwischen Geräten auszutausc
    - Struktur: `{ app: "SmartCart", format: "smartcart-shopping-list", version: 2, type: "shopping_list", exportedAt, list: { id, name, supermarketId, liveOptimizationEnabled, updatedAt, items: [...] }, supermarket: { id, name, icon, color } | null }`.
    - Jeder Artikel speichert vollständig `id`, `name`, `specification`, `quantity`, `category`, `checked`, `checkedAt`, `addedLateOverride` und `originalOrder`.
 2. **Export-Pfade**:
-   - **Auf Gerät speichern (`saveShoppingListFile`)**: Nutzt in einer nativen Capacitor-App `Capacitor.Plugins.Filesystem.writeFile` (Verzeichnis `DOCUMENTS`), andernfalls einen Browser-Blob-Download (`triggerBrowserDownload`).
+   - **Auf Gerät speichern (`saveShoppingListFile`)**: Nutzt in einer nativen Capacitor-App `@capacitor/filesystem` (`writeFile` im Verzeichnis `DOCUMENTS` mit `recursive: true` sowie Berechtigungs-/Fallback-Behandlung z. B. auf `DATA` oder Browser-Download), andernfalls einen Browser-Blob-Download (`triggerBrowserDownload`).
    - **Als Datei teilen (`shareShoppingListFile`)**: Teilt **strikt als Dateianhang** (niemals als Text oder über die Zwischenablage):
-     - Nativ über `Capacitor.Plugins.Filesystem` (`CACHE`) + `Capacitor.Plugins.Share.share({ files: [uri], ... })`.
+     - Nativ in der Android-APK über `@capacitor/filesystem` (`writeFile` in `CACHE` + URI-Auflösung via `writeRes.uri`/`getUri`) und `@capacitor/share` (`Share.share({ title, files: [fileUri], dialogTitle })` – bewusst ohne doppeltes `url`-Feld, damit Androids `ACTION_SEND`/`EXTRA_STREAM` über den Capacitor-`FileProvider` sauber eine Datei an WhatsApp, E-Mail & Messenger übergibt).
      - Im Browser/PWA über Web Share API Level 2 (`navigator.share({ files: [file], title })`), abgesichert durch `navigator.canShare({ files })` (inklusive MIME-Probe für `application/json` und Fallback-Probe `text/plain`, falls ein mobiler Browser `application/json` beim Dateisharing ablehnt).
-     - Nutzerabbruch (`AbortError`) wird sauber als `{ aborted: true, method: 'aborted' }` gemeldet, ohne ungewollten Download. Wird direktes Datei-Teilen vom Browser nicht unterstützt (z. B. Desktop-Browser), speichert `fallbackToSave: true` automatisch die Datei auf dem Gerät (`method: 'save-fallback'`).
+     - Nutzerabbruch (`AbortError`) wird sauber als `{ aborted: true, method: 'aborted' }` gemeldet, ohne ungewollten Download. Native Fehler liefern kontextgerechte Meldungen ohne verwirrenden „Browser“-Hinweis; bei `fallbackToSave: true` wird die Datei automatisch gespeichert (`method: 'save-fallback'`).
 3. **Import-Validierung & Modi (`readShoppingListFile`, `parseShoppingListFileContent`, `applyImportedShoppingList`)**:
    - Akzeptiert `.smartcart.json` und `.json` bis maximal **5 MB** (`MAX_IMPORT_FILE_BYTES`), entfernt optionale UTF-8-BOMs und weist leere, defekte, fremde oder veraltete `SC1:`-Daten mit klaren deutschen Fehlermeldungen ab. Ältere v1-JSON-Dateien ohne `specification`-Feld werden abwärtskompatibel eingelesen (`specification: ''`).
    - Beim Anwenden stehen drei Modi zur Wahl:
@@ -656,13 +656,13 @@ Alle Methoden von `LocalStorageRepository` können sowohl auf einer Instanz (`ne
 
 #### 5. `saveShoppingListFile(list, supermarket = null, options = {})`
 - **Parameter**: `list`, `supermarket`, `options`.
-- **Rückgabewert**: `Promise<{ success: boolean, method: 'capacitor-filesystem'|'browser-download'|'invalid'|'unsupported', filename: string|null, uri?: string|null, error?: string }>`.
-- **Was macht die Funktion?** Speichert die Einkaufsliste als `.smartcart.json`-Datei auf dem Gerät – nativ über `Capacitor.Plugins.Filesystem.writeFile` (`DOCUMENTS`) oder im Browser per Blob-Download (`triggerBrowserDownload`).
+- **Rückgabewert**: `Promise<{ success: boolean, method: 'capacitor-filesystem'|'browser-download'|'invalid'|'unsupported', filename: string|null, directory?: string, uri?: string|null, error?: string }>`.
+- **Was macht die Funktion?** Speichert die Einkaufsliste als `.smartcart.json`-Datei auf dem Gerät – nativ über `@capacitor/filesystem` (`writeFile` in `DOCUMENTS` mit `recursive: true`, optionalem `requestPermissions()`-Retry und sauberem Fallback auf `DATA`) oder im Browser per Blob-Download (`triggerBrowserDownload`).
 
 #### 6. `shareShoppingListFile(list, supermarket = null, options = {})`
 - **Parameter**: `list`, `supermarket`, `options` (`{ title?, dialogTitle?, fallbackToSave?: boolean }`).
 - **Rückgabewert**: `Promise<{ success: boolean, supported: boolean, method: 'capacitor-share'|'web-share-file'|'aborted'|'save-fallback'|'unsupported'|'error'|'invalid', filename: string|null, aborted?: boolean, fallbackSaved?: boolean, error?: string }>`.
-- **Was macht die Funktion?** Teilt die Einkaufsliste **ausschließlich als Datei** über das OS-Teilen-Menü (WhatsApp, E-Mail, Messenger) via Capacitor Share+Filesystem oder `navigator.share({ files: [file], title })`. Teilt niemals Klartext und kopiert niemals in die Zwischenablage. Nutzerabbruch wird sauber als `aborted: true` behandelt; bei fehlender Browser-Unterstützung und `fallbackToSave: true` wird automatisch die Datei gespeichert.
+- **Was macht die Funktion?** Teilt die Einkaufsliste **ausschließlich als Datei** über das OS-Teilen-Menü (WhatsApp, E-Mail, Messenger) via `@capacitor/filesystem` (`CACHE`) + `@capacitor/share` (`{ title, files: [fileUri], dialogTitle }` ohne doppeltes `url`-Feld) oder Web Share API Level 2 (`navigator.share({ files: [file], title })`). Teilt niemals Klartext und kopiert niemals in die Zwischenablage. Nutzerabbruch wird sauber als `aborted: true` behandelt; native Fehler liefern kontextgerechte Meldungen ohne „Browser“-Verweis und speichern bei `fallbackToSave: true` automatisch die Datei.
 
 #### 7. `parseShoppingListFileContent(rawContent)`
 - **Parameter**: `rawContent` (`string`) – UTF-8-Inhalt der importierten Datei.
@@ -829,7 +829,7 @@ Wenn zwei Personen gleichzeitig im selben Supermarkt einkaufen, soll das Abhaken
 Da `capacitor.config.json` (`appId: "com.smartcart.einkaufsliste"`) bereits integriert ist, sind für ein Store-Release nur folgende Schritte nötig:
 1. **Android (Google Play Store)**:
    - In `.github/workflows/android-and-web.yml` (oder lokal in Android Studio) statt `./gradlew assembleDebug` ein signiertes Android App Bundle (`./gradlew bundleRelease`) mit Upload-Keystore erzeugen.
-   - Optionale native Plugins wie `@capacitor/filesystem` und `@capacitor/share` (von `src/core/share.js` bereits nativ unterstützt) sowie `@capacitor/camera` ergänzen.
+   - Die nativen Plugins `@capacitor/filesystem` und `@capacitor/share` sind seit `v1.1.1` bereits direkt in `package.json` und dem CI-APK-Build integriert; bei Bedarf kann optional `@capacitor/camera` ergänzt werden.
 2. **iOS (Apple App Store / TestFlight)**:
    - Auf einem macOS-System oder macOS-GitHub-Action-Runner `npx cap add ios && npx cap sync ios` ausführen und das Projekt in Xcode mit einem Apple-Developer-Zertifikat archivieren.
 

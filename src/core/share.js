@@ -334,13 +334,14 @@
 
   /**
    * Saves a shopping list as a `.smartcart.json` file to the user's device.
-   * Uses Capacitor Filesystem when running natively with the plugin installed,
+   * Uses Capacitor Filesystem when running natively with the plugin installed
+   * (`DOCUMENTS` with optional permission request, falling back cleanly to `DATA` or browser download),
    * otherwise triggers a mobile- and desktop-friendly browser file download.
    *
    * @param {Object} list
    * @param {Object|null} [supermarket=null]
    * @param {Object} [options={}]
-   * @returns {Promise<{ success: boolean, method: string, filename: string|null, uri?: string|null, error?: string }>}
+   * @returns {Promise<{ success: boolean, method: string, filename: string|null, directory?: string|null, uri?: string|null, error?: string }>}
    */
   async function saveShoppingListFile(list, supermarket = null, options = {}) {
     let fileBundle;
@@ -359,22 +360,56 @@
 
     // 1. Native Capacitor Filesystem (if installed)
     const cap = getCapacitorPlugins();
+    let nativeSaveError = null;
     if (cap.isNative && cap.Filesystem) {
-      try {
+      const writeToDirectory = async (directory) => {
         const writeRes = await cap.Filesystem.writeFile({
           path: filename,
           data: json,
-          directory: 'DOCUMENTS',
-          encoding: 'utf8'
+          directory,
+          encoding: 'utf8',
+          recursive: true
         });
+        let uri = writeRes && writeRes.uri ? writeRes.uri : null;
+        if (!uri && typeof cap.Filesystem.getUri === 'function') {
+          try {
+            const uriRes = await cap.Filesystem.getUri({ path: filename, directory });
+            uri = uriRes && uriRes.uri ? uriRes.uri : null;
+          } catch (_uriErr) {
+            uri = null;
+          }
+        }
         return {
           success: true,
           method: 'capacitor-filesystem',
           filename,
-          uri: writeRes && writeRes.uri ? writeRes.uri : null
+          directory,
+          uri
         };
-      } catch (_err) {
-        // Fall through to browser download
+      };
+
+      try {
+        return await writeToDirectory('DOCUMENTS');
+      } catch (docErr) {
+        nativeSaveError = docErr;
+        // On older Android API levels, DOCUMENTS may require runtime storage permission
+        if (typeof cap.Filesystem.requestPermissions === 'function') {
+          try {
+            const perm = await cap.Filesystem.requestPermissions();
+            if (!perm || perm.publicStorage !== 'denied') {
+              return await writeToDirectory('DOCUMENTS');
+            }
+          } catch (permErr) {
+            nativeSaveError = permErr;
+          }
+        }
+
+        // Clean fallback to app-private DATA directory (no external storage permission needed)
+        try {
+          return await writeToDirectory('DATA');
+        } catch (dataErr) {
+          nativeSaveError = dataErr;
+        }
       }
     }
 
@@ -385,6 +420,20 @@
         success: true,
         method: 'browser-download',
         filename
+      };
+    }
+
+    if (cap.isNative) {
+      return {
+        success: false,
+        method: nativeSaveError ? 'error' : 'unsupported',
+        filename,
+        directory: null,
+        uri: null,
+        error:
+          nativeSaveError && nativeSaveError.message
+            ? `Datei konnte auf diesem Gerät nicht gespeichert werden: ${nativeSaveError.message}`
+            : 'Datei konnte auf diesem Gerät nicht gespeichert werden.'
       };
     }
 
@@ -411,7 +460,7 @@
    * @param {string} [options.title]
    * @param {string} [options.dialogTitle]
    * @param {boolean} [options.fallbackToSave=false]
-   * @returns {Promise<{ success: boolean, supported: boolean, method: string, filename: string|null, aborted?: boolean, fallbackSaved?: boolean, error?: string }>}
+   * @returns {Promise<{ success: boolean, supported: boolean, method: string, filename: string|null, aborted?: boolean, fallbackSaved?: boolean, directory?: string|null, uri?: string|null, error?: string }>}
    */
   async function shareShoppingListFile(list, supermarket = null, options = {}) {
     let serialized;
@@ -456,20 +505,21 @@
           fileUri = uriRes && uriRes.uri ? uriRes.uri : null;
         }
 
-        if (fileUri) {
-          await cap.Share.share({
-            title: shareTitle,
-            files: [fileUri],
-            url: fileUri,
-            dialogTitle
-          });
-          return {
-            success: true,
-            supported: true,
-            method: 'capacitor-share',
-            filename
-          };
+        if (!fileUri) {
+          throw new Error('Temporäre Datei-URI konnte nicht ermittelt werden.');
         }
+
+        await cap.Share.share({
+          title: shareTitle,
+          files: [fileUri],
+          dialogTitle
+        });
+        return {
+          success: true,
+          supported: true,
+          method: 'capacitor-share',
+          filename
+        };
       } catch (err) {
         if (isAbortError(err)) {
           return {
@@ -480,7 +530,34 @@
             filename
           };
         }
-        // Fall through to Web Share API check / unsupported handling
+
+        const nativeErrMsg =
+          err && err.message
+            ? `Datei konnte auf diesem Gerät nicht geteilt werden: ${err.message}`
+            : 'Datei konnte auf diesem Gerät nicht geteilt werden.';
+
+        if (options && options.fallbackToSave) {
+          const saveRes = await saveShoppingListFile(list, supermarket, options);
+          return {
+            success: saveRes.success,
+            supported: true,
+            fallbackSaved: saveRes.success,
+            method: saveRes.success ? 'save-fallback' : 'error',
+            filename,
+            directory: saveRes.directory || null,
+            uri: saveRes.uri || null,
+            error: saveRes.success ? undefined : nativeErrMsg
+          };
+        }
+
+        return {
+          success: false,
+          supported: true,
+          fallbackSaved: false,
+          method: 'error',
+          filename,
+          error: nativeErrMsg
+        };
       }
     }
 
@@ -536,7 +613,11 @@
       }
     }
 
-    // 3. Unsupported on this browser/device -> optional file download fallback (never text/clipboard)
+    // 3. Unsupported on this platform/browser -> optional file download fallback (never text/clipboard)
+    const unsupportedMsg = cap.isNative
+      ? 'Direktes Teilen von Dateien ist auf diesem Gerät derzeit nicht verfügbar. Bitte speichere die Datei und versende sie manuell.'
+      : 'Direktes Teilen von Dateien wird von diesem Browser/Gerät nicht unterstützt. Bitte speichere die Datei und versende sie manuell.';
+
     if (options && options.fallbackToSave) {
       const saveRes = await saveShoppingListFile(list, supermarket, options);
       return {
@@ -545,9 +626,9 @@
         fallbackSaved: saveRes.success,
         method: saveRes.success ? 'save-fallback' : 'unsupported',
         filename,
-        error: saveRes.success
-          ? undefined
-          : saveRes.error || 'Direktes Datei-Teilen wird von diesem Browser nicht unterstützt.'
+        directory: saveRes.directory || null,
+        uri: saveRes.uri || null,
+        error: saveRes.success ? undefined : saveRes.error || unsupportedMsg
       };
     }
 
@@ -557,8 +638,7 @@
       fallbackSaved: false,
       method: 'unsupported',
       filename,
-      error:
-        'Direktes Teilen von Dateien wird von diesem Browser/Gerät nicht unterstützt. Bitte speichere die Datei und versende sie manuell.'
+      error: unsupportedMsg
     };
   }
 

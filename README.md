@@ -1,6 +1,6 @@
 # 🛒 SmartCart – Intelligente Einkaufslisten-App mit Supermarkt-Laufweg-Optimierung
 
-**Version:** `1.1.0`
+**Version:** `1.1.1`
 
 **SmartCart** ist eine moderne, vollständig offline-fähige Mobile-App (Android, iOS & Web/PWA) zur Erstellung, Verwaltung und intelligenten Sortierung von Einkaufszetteln. Sie lernt die exakte Laufreihenfolge deiner Supermärkte (z. B. REWE, ALDI, LIDL) inklusive optionaler **Spezifikationen/Marken**, sortiert deine Einkaufslisten automatisch entsprechend deines Weges durch die Gänge und passt sich durch **Live-Optimierung** dynamisch an, wenn Waren im Markt umgeräumt wurden.
 
@@ -57,8 +57,8 @@ Du kannst die fertige App direkt auf deinem Smartphone herunterladen (kein Entpa
    - **Wenn deaktiviert (AUS)**: Du kannst Waren in beliebiger Reihenfolge ohne Rückfrage abhaken.
 10. **Ausschließlich dateibasierter Export & Import von Einkaufslisten (`.smartcart.json`)**
     - Im Tab **„Export / Import“** werden Einkaufslisten ausschließlich über standardisierte `.smartcart.json`-Dateien ausgetauscht (veraltete Share-Codes oder reine Text-Exporte wurden vollständig entfernt):
-      - **Auf Gerät speichern**: Speichert die aktive Einkaufsliste als `.smartcart.json`-Datei auf dem Gerät (Capacitor Filesystem oder Browser-Download).
-      - **Als Datei teilen (WhatsApp, Mail, Messenger)**: Teilt die `.smartcart.json`-Datei direkt über den nativen Teilen-Dialog des Betriebssystems (Capacitor Share / Web Share API Level 2 `navigator.share({ files })` mit `canShare`-Prüfung und automatischem Datei-Download-Fallback, falls direktes Datei-Teilen nicht unterstützt wird).
+      - **Auf Gerät speichern**: Speichert die aktive Einkaufsliste als `.smartcart.json`-Datei auf dem Gerät – in der nativen Android-APK direkt über `@capacitor/filesystem` (Dokumenten-Ordner, mit sauberem Fallback), im Browser/PWA per Datei-Download.
+      - **Als Datei teilen (WhatsApp, Mail, Messenger)**: Teilt die `.smartcart.json`-Datei direkt über den nativen Teilen-Dialog des Betriebssystems – in der nativen Android-APK über `@capacitor/filesystem` (`CACHE`) + `@capacitor/share` (`files: [fileUri]`) und im mobilen Browser über die Web Share API Level 2 (`navigator.share({ files })` mit `canShare`-Prüfung und automatischem Datei-Speichern-Fallback).
       - **Aus Datei importieren**: Importiert `.smartcart.json`- oder `.json`-Dateien auf jedem anderen Gerät mit strikter Validierung und wählbarem Modus (*Als neuen Einkaufszettel anlegen*, *In aktuellen Zettel zusammenführen (Merge)* oder *Aktuellen Zettel ersetzen*). Mengen, Spezifikationen und Abhak-Status bleiben vollständig erhalten und die Liste wird sofort für den lokalen Supermarkt sortiert.
     - Vorbereiteter `SyncAdapter`-Layer für lokale Tab-Synchronisation (`BroadcastChannel`) und zukünftige Echtzeit-Synchronisation.
 
@@ -78,7 +78,7 @@ Wenn das Projekt über einen lokalen Webserver oder über **GitHub Pages** (sieh
 - **iOS / iPhone (Safari)**: Tippe unten auf das **Teilen-Symbol (Quadrat mit Pfeil nach oben)** → **„Zum Home-Bildschirm“**.
 
 ### Weg 3: Native Android-APK (via Capacitor / GitHub Actions)
-Das Projekt ist vollständig für **Ionic Capacitor** (`com.smartcart.einkaufsliste`) konfiguriert:
+Das Projekt ist vollständig für **Ionic Capacitor 6** (`com.smartcart.einkaufsliste`) inklusive der nativen Plugins **`@capacitor/share`** und **`@capacitor/filesystem`** (für direktes Datei-Teilen via WhatsApp/Mail/Messenger und Datei-Speichern unter Android) konfiguriert:
 - **Automatisch über GitHub Actions**: Bei jedem Push auf GitHub baut die Workflow-Pipeline [`.github/workflows/android-and-web.yml`](file:///home/manus/.gemini/antigravity/scratch/smartcart-app/.github/workflows/android-and-web.yml) automatisch eine installierbare `SmartCart.apk`, die unter *Actions → Artifacts* sowie unter *GitHub Releases* heruntergeladen werden kann.
 - **Lokal bauen** (mit installiertem Android Studio / Android SDK):
   ```bash
@@ -121,9 +121,9 @@ npx serve .
 smartcart-app/
 ├── index.html                        # Haupt-Einstiegspunkt der Web-App / PWA (inkl. Tesseract.js v5 CDN)
 ├── manifest.json                     # Web App Manifest für Android/iOS Home-Screen Installation
-├── sw.js                             # Service Worker für Offline-Caching der PWA (Cache v2)
+├── sw.js                             # Service Worker für Offline-Caching der PWA (Cache v3)
 ├── capacitor.config.json             # Capacitor-Konfiguration für native Android/iOS Builds
-├── package.json                      # NPM-Skripte und Metadaten (v1.1.0)
+├── package.json                      # NPM-Skripte und Metadaten (v1.1.1, inkl. @capacitor/share & @capacitor/filesystem)
 ├── .gitignore                        # Git-Ausschlussregeln
 ├── .github/
 │   └── workflows/

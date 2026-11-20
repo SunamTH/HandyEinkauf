@@ -436,7 +436,7 @@ async function main() {
       URL.revokeObjectURL = origRevokeObjectURL;
     }
 
-    // Mock Capacitor native Filesystem
+    // Mock Capacitor native Filesystem (DOCUMENTS + recursive + DATA fallback)
     const origCap = globalThis.Capacitor;
     let writtenArgs = null;
     try {
@@ -455,12 +455,44 @@ async function main() {
       const capRes = await Share.saveShoppingListFile(list);
       assert.strictEqual(capRes.success, true);
       assert.strictEqual(capRes.method, 'capacitor-filesystem');
+      assert.strictEqual(capRes.directory, 'DOCUMENTS');
       assert.strictEqual(writtenArgs.directory, 'DOCUMENTS');
       assert.strictEqual(writtenArgs.encoding, 'utf8');
+      assert.strictEqual(writtenArgs.recursive, true);
       assert.ok(capRes.uri.endsWith('.smartcart.json'));
       const parsedBack = Share.parseShoppingListFileContent(writtenArgs.data);
       assert.strictEqual(parsedBack.valid, true);
       assert.strictEqual(parsedBack.list.items[0].specification, 'Roggen');
+
+      // Permission denied on DOCUMENTS -> requests permissions -> falls back cleanly to DATA
+      const attempts = [];
+      let permRequested = false;
+      globalThis.Capacitor = {
+        isNativePlatform: () => true,
+        Plugins: {
+          Filesystem: {
+            requestPermissions: async () => {
+              permRequested = true;
+              return { publicStorage: 'denied' };
+            },
+            writeFile: async (args) => {
+              attempts.push(args.directory);
+              if (args.directory === 'DOCUMENTS') {
+                throw new Error('Permission denied');
+              }
+              return { uri: `file:///data/${args.path}` };
+            }
+          }
+        }
+      };
+
+      const dataFallbackRes = await Share.saveShoppingListFile(list);
+      assert.strictEqual(permRequested, true);
+      assert.deepStrictEqual(attempts, ['DOCUMENTS', 'DATA']);
+      assert.strictEqual(dataFallbackRes.success, true);
+      assert.strictEqual(dataFallbackRes.method, 'capacitor-filesystem');
+      assert.strictEqual(dataFallbackRes.directory, 'DATA');
+      assert.ok(dataFallbackRes.uri.startsWith('file:///data/'));
     } finally {
       globalThis.Capacitor = origCap;
     }
@@ -610,13 +642,17 @@ async function main() {
       assert.strictEqual(fallbackClicked, true);
       assert.strictEqual(clipboardTouched, false);
 
-      // Case E: Capacitor Native Share + Filesystem
+      // Case E: Capacitor Native Share + Filesystem (CACHE + utf8, files without duplicate url)
       let capShareCall = null;
+      let capWriteCall = null;
       globalThis.Capacitor = {
         isNativePlatform: () => true,
         Plugins: {
           Filesystem: {
-            writeFile: async (args) => ({ uri: `file:///cache/${args.path}` })
+            writeFile: async (args) => {
+              capWriteCall = args;
+              return { uri: `file:///cache/${args.path}` };
+            }
           },
           Share: {
             share: async (args) => {
@@ -629,7 +665,99 @@ async function main() {
       const capShareRes = await Share.shareShoppingListFile(list);
       assert.strictEqual(capShareRes.success, true);
       assert.strictEqual(capShareRes.method, 'capacitor-share');
-      assert.ok(Array.isArray(capShareCall.files) && capShareCall.files[0].startsWith('file:///cache/'));
+      assert.strictEqual(capWriteCall.directory, 'CACHE');
+      assert.strictEqual(capWriteCall.encoding, 'utf8');
+      assert.ok(Array.isArray(capShareCall.files) && capShareCall.files.length === 1);
+      assert.ok(capShareCall.files[0].startsWith('file:///cache/'));
+      assert.strictEqual('url' in capShareCall, false, 'Must NOT pass duplicate url alongside files');
+      assert.strictEqual(capShareCall.url, undefined);
+
+      // Case E2: Capacitor getUri fallback when writeFile omits uri
+      let capShareCall2 = null;
+      let getUriCalledWith = null;
+      globalThis.Capacitor = {
+        isNativePlatform: () => true,
+        Plugins: {
+          Filesystem: {
+            writeFile: async () => ({}),
+            getUri: async (args) => {
+              getUriCalledWith = args;
+              return { uri: `file:///cache-uri/${args.path}` };
+            }
+          },
+          Share: {
+            share: async (args) => {
+              capShareCall2 = args;
+            }
+          }
+        }
+      };
+      const capShareRes2 = await Share.shareShoppingListFile(list);
+      assert.strictEqual(capShareRes2.success, true);
+      assert.strictEqual(getUriCalledWith.directory, 'CACHE');
+      assert.ok(capShareCall2.files[0].startsWith('file:///cache-uri/'));
+      assert.strictEqual('url' in capShareCall2, false);
+
+      // Case F: Capacitor native Share non-abort error does NOT fall through to "Browser" wording
+      globalThis.Capacitor = {
+        isNativePlatform: () => true,
+        Plugins: {
+          Filesystem: {
+            writeFile: async (args) => ({ uri: `file:///cache/${args.path}` })
+          },
+          Share: {
+            share: async () => {
+              throw new Error('ActivityNotFoundException');
+            }
+          }
+        }
+      };
+      const capErrRes = await Share.shareShoppingListFile(list);
+      assert.strictEqual(capErrRes.success, false);
+      assert.strictEqual(capErrRes.supported, true);
+      assert.strictEqual(capErrRes.method, 'error');
+      assert.ok(capErrRes.error.includes('ActivityNotFoundException'));
+      assert.strictEqual(/browser/i.test(capErrRes.error), false, 'Native error must not mention Browser');
+
+      // Case F2: Native error with fallbackToSave saves cleanly via Capacitor Filesystem
+      let savedInFallbackDir = null;
+      globalThis.Capacitor = {
+        isNativePlatform: () => true,
+        Plugins: {
+          Filesystem: {
+            writeFile: async (args) => {
+              if (args.directory !== 'CACHE') savedInFallbackDir = args.directory;
+              return { uri: `file:///${args.directory.toLowerCase()}/${args.path}` };
+            }
+          },
+          Share: {
+            share: async () => {
+              throw new Error('No share targets');
+            }
+          }
+        }
+      };
+      const capFallbackRes = await Share.shareShoppingListFile(list, null, { fallbackToSave: true });
+      assert.strictEqual(capFallbackRes.success, true);
+      assert.strictEqual(capFallbackRes.fallbackSaved, true);
+      assert.strictEqual(capFallbackRes.method, 'save-fallback');
+      assert.strictEqual(savedInFallbackDir, 'DOCUMENTS');
+      assert.strictEqual(capFallbackRes.directory, 'DOCUMENTS');
+
+      // Case G: Native platform without Capacitor plugins installed -> unsupported message must NOT say "Browser"
+      globalThis.Capacitor = {
+        isNativePlatform: () => true,
+        Plugins: {}
+      };
+      setNavigator({
+        canShare: () => false,
+        share: async () => {}
+      });
+      const capMissingRes = await Share.shareShoppingListFile(list);
+      assert.strictEqual(capMissingRes.success, false);
+      assert.strictEqual(capMissingRes.supported, false);
+      assert.strictEqual(capMissingRes.method, 'unsupported');
+      assert.strictEqual(/browser/i.test(capMissingRes.error), false, 'Native unsupported message must not mention Browser');
     } finally {
       if (origNavDescriptor) {
         Object.defineProperty(globalThis, 'navigator', origNavDescriptor);
