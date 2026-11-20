@@ -161,6 +161,50 @@
   }
 
   /**
+   * Detects whether stored supermarkets use legacy string `itemOrder` entries or entries
+   * missing the `specification` field and therefore need migration.
+   * @param {Array<Object>} stores
+   * @returns {boolean}
+   */
+  function needsSupermarketMigration(stores) {
+    if (!Array.isArray(stores)) return false;
+    return stores.some(
+      (store) =>
+        store &&
+        Array.isArray(store.itemOrder) &&
+        store.itemOrder.some(
+          (entry) =>
+            typeof entry === 'string' ||
+            !entry ||
+            typeof entry !== 'object' ||
+            typeof entry.specification !== 'string'
+        )
+    );
+  }
+
+  /**
+   * Detects whether stored shopping lists contain legacy items missing the
+   * `specification` or `normalizedSpecification` fields.
+   * @param {Array<Object>} lists
+   * @returns {boolean}
+   */
+  function needsShoppingListMigration(lists) {
+    if (!Array.isArray(lists)) return false;
+    return lists.some(
+      (list) =>
+        list &&
+        Array.isArray(list.items) &&
+        list.items.some(
+          (item) =>
+            !item ||
+            typeof item !== 'object' ||
+            typeof item.specification !== 'string' ||
+            typeof item.normalizedSpecification !== 'string'
+        )
+    );
+  }
+
+  /**
    * Repository class for managing supermarkets, shopping lists, and active state in LocalStorage.
    */
   class LocalStorageRepository {
@@ -191,14 +235,19 @@
     }
 
     /**
-     * Loads all supermarkets from storage, automatically seeding the 3 default German
+     * Loads all supermarkets from storage, automatically migrating legacy string `itemOrder`
+     * entries to `{ name, specification }` objects and seeding the 3 default German
      * supermarkets (`REWE`, `ALDI`, `LIDL`) if none exist yet.
      * @returns {Array<Object>}
      */
     loadSupermarkets() {
       const stored = this._readJson(STORAGE_KEYS.SUPERMARKETS, null);
       if (Array.isArray(stored) && stored.length > 0) {
-        return stored.map((s) => createSupermarket(s));
+        const migrated = stored.map((s) => createSupermarket(s));
+        if (needsSupermarketMigration(stored)) {
+          this._writeJson(STORAGE_KEYS.SUPERMARKETS, migrated);
+        }
+        return migrated;
       }
       const defaults = getDefaultSupermarkets();
       this.saveSupermarkets(defaults);
@@ -278,13 +327,18 @@
     }
 
     /**
-     * Loads all shopping lists from storage, seeding a default list if none exist.
+     * Loads all shopping lists from storage, automatically migrating legacy items
+     * without `specification` and seeding a default list if none exist.
      * @returns {Array<Object>}
      */
     loadShoppingLists() {
       const stored = this._readJson(STORAGE_KEYS.LISTS, null);
       if (Array.isArray(stored) && stored.length > 0) {
-        return stored.map((list) => createShoppingList(list));
+        const migrated = stored.map((list) => createShoppingList(list));
+        if (needsShoppingListMigration(stored)) {
+          this._writeJson(STORAGE_KEYS.LISTS, migrated);
+        }
+        return migrated;
       }
       const stores = this.loadSupermarkets();
       const seedList = createDefaultSeedShoppingList(stores[0]);

@@ -1,6 +1,8 @@
 # 📐 SmartCart – Gesamtarchitektur, Algorithmen & Vollständige Funktionsreferenz
 
-Dieses Dokument beschreibt die technische Gesamtarchitektur, die mathematisch-logischen Algorithmen der Supermarkt-Laufweg-Optimierung sowie **jedes einzelne Modul und jede einzelne Funktion** der SmartCart Einkaufslisten-App (Aufgabe, Parameter, Rückgabewerte und konkrete technische Umsetzung). Darüber hinaus enthält es die Roadmap zur Weiterentwicklung (Echtzeit-Kollaboration, Store-Deployment) sowie die Anleitung für das GitHub-Projekt.
+**Version:** `1.1.0`
+
+Dieses Dokument beschreibt die technische Gesamtarchitektur, die mathematisch-logischen Algorithmen der Supermarkt-Laufweg-Optimierung (inklusive Spezifikations-Matching, Behandlung unbekannter Waren, Drag-and-Drop Auto-Scroll und rein dateibasiertem Listen-Export/-Import) sowie **jedes einzelne Modul und jede einzelne Funktion** der SmartCart Einkaufslisten-App (Aufgabe, Parameter, Rückgabewerte und konkrete technische Umsetzung). Darüber hinaus enthält es die Roadmap zur Weiterentwicklung (Echtzeit-Kollaboration, Store-Deployment) sowie die Anleitung für das GitHub-Projekt.
 
 ---
 
@@ -10,19 +12,22 @@ Dieses Dokument beschreibt die technische Gesamtarchitektur, die mathematisch-lo
    - [Architektur-Übersicht (Mermaid-Diagramm)](#11-architektur-übersicht-mermaid-diagramm)
    - [Die 5 Architektur-Schichten im Detail](#12-die-5-architektur-schichten-im-detail)
 2. [Algorithmen im Detail](#2-algorithmen-im-detail)
-   - [Supermarkt-Reihenfolge-Optimierung & Gruppierung (Regel A, B, C)](#21-supermarkt-reihenfolge-optimierung--gruppierung-regel-a-b-c)
-   - [Rückgängig-Logik (Uncheck / Wiederherstellung der Laufposition)](#22-rückgängig-logik-uncheck--wiederherstellung-der-laufposition)
-   - [Selbstlernender Live-Optimierungs-Algorithmus](#23-selbstlernender-live-optimierungs-algorithmus)
-   - [Intelligentes nachträgliches Hinzufügen („Bereits vorbeigelaufen“-Erkennung)](#24-intelligentes-nachträgliches-hinzufügen-bereits-vorbeigelaufen-erkennung)
-   - [Präzises Einfügen & Verschieben von Supermarkt-Waren über die vorige Ware & Drag-and-Drop](#25-präzises-einfügen--verschieben-von-supermarkt-waren-über-die-vorige-ware--drag-and-drop)
-   - [Echte Kamera-OCR mit Tesseract.js v5 & HTML5-Canvas Bild-Vorverarbeitung](#26-echte-kamera-ocr-mit-tesseractjs-v5--html5-canvas-bild-vorverarbeitung)
+   - [Supermarkt-Reihenfolge-Optimierung & Gruppierung (Regel A, B, C, D)](#21-supermarkt-reihenfolge-optimierung--gruppierung-regel-a-b-c-d)
+   - [Spezifikations-/Marken-Matching & Mehrfach-Koexistenz im Supermarkt](#22-spezifikations-marken-matching--mehrfach-koexistenz-im-supermarkt)
+   - [Unbekannte Waren am Listenanfang & Long-Press-Aufnahme](#23-unbekannte-waren-am-listenanfang--long-press-aufnahme)
+   - [Rückgängig-Logik (Uncheck / Wiederherstellung der Laufposition)](#24-rückgängig-logik-uncheck--wiederherstellung-der-laufposition)
+   - [Selbstlernender Live-Optimierungs-Algorithmus](#25-selbstlernender-live-optimierungs-algorithmus)
+   - [Intelligentes nachträgliches Hinzufügen („Bereits vorbeigelaufen“-Erkennung)](#26-intelligentes-nachträgliches-hinzufügen-bereits-vorbeigelaufen-erkennung)
+   - [Präzises Einfügen, Verschieben & Drag-and-Drop mit automatischem Rand-Scrollen](#27-präzises-einfügen-verschieben--drag-and-drop-mit-automatischem-rand-scrollen)
+   - [Echte Kamera-OCR mit Tesseract.js v5 & HTML5-Canvas Bild-Vorverarbeitung](#28-echte-kamera-ocr-mit-tesseractjs-v5--html5-canvas-bild-vorverarbeitung)
+   - [Ausschließlich dateibasierter Export & Import (`.smartcart.json`)](#29-ausschließlich-dateibasierter-export--import-smartcartjson)
 3. [Vollständige Modul- und Funktionsreferenz](#3-vollständige-modul--und-funktionsreferenz)
-   - [Modul 1: `src/core/models.js` (Domänenmodelle, Sortier-Vorlagen & Normalisierung)](#31-modul-1-srccoremodelsjs)
-   - [Modul 2: `src/core/optimizer.js` (Sortier-, Vorige-Ware-, Spät-Kauf- & Live-Lern-Engine)](#32-modul-2-srccoreoptimizerjs)
+   - [Modul 1: `src/core/models.js` (Domänenmodelle, Spezifikationen, Sortier-Vorlagen & Normalisierung)](#31-modul-1-srccoremodelsjs)
+   - [Modul 2: `src/core/optimizer.js` (Sortier-, Unbekannte-Waren-, Vorige-Ware-, Spät-Kauf- & Live-Lern-Engine)](#32-modul-2-srccoreoptimizerjs)
    - [Modul 3: `src/core/ocr.js` (Text-Parser, Tesseract-OCR, Bild-Preprocessing & Demo-Generator)](#33-modul-3-srccoreocrjs)
-   - [Modul 4: `src/core/storage.js` (Lokale Persistenz, Multi-Listen-Verwaltung & Seeding)](#34-modul-4-srccorestoragejs)
-   - [Modul 5: `src/core/share.js` (Teilen, Share-Codes, Backup & SyncAdapter)](#35-modul-5-srccoresharejs)
-   - [Modul 6: `src/ui/app.js` (Mobile UI-Controller, Multi-Listen-Bar, Drag & Drop & Event-Orchestrierung)](#36-modul-6-srcuiappjs)
+   - [Modul 4: `src/core/storage.js` (Lokale Persistenz, Multi-Listen-Verwaltung, Legacy-Migration & Seeding)](#34-modul-4-srccorestoragejs)
+   - [Modul 5: `src/core/share.js` (Datei-Export/-Import `.smartcart.json` & SyncAdapter)](#35-modul-5-srccoresharejs)
+   - [Modul 6: `src/ui/app.js` (Mobile UI-Controller, Spezifikationen, Long-Press, DnD-Auto-Scroll & Datei-I/O)](#36-modul-6-srcuiappjs)
    - [Modul 7: `scripts/bundle-standalone.js` (Single-File-App-Bundler & Capacitor-Sync)](#37-modul-7-scriptsbundle-standalonejs)
 4. [Weiterentwicklung & Roadmap (Echtzeit-Sharing, Cloud-Sync & App Stores)](#4-weiterentwicklung--roadmap-echtzeit-sharing-cloud-sync--app-stores)
 5. [Empfehlung & Anleitung zum GitHub-Projekt](#5-empfehlung--anleitung-zum-github-projekt)
@@ -31,7 +36,7 @@ Dieses Dokument beschreibt die technische Gesamtarchitektur, die mathematisch-lo
 
 ## 1. Gesamtarchitektur & Schichtenmodell
 
-SmartCart folgt einer strikten **Clean-Architecture-Trennung** zwischen einer komplett abhängigkeitsfreien Geschäftslogik (`src/core/`) und einer reaktiven, mobil-optimierten Präsentationsschicht (`src/ui/`). Alle Kernmodule sind als universelle **UMD/IIFE-Module** konzipiert: Sie hängen ihre Exporte im Browser an `window.SmartCartCore` und exportieren sie gleichzeitig unter Node.js per CommonJS (`module.exports`). Dadurch laufen sowohl die automatisierten Unit-Tests (`tests/engine.test.js`), die Web-App (`index.html`), die eigenständige 1-Datei-Smartphone-App (`dist/SmartCart_Handy_App.html`) als auch der native Capacitor-Build (`android/` & `ios/`) auf exakt demselben Code.
+SmartCart folgt einer strikten **Clean-Architecture-Trennung** zwischen einer komplett abhängigkeitsfreien Geschäftslogik (`src/core/`) und einer reaktiven, mobil-optimierten Präsentationsschicht (`src/ui/`). Alle Kernmodule sind als universelle **UMD/IIFE-Module** konzipiert: Sie hängen ihre Exporte im Browser an `window.SmartCartCore` und exportieren sie gleichzeitig unter Node.js per CommonJS (`module.exports`). Dadurch laufen sowohl die automatisierten Unit-Tests (`tests/engine.test.js` und `tests/share.test.js`), die Web-App (`index.html`), die eigenständige 1-Datei-Smartphone-App (`dist/SmartCart_Handy_App.html`) als auch der native Capacitor-Build (`android/` & `ios/`) auf exakt demselben Code.
 
 ### 1.1 Architektur-Übersicht (Mermaid-Diagramm)
 
@@ -39,24 +44,24 @@ SmartCart folgt einer strikten **Clean-Architecture-Trennung** zwischen einer ko
 flowchart TB
     subgraph CrossPlatform["📱 Cross-Platform Auslieferung (Android, iOS & Web)"]
         Standalone["dist/SmartCart_Handy_App.html<br/>(Eigenständige Einzeldatei inkl. Tesseract CDN)"]
-        PWA["PWA (index.html + manifest.json + sw.js)<br/>(Offline-fähig, Home-Screen-App)"]
+        PWA["PWA (index.html + manifest.json + sw.js v2)<br/>(Offline-fähig, Home-Screen-App)"]
         Capacitor["Capacitor Native Runtime<br/>(Android APK & iOS App Wrapper)"]
     end
 
     subgraph UILayer["🎨 Mobile UI Layer (src/ui/)"]
-        AppJS["app.js (window.SmartCartUI)<br/>Multi-Listen-Bar, 4 Tabs, Drag & Drop,<br/>Direkt-Verschieben-Modal, Live-Opt-Modal"]
-        StylesCSS["styles.css<br/>Mobile-First Design, Erledigt-Ausgrauung, Gang-Highlights"]
+        AppJS["app.js (window.SmartCartUI)<br/>Multi-Listen-Bar, 4 Tabs, Spezifikations-Modals,<br/>Unknown-Item Long-Press, DnD + Rand-Auto-Scroll, Datei-I/O"]
+        StylesCSS["styles.css<br/>Mobile-First Design, Spezifikations-Badges,<br/>Unknown-Styling, Drag-Ghost & Gang-Highlights"]
     end
 
     subgraph CoreLayer["🧠 Core Domain & Business Logic (src/core/ – window.SmartCartCore)"]
-        Models["models.js<br/>Domänenmodelle, Umlaut-/Synonym-Normalisierung,<br/>Sortier-Vorlagen, Standard-Märkte (REWE, ALDI, LIDL)"]
-        Optimizer["optimizer.js<br/>Supermarkt-Sortierung (Regel A/B/C),<br/>Uncheck-Rückgängig, Vorbeigelaufen-Erkennung,<br/>Vorige-Ware-Einfügen/-Verschieben, Live-Optimierung"]
+        Models["models.js<br/>Domänenmodelle inkl. specification, {name, specification}[] Einträge,<br/>Exact-Spec/Fallback-Matching, Umlaut-/Synonym-Normalisierung"]
+        Optimizer["optimizer.js<br/>Supermarkt-Sortierung (Regel A/B/C/D), Unbekannte am Anfang,<br/>addItemToSupermarket, Uncheck-Rückgängig, Live-Optimierung"]
         OCR["ocr.js<br/>Mengen-/Zeilen-Parser, HTML5-Canvas Bild-Preprocessing,<br/>Echte Tesseract.js v5 OCR, Canvas-Demo-Zettel"]
     end
 
-    subgraph InfraLayer["💾 Persistenz & Kollaboration (src/core/)"]
-        Storage["storage.js<br/>LocalStorageRepository + Multi-Listen-Verwaltung<br/>(Speichern, Benennen, Wechseln, Neu, Löschen)"]
-        Share["share.js<br/>ShareService (SC1-Base64-Codes, JSON, Web Share API)<br/>SyncAdapter (BroadcastChannel + WebSocket-Hooks)"]
+    subgraph InfraLayer["💾 Persistenz & Datei-Austausch (src/core/)"]
+        Storage["storage.js<br/>LocalStorageRepository + Multi-Listen-Verwaltung<br/>& automatische Legacy-Migration (string[] -> {name, specification}[])"]
+        Share["share.js<br/>ShareService (reiner .smartcart.json Datei-Export/-Import,<br/>Web Share API files / Capacitor Share+Filesystem)<br/>SyncAdapter (BroadcastChannel + WebSocket-Hooks)"]
     end
 
     Standalone --> UILayer
@@ -78,73 +83,108 @@ flowchart TB
 ### 1.2 Die 5 Architektur-Schichten im Detail
 
 1. **Core Domain & Optimizer Layer ([`src/core/models.js`](file:///home/manus/.gemini/antigravity/scratch/smartcart-app/src/core/models.js), [`src/core/optimizer.js`](file:///home/manus/.gemini/antigravity/scratch/smartcart-app/src/core/optimizer.js))**
-   - Kapselt sämtliche Datenstrukturen (`Item`, `Supermarket`, `ShoppingList`), die Übernahme einer bestehenden Supermarkt- oder Standard-Sortierung beim Anlegen neuer Märkte (`createSupermarketWithSorting`, `getDefaultItemOrder`), die sprachliche Normalisierung deutscher Artikelnamen (inklusive Umlaut-Faltung und 48 Synonym-/Plural-Äquivalenzgruppen wie `Apfel ↔ Äpfel`, `Brötchen ↔ Semmeln`, `Klopapier ↔ Toilettenpapier`) sowie alle Sortier-, Positionierungs- (`addSupermarketKnownItemAfter`, `moveSupermarketItemAfter`, `reorderSupermarketItem`) und Lern-Algorithmen.
+   - Kapselt sämtliche Datenstrukturen (`Item` mit `specification`/`normalizedSpecification`, `Supermarket` mit kanonischen `{ name, specification }[]`-Einträgen in `itemOrder`, `ShoppingList`), die Übernahme einer bestehenden Supermarkt- oder Standard-Sortierung beim Anlegen neuer Märkte (`createSupermarketWithSorting`, `getDefaultItemOrder`), die sprachliche Normalisierung deutscher Artikelnamen (inklusive Umlaut-Faltung und 48 Synonym-/Plural-Äquivalenzgruppen), das zweistufige Spezifikations-Matching (`findStoreEntryMatch`) sowie alle Sortier-, Positionierungs- (`addItemToSupermarket`, `updateSupermarketKnownItem`, `addSupermarketKnownItemAfter`, `moveSupermarketItemAfter`, `reorderSupermarketItem`) und Lern-Algorithmen.
 2. **OCR & Foto-Erkennungs-Pipeline ([`src/core/ocr.js`](file:///home/manus/.gemini/antigravity/scratch/smartcart-app/src/core/ocr.js))**
    - Mehrstufige Erkennungspipeline für abfotografierte Einkaufszettel: Führt für echte Kamerafotos eine automatische HTML5-Canvas-Bildoptimierung (`preprocessImageForOcr`: Skalierung, Graustufen-Histogramm, Auto-Levels-Kontrastspreizung und Hintergrund-Aufhellung) durch, lädt bei Bedarf `window.Tesseract` dynamisch nach (`ensureTesseractLoaded`) und liest den echten deutschen Text per `Tesseract.recognize(..., 'deu')` aus. Unterstützt außerdem 3 isolierte Canvas-Demo-Einkaufszettel (`GENERATED_SAMPLE_DATA_URLS`), ohne jemals echte Nutzerfotos mit Demo-Daten zu vermischen, sowie den regulären Ausdrucks-Parser (`parseShoppingLine`), der Mengenangaben (`2x`, `500g`, `1,5L`, `2 Dosen`) sauber vom Artikelnamen trennt.
-3. **Lokale Persistenz & Multi-Listen-Verwaltung ([`src/core/storage.js`](file:///home/manus/.gemini/antigravity/scratch/smartcart-app/src/core/storage.js))**
-   - Das `LocalStorageRepository` kapselt alle Lese- und Schreibzugriffe auf `window.localStorage` unter versionierten Schlüsseln (`smartcart_supermarkets_v1`, `smartcart_lists_v1`, `smartcart_active_list_id_v1`). Es verwaltet beliebig viele benannte Einkaufszettel (`createNewShoppingList`, `renameShoppingList`, `duplicateShoppingList`, `switchShoppingList`, `deleteShoppingList`, `saveActiveList`). Falls `localStorage` (z. B. in Node.js-Tests oder im strikten Inkognito-Modus) nicht verfügbar ist, schaltet `resolveStorageBackend` transparent auf einen In-Memory-Speicher (`createMemoryStorage`) um.
-4. **Share- & Sync-Layer ([`src/core/share.js`](file:///home/manus/.gemini/antigravity/scratch/smartcart-app/src/core/share.js))**
-   - `ShareService` serialisiert Einkaufslisten und Supermarkt-Konfigurationen in menschenlesbare WhatsApp-/Telegram-Nachrichten sowie in kompakte Base64-Token mit dem Präfix `SC1:`.
-   - `SyncAdapter` synchronisiert Änderungen (inklusive aller gespeicherten Einkaufslisten) heute bereits in Echtzeit über die Browser-`BroadcastChannel`-API zwischen offenen Tabs/Fenstern und stellt definierte Transport-Hooks (`remoteTransport`) für zukünftige Cloud-/CRDT-Synchronisation bereit.
+3. **Lokale Persistenz, Multi-Listen-Verwaltung & Legacy-Migration ([`src/core/storage.js`](file:///home/manus/.gemini/antigravity/scratch/smartcart-app/src/core/storage.js))**
+   - Das `LocalStorageRepository` kapselt alle Lese- und Schreibzugriffe auf `window.localStorage` unter versionierten Schlüsseln (`smartcart_supermarkets_v1`, `smartcart_lists_v1`, `smartcart_active_list_id_v1`). Es verwaltet beliebig viele benannte Einkaufszettel (`createNewShoppingList`, `renameShoppingList`, `duplicateShoppingList`, `switchShoppingList`, `deleteShoppingList`, `saveActiveList`) und migriert ältere gespeicherte Daten (Supermärkte mit `string[]`-`itemOrder` und Artikel ohne `specification`-Feld) beim Laden vollautomatisch und verlustfrei. Falls `localStorage` nicht verfügbar ist, schaltet `resolveStorageBackend` transparent auf `createMemoryStorage()` um.
+4. **Datei-Export/-Import & Sync-Layer ([`src/core/share.js`](file:///home/manus/.gemini/antigravity/scratch/smartcart-app/src/core/share.js))**
+   - `ShareService` realisiert den **ausschließlich dateibasierten** Export und Import von Einkaufslisten im Format `.smartcart.json` (Format-Version 2, abwärtskompatibel zu v1-Dateien). Exportierte Dateien werden auf dem Gerät gespeichert (`saveShoppingListFile` via Capacitor Filesystem oder Browser-Blob-Download) oder direkt als Datei über WhatsApp, E-Mail und Messenger geteilt (`shareShoppingListFile` via Capacitor Share+Filesystem oder Web Share API Level 2 `navigator.share({ files })` mit `canShare`-Prüfung). Alle älteren Share-Methoden (`SC1:`-Codes, Text-/Zwischenablage-Share, separates Markt-/Backup-Share) wurden vollständig entfernt.
+   - `SyncAdapter` synchronisiert Änderungen im selben Browser weiterhin über die `BroadcastChannel`-API zwischen offenen Tabs/Fenstern und stellt Transport-Hooks (`remoteTransport`) für zukünftige Echtzeit-Synchronisation bereit.
 5. **Mobile UI, PWA & Capacitor Cross-Platform Layer ([`src/ui/app.js`](file:///home/manus/.gemini/antigravity/scratch/smartcart-app/src/ui/app.js), [`src/ui/styles.css`](file:///home/manus/.gemini/antigravity/scratch/smartcart-app/src/ui/styles.css), [`scripts/bundle-standalone.js`](file:///home/manus/.gemini/antigravity/scratch/smartcart-app/scripts/bundle-standalone.js))**
-   - Ein ohne externe Frameworks geschriebener, schneller Mobile-Controller mit 4 Hauptansichten (*Einkaufszettel*, *Foto-Scanner*, *Supermärkte*, *Teilen & App*), prominenter Einkaufszettel-Verwaltungsleiste, Touch-/Maus-Drag-and-Drop für die Supermarkt-Sortierung, nativer Kamera-Anbindung, Service-Worker-Caching (`sw.js`) und Capacitor-Konfiguration (`capacitor.config.json`) für Android und iOS.
+   - Ein ohne externe Frameworks geschriebener, schneller Mobile-Controller mit 4 Hauptansichten (*Einkaufszettel*, *Foto-Scanner*, *Supermärkte*, *Export / Import*), prominenter Einkaufszettel-Verwaltungsleiste, Spezifikations-Eingabe- und Bearbeitungs-Modals (`#edit-item-modal`, `#edit-store-item-modal`), Long-Press-Geste für unbekannte Waren (`bindUnknownItemLongPress`), Touch-/Maus-Drag-and-Drop mit automatischem Rand-Scrollen (`requestAnimationFrame`), nativer Kamera-Anbindung, Service-Worker-Caching (`sw.js`, `smartcart-pwa-v2`) und Capacitor-Konfiguration (`capacitor.config.json`) für Android und iOS.
 
 ---
 
 ## 2. Algorithmen im Detail
 
-### 2.1 Supermarkt-Reihenfolge-Optimierung & Gruppierung (Regel A, B, C)
+### 2.1 Supermarkt-Reihenfolge-Optimierung & Gruppierung (Regel A, B, C, D)
 
-Die Funktion `sortShoppingList(listOrItems, supermarket)` in [`src/core/optimizer.js`](file:///home/manus/.gemini/antigravity/scratch/smartcart-app/src/core/optimizer.js#L39-L106) berechnet bei jeder Änderung und bei jedem Wechsel des Supermarkts die optimale Darstellungsreihenfolge.
+Die Funktion `sortShoppingList(listOrItems, supermarket)` in [`src/core/optimizer.js`](file:///home/manus/.gemini/antigravity/scratch/smartcart-app/src/core/optimizer.js#L49-L126) berechnet bei jeder Änderung und bei jedem Wechsel des Supermarkts die optimale Darstellungsreihenfolge.
 
-Dabei gelten drei streng priorisierte Regeln:
+Dabei gelten vier streng priorisierte Regeln:
 
 - **Regel A – Abgehakte Waren ausgegraut nach ganz oben (`checkedItems`)**:
-  Alle Waren mit `item.checked === true` werden aus der aktiven Laufstrecke herausgenommen und im oberen Listenbereich (*„Bereits abgehakt (Erledigt)“*) ausgegraut und durchgestrichen dargestellt. Innerhalb der erledigten Waren bleiben sie nach ihrer Supermarkt-Position (`storePosition`) sortiert.
-  *Vorteil*: Unterhalb des erledigten Blocks stehen **ausschließlich offene Waren** lückenlos in der exakten Laufreihenfolge des Supermarkts untereinander.
-- **Regel C – Vorrang für nachträglich hinzugefügte Waren, deren Abteilung bereits passiert wurde (`addedLateOverride === true`)**:
+  Alle Waren mit `item.checked === true` werden aus der aktiven Laufstrecke herausgenommen und im oberen Listenbereich (*„Bereits abgehakt (Erledigt)“*) ausgegraut und durchgestrichen dargestellt. Innerhalb von `checkedItems` werden bekannte Waren aufsteigend nach ihrer Supermarkt-Position (`storePosition`) sortiert; abgehakte unbekannte Waren (`storePosition === -1`) folgen dahinter in ihrer ursprünglichen Reihenfolge (`originalOrder`).
+- **Regel B – Vorrang für nachträglich hinzugefügte bekannte Waren, deren Abteilung bereits passiert wurde (`addedLateOverride === true`)**:
   Unter den offenen Waren (`uncheckedItems`) werden alle Artikel mit dem Flag `addedLateOverride: true` an **Index 0 (ganz oben unter den offenen Waren)** gesetzt. Wurden mehrere solcher Artikel hinzugefügt, steht der zuletzt hinzugefügte ganz oben (`b.originalOrder - a.originalOrder`).
-- **Regel B – Supermarkt-Laufreihenfolge für reguläre offene Waren (`supermarket.itemOrder`)**:
-  Alle übrigen offenen Waren werden über `indexOfNormalized(supermarket.itemOrder, item.name)` auf ihren 0-basierten Positionsindex im gewählten Supermarkt abgebildet:
-  - Ist die Ware im Supermarkt bekannt (`pos !== -1`), wird aufsteigend nach `posA - posB` sortiert.
-  - Ist eine Ware im gewählten Supermarkt noch unbekannt (`pos === -1`), wird sie hinter den bekannten Waren in ihrer ursprünglichen Eingabereihenfolge (`originalOrder`) eingereiht (und kann beim Abhaken durch die Live-Optimierung automatisch gelernt werden).
+- **Regel C – Noch nicht im Supermarkt vorhandene Waren ganz am Anfang (`isUnknownInStore === true` / `storePosition === -1`)**:
+  Unbekannte offene Waren, für die `findStoreEntryMatch(supermarket.itemOrder, item.name, item.specification)` keinen Treffer liefert (`storePosition === -1`), werden **ganz an den Anfang der offenen Einkaufsliste (vor allen bekannten Supermarkt-Waren)** in ihrer `originalOrder` eingereiht. So fallen fehlende Artikel sofort ins Auge und können per **Long-Press** direkt in den Supermarkt aufgenommen werden.
+- **Regel D – Supermarkt-Laufreihenfolge für reguläre bekannte offene Waren (`supermarket.itemOrder`)**:
+  Alle übrigen bekannten offenen Waren (`storePosition !== -1`) folgen aufsteigend nach `posA - posB` (bei gleicher Position Tie-Break über `originalOrder`).
 
 ```mermaid
 flowchart TD
-    Input["Eingabe: Einkaufsliste (list.items) + Aktiver Supermarkt (supermarket.itemOrder)"] --> MapPos["Bestimme für jede Ware storePosition = indexOfNormalized(itemOrder, item.name)"]
+    Input["Eingabe: Einkaufsliste (list.items) + Aktiver Supermarkt (supermarket.itemOrder)"] --> MapPos["Bestimme pro Ware: findStoreEntryMatch(itemOrder, item.name, item.specification)<br/>-> storePosition, storeMatchType, isUnknownInStore"]
     MapPos --> Split{"item.checked === true?"}
-    
-    Split -- "Ja (Erledigt)" --> CheckedGroup["Gruppe 1: checkedItems<br/>(Oben in der UI, ausgegraut & durchgestrichen)"]
+
+    Split -- "Ja (Erledigt)" --> CheckedGroup["Regel A: checkedItems<br/>(Oben, ausgegraut: bekannte nach storePosition,<br/>erledigte unbekannte danach nach originalOrder)"]
     Split -- "Nein (Offen)" --> LateCheck{"item.addedLateOverride === true?"}
-    
-    LateCheck -- "Ja (Station schon passiert)" --> LateGroup["Gruppe 2a: Priorisierte Spät-Käufe<br/>(Ganz oben bei den offenen Waren als #1 Nächste Ware)"]
-    LateCheck -- "Nein (Normal offen)" --> KnownCheck{"storePosition !== -1?"}
-    
-    KnownCheck -- "Ja (Im Markt bekannt)" --> StoreOrder["Gruppe 2b: Sortiert nach storePosition (0 .. N)<br/>entsprechend dem Laufweg durch die Abteilungen"]
-    KnownCheck -- "Nein (Neue Ware)" --> UnknownOrder["Gruppe 2c: Am Ende der offenen Waren<br/>sortiert nach originalOrder"]
-    
-    CheckedGroup --> Combine["Ausgabe: { sortedItems, checkedItems, uncheckedItems }"]
+
+    LateCheck -- "Ja (Station schon passiert)" --> LateGroup["Regel B: Priorisierte Spät-Käufe<br/>(Ganz oben bei den offenen Waren als #1 Nächste Ware)"]
+    LateCheck -- "Nein (Normal offen)" --> UnknownCheck{"storePosition === -1?"}
+
+    UnknownCheck -- "Ja (Noch nicht im Markt)" --> UnknownOrder["Regel C: Unbekannte Waren am Anfang<br/>(Vor allen bekannten Waren, nach originalOrder;<br/>Long-Press nimmt Ware in den Markt auf)"]
+    UnknownCheck -- "Nein (Im Markt bekannt)" --> StoreOrder["Regel D: Bekannte Waren nach storePosition (0 .. N)<br/>entsprechend dem Laufweg (exact-spec / exact-generic / fallback-generic)"]
+
+    CheckedGroup --> Combine["Ausgabe: { sortedItems, checkedItems, uncheckedItems, unknownItems }"]
     LateGroup --> Combine
-    StoreOrder --> Combine
     UnknownOrder --> Combine
+    StoreOrder --> Combine
 ```
 
 ---
 
-### 2.2 Rückgängig-Logik (Uncheck / Wiederherstellung der Laufposition)
+### 2.2 Spezifikations-/Marken-Matching & Mehrfach-Koexistenz im Supermarkt
 
-Wenn der Nutzer im oberen Bereich *„Bereits abgehakt (Erledigt)“* auf eine bereits abgehakte Ware tippt, um das Abhaken rückgängig zu machen, führt `toggleItemCheck(list, supermarket, itemId)` ([`src/core/optimizer.js`](file:///home/manus/.gemini/antigravity/scratch/smartcart-app/src/core/optimizer.js#L296-L328)) folgende Schritte aus:
+Jeder Einkaufslisten-Artikel trägt `specification` (bereinigter Anzeigetext, Standard `''`) sowie `normalizedSpecification`. Jeder Eintrag in `supermarket.itemOrder` hat kanonisch die Struktur `{ name: string, specification: string }`.
+
+1. **Normalisierung von Spezifikationen (`normalizeSpecification`)**:
+   - Unicode-NFC-Normalisierung, `trim()`, Umwandlung in Kleinbuchstaben (`toLowerCase()`) und Zusammenfassen mehrfacher interner Leerzeichen auf ein einzelnes Leerzeichen.
+   - Bewusst **keine** Synonym- oder Fuzzy-Erweiterung bei Marken/Spezifikationen, damit z. B. `Oatly` und `Weihenstephan` strikt getrennt bleiben.
+2. **Eindeutigkeit & Mehrfach-Koexistenz (`getStoreEntryKey`)**:
+   - Der Deduplizierungsschlüssel eines Supermarkt-Eintrags lautet `"<normalizedName>::<normalizedSpecification>"` (z. B. `"milch::"`, `"milch::weihenstephan"`, `"milch::oatly"`).
+   - Dadurch können in einem Supermarkt beliebig viele spezifizierte Einträge derselben Warengruppe **und** zusätzlich ein unspezifizierter Basis-Eintrag gleichzeitig an unterschiedlichen Positionen im Laufweg existieren.
+   - Alle Bearbeitungsfunktionen (`findExactStoreEntryIndex`, `addSupermarketKnownItem*`, `moveSupermarketItemAfter`, `updateSupermarketKnownItem`, `removeSupermarketKnownItem`) arbeiten auf dieser exakten `(name, specification)`-Identität bzw. dem Zeilen-Index.
+3. **Matching-Regel (`findStoreEntryMatch`)**:
+   - **Fall 1 – Einkaufslisten-Ware HAT eine Spezifikation (`targetNormSpec !== ''`)**:
+     1. Suche exakten `normalizedName` + exakte `normalizedSpecification` → `matchType: 'exact-spec'`.
+     2. Suche kanonisches Namens-Synonym (`getCanonicalItemKey`) + exakte `normalizedSpecification` → `matchType: 'exact-spec'`.
+     3. **Fallback**: Falls kein exakter Spezifikations-Treffer existiert, suche allgemeinen Supermarkt-Eintrag derselben Warengruppe **ohne Spezifikation** (`normSpec === ''`, erst `normalizedName`, dann Synonym) → `matchType: 'fallback-generic'`.
+     4. Sonst kein Treffer (`index: -1`, `matchType: 'none'` → unbekannt). Eine abweichende Spezifikation (z. B. `Milch (Alpro)` vs. `Milch (Oatly)`) matcht **niemals** aufeinander.
+   - **Fall 2 – Einkaufslisten-Ware hat KEINE Spezifikation (`targetNormSpec === ''`)**:
+     1. Suche ausschließlich Einträge mit `normSpec === ''` (erst `normalizedName`, dann Synonym) → `matchType: 'exact-generic'`.
+     2. Existiert im Markt nur ein spezifizierter Eintrag (z. B. nur `Milch (Oatly)`), gilt die unspezifizierte `Milch` als **nicht im Markt vorhanden** (`index: -1`, `matchType: 'none'`).
+
+---
+
+### 2.3 Unbekannte Waren am Listenanfang & Long-Press-Aufnahme
+
+1. **Platzierung & Abhak-Verhalten**:
+   - Offene Waren mit `storePosition === -1` (`isUnknownInStore: true`) stehen per **Regel C** am Anfang der offenen Waren (nach eventuellen `addedLateOverride`-Artikeln, aber vor allen bekannten Supermarkt-Waren) und erhalten in der UI die Klasse `.unknown-in-store` sowie das Attribut `data-unknown-item="true"`.
+   - Beim **Abhaken** wechselt eine unbekannte Ware sauber in den erledigten Bereich (`checkedItems`), wo sie hinter den abgehakten bekannten Waren nach `originalOrder` einsortiert wird.
+   - In `toggleItemCheck` werden unbekannte Waren am Listenanfang beim Ermitteln von `skippedItems` explizit ausgeblendet (`item.storePosition !== -1`), sodass das Abhaken regulärer bekannter Waren keine falsche Live-Optimierungs-Rückfrage wegen davor stehender unbekannter Artikel auslöst.
+2. **Aufnahme per Long-Press (`bindUnknownItemLongPress` & `addItemToSupermarket`)**:
+   - Ein Gedrückthalten von **550 ms** (Pointer Events mit Touch-/Maus-Fallback; visuelles Feedback `.long-pressing` ab 110 ms; Abbruch bei Bewegung `> 10 px` oder Scroll-Event; unterdrücktes Kontextmenü und deaktiviertes iOS-Touch-Callout) ruft `handleAddUnknownItemToSupermarket(itemId)` auf.
+   - Der Core-Aufruf `addItemToSupermarket(supermarket, item, { list })` fügt den Eintrag `{ name, specification }` ans Ende der Supermarkt-Sortierliste an (ohne bestehende identische Einträge zu duplizieren) und sortiert die Einkaufsliste sofort neu.
+   - Nach dem Loslassen verhindert eine pointerId-sichere Klick-Unterdrückung (inklusive `window`-Release-Cleanup für durch `renderApp()` entfernte Touch-DOM-Knoten), dass der abschließende Touch-Release versehentlich ein Abhaken auslöst oder den nächsten normalen Tap verschluckt.
+
+---
+
+### 2.4 Rückgängig-Logik (Uncheck / Wiederherstellung der Laufposition)
+
+Wenn der Nutzer im oberen Bereich *„Bereits abgehakt (Erledigt)“* auf eine bereits abgehakte Ware tippt, um das Abhaken rückgängig zu machen, führt `toggleItemCheck(list, supermarket, itemId)` ([`src/core/optimizer.js`](file:///home/manus/.gemini/antigravity/scratch/smartcart-app/src/core/optimizer.js#L330-L361)) folgende Schritte aus:
 
 1. Die Eigenschaften der Ware werden zurückgesetzt auf:
    - `checked: false`
    - `checkedAt: null`
    - `addedLateOverride: false`
 2. Anschließend wird `sortShoppingList(updatedRawItems, supermarket)` aufgerufen.
-3. Da `checked` nun `false` ist, fällt die Ware zurück in die Menge der offenen Waren (`uncheckedItems`) und wird anhand ihres Index `indexOfNormalized(supermarket.itemOrder, item.name)` **wieder exakt an ihrer richtigen Supermarkt-Station** zwischen den anderen offenen Waren einsortiert.
+3. Da `checked` nun `false` ist, fällt die Ware zurück in die Menge der offenen Waren (`uncheckedItems`) und wird anhand ihres Treffers aus `findStoreEntryMatch(supermarket.itemOrder, item.name, item.specification)` **wieder exakt an ihrer richtigen Supermarkt-Station** (bzw. bei weiterhin unbekannten Waren wieder am Listenanfang) einsortiert.
 
 ---
 
-### 2.3 Selbstlernender Live-Optimierungs-Algorithmus
+### 2.5 Selbstlernender Live-Optimierungs-Algorithmus
 
 Die Funktion **Live-Optimierung** lässt sich direkt im Header der Einkaufsliste per Schalter (`list.liveOptimizationEnabled`) ein- und ausschalten.
 
@@ -157,85 +197,78 @@ sequenceDiagram
     participant Opt as Optimizer (optimizer.js)
     participant Store as Storage (storage.js)
 
-    User->>UI: Tippt auf offene Ware W (z. B. "Milch") zum Abhaken
+    User->>UI: Tippt auf offene Ware W (z. B. "Milch (Oatly)") zum Abhaken
     UI->>Opt: toggleItemCheck(list, supermarket, itemId)
     Opt->>Opt: Berechne aktuelle uncheckedItems in Laufreihenfolge
-    Opt->>Opt: Ermittle targetUncheckedIdx von W
-    Opt->>Opt: skippedItems = alle offenen Waren vor W (ohne addedLateOverride)
+    Opt->>Opt: Prüfe targetIsKnown (storePosition !== -1) und targetUncheckedIdx
+    Opt->>Opt: skippedItems = bekannte offene Waren vor W (ohne addedLateOverride & ohne unbekannte)
     Opt->>Opt: Setze W auf checked = true, checkedAt = Date.now()
-    
-    alt liveOptimizationEnabled === true UND skippedItems.length > 0
+
+    alt liveOptimizationEnabled === true UND targetIsKnown UND skippedItems.length > 0
         Opt-->>UI: { action: 'checked', outOfOrderDetected: true, checkedItem: W, skippedItems, promptMessage }
-        UI->>User: Öffnet Modal: "Reihenfolge im Supermarkt anpassen?<br/>Du hast „Milch“ vor „Hackfleisch“ abgehakt..."
+        UI->>User: Öffnet Modal: "Reihenfolge im Supermarkt anpassen?<br/>Du hast „Milch (Oatly)“ vor „Hackfleisch“ abgehakt..."
         alt Nutzer klickt "Ja, Reihenfolge anpassen"
             User->>UI: Bestätigt Anpassung
             UI->>Opt: applyLiveOptimizationUpdate(supermarket, checkedItem, skippedItems)
-            Opt->>Opt: Entfernt "Milch" aus alter Position in itemOrder<br/>und fügt "Milch" direkt VOR dem ersten skippedItem ("Hackfleisch") ein
+            Opt->>Opt: Platziert exakten Eintrag W (mit Spezifikation) direkt VOR dem ersten skippedItem
             Opt-->>UI: Aktualisierter Supermarket + neu sortierte Einkaufsliste
             UI->>Store: Speichert aktualisierten Supermarkt & Liste
         else Nutzer klickt "Nein, nur abhaken"
             User->>UI: Lehnt Anpassung ab
             UI->>UI: Schließt Modal (Supermarkt-Reihenfolge bleibt unverändert)
         end
-    else liveOptimizationEnabled === false ODER W war bereits die 1. offene Ware
+    else liveOptimizationEnabled === false ODER W unbekannt ODER keine übersprungenen bekannten Waren
         Opt-->>UI: { action: 'checked', outOfOrderDetected: false }
         UI->>Store: Speichert abgehakte Liste ohne Rückfrage
     end
 ```
 
 1. **Erkennung einer Reihenfolge-Abweichung**:
-   Bevor die Ware `target` auf `checked: true` gesetzt wird, prüft `toggleItemCheck`, an welchem Index `targetUncheckedIdx` sich die Ware innerhalb der aktuellen `uncheckedItems` befindet.
-   - Falls `targetUncheckedIdx > 0` (und die Ware kein `addedLateOverride` hatte), hat der Nutzer alle offenen Waren im Bereich `uncheckedItems.slice(0, targetUncheckedIdx)` (gefiltert auf `!item.addedLateOverride`) im Gang übersprungen (`skippedItems`).
-   - Ist `list.liveOptimizationEnabled === true` und `skippedItems.length > 0`, liefert `toggleItemCheck` das Flag `outOfOrderDetected: true` sowie den deutschen Rückfragetext `promptMessage` zurück.
-   - Ist `list.liveOptimizationEnabled === false`, ist `outOfOrderDetected` immer `false` – es erfolgt keinerlei Rückfrage.
-2. **Dynamisches Umhängen in der Supermarkt-Konfiguration (`applyLiveOptimizationUpdate`)**:
-   Bestätigt der Nutzer den Dialog mit *„Ja, Reihenfolge anpassen“*, wird `applyLiveOptimizationUpdate(supermarket, checkedItemName, skippedItemNames)` ([`src/core/optimizer.js`](file:///home/manus/.gemini/antigravity/scratch/smartcart-app/src/core/optimizer.js#L341-L404)) ausgeführt:
-   - Falls `checkedItemName` bereits in `supermarket.itemOrder` enthalten war, wird es zunächst an seiner alten Stelle entfernt (`order.splice(existingCheckedIdx, 1)`).
-   - Danach wird der kleinste Index `targetInsertIdx` unter allen übersprungenen Waren (`skippedItemNames`) in `order` gesucht.
-   - `checkedItemName` wird mittels `order.splice(targetInsertIdx, 0, canonicalCheckedName)` **unmittelbar vor** der ersten übersprungenen Ware eingefügt. Falls noch keine der beteiligten Waren in `itemOrder` existierte, werden beide in der neu gelernten Reihenfolge ans Ende von `itemOrder` angehängt.
+   Bevor die Ware `target` auf `checked: true` gesetzt wird, prüft `toggleItemCheck`, ob `target` im Supermarkt bekannt ist (`targetIsKnown`) und an welchem Index `targetUncheckedIdx` sie innerhalb von `uncheckedItems` steht.
+   - Falls `!wasLateOverride && targetIsKnown && targetUncheckedIdx > 0`, werden alle davor liegenden bekannten offenen Waren ohne `addedLateOverride` (`!item.addedLateOverride && item.storePosition !== -1`) als `skippedItems` gesammelt. Unbekannte Waren am Listenanfang werden dabei bewusst ignoriert.
+   - Ist `list.liveOptimizationEnabled === true` und `skippedItems.length > 0`, liefert `toggleItemCheck` das Flag `outOfOrderDetected: true` sowie den deutschen Rückfragetext `promptMessage` (inkl. formatierter Spezifikationen über `formatItemDisplayName`) zurück.
+2. **Dynamisches Umhängen unter Erhalt der Spezifikation (`applyLiveOptimizationUpdate`)**:
+   Bestätigt der Nutzer den Dialog mit *„Ja, Reihenfolge anpassen“*, wird `applyLiveOptimizationUpdate(supermarket, checkedItemOrName, skippedItemsOrNames)` ([`src/core/optimizer.js`](file:///home/manus/.gemini/antigravity/scratch/smartcart-app/src/core/optimizer.js#L376-L448)) ausgeführt:
+   - Es wird gezielt nach dem **exakten** Eintrag `(name, specification)` gesucht (`findExactStoreEntryIndex` bzw. `exact-spec`/`exact-generic`). Trägt die abgehakte Ware eine eigene Spezifikation, die bisher nur per Fallback über die allgemeine Warengruppe gematcht hatte, bleibt der allgemeine Eintrag unangetastet und die spezifizierte Ware wird als eigener Eintrag direkt vor dem ersten `skippedItem` eingefügt.
 
 ---
 
-### 2.4 Intelligentes nachträgliches Hinzufügen („Bereits vorbeigelaufen“-Erkennung)
+### 2.6 Intelligentes nachträgliches Hinzufügen („Bereits vorbeigelaufen“-Erkennung)
 
-Fällt dem Nutzer **während des Einkaufs** (nachdem er bereits erste Waren im Markt abgehakt hat) noch ein Artikel ein, prüft `addItemToList(list, supermarket, { name, quantity, category })` ([`src/core/optimizer.js`](file:///home/manus/.gemini/antigravity/scratch/smartcart-app/src/core/optimizer.js#L124-L175)) automatisch, ob der Nutzer die reguläre Abteilung dieser Ware im Supermarkt bereits passiert hat:
+Fällt dem Nutzer **während des Einkaufs** (nachdem er bereits erste Waren im Markt abgehakt hat) noch ein Artikel ein, prüft `addItemToList(list, supermarket, { name, specification, quantity, category })` ([`src/core/optimizer.js`](file:///home/manus/.gemini/antigravity/scratch/smartcart-app/src/core/optimizer.js#L144-L205)) automatisch, ob der Nutzer die reguläre Abteilung dieser Ware im Supermarkt bereits passiert hat:
 
 1. **Positionsbestimmung der neuen Ware**:
-   Es wird `pos = indexOfNormalized(supermarket.itemOrder, name)` ermittelt.
+   Es wird `pos = indexOfNormalized(supermarket.itemOrder, name, cleanSpec)` ermittelt.
 2. **Abgleich mit bereits abgehakten Waren**:
-   Falls `pos !== -1` (die Ware hat einen festen Platz im Markt), iteriert der Algorithmus über alle aktuell bereits abgehakten Waren (`existing.checked === true`) auf dem Einkaufszettel und bestimmt deren Marktposition `checkedPos = indexOfNormalized(supermarket.itemOrder, existing.name)`.
+   Falls `pos !== -1` (die Ware hat einen festen Platz im Markt), iteriert der Algorithmus über alle aktuell bereits abgehakten Waren (`existing.checked === true`) auf dem Einkaufszettel und bestimmt deren Marktposition `checkedPos = indexOfNormalized(supermarket.itemOrder, existing.name, existing.specification)`.
 3. **Entscheidungskriterium (`checkedPos > pos`)**:
    - **Fall 1: `checkedPos > pos` trifft für mindestens eine abgehakte Ware zu (`passedByItems.length > 0`)**:
-     Der Nutzer hat bereits Waren im Einkaufswagen, die im Supermarkt *weiter hinten* (näher Richtung Kasse) liegen als die neu hinzugefügte Ware. Er ist also an der Position der neuen Ware schon vorbeigelaufen!
-     - `wasAddedLate` wird auf `true` gesetzt.
-     - Die neue Ware erhält `addedLateOverride: true`.
-     - Durch **Regel C** in `sortShoppingList` wird diese Ware sofort auf **Platz 1 der offenen Waren** (direkt unter den erledigten Waren) gesetzt und in der UI mit einem orangenen Highlight-Rahmen, dem Badge *„⚡ Nachträglich hinzugefügt • Als Nächstes (Station schon passiert)“* sowie einem erklärenden Toast-Hinweis versehen.
+     `wasAddedLate` und `addedLateOverride` werden auf `true` gesetzt. Durch **Regel B** in `sortShoppingList` erscheint die Ware sofort als erste offene Ware ganz oben mit orangenem Highlight und Toast-Hinweis.
    - **Fall 2: Keine abgehakte Ware liegt hinter `pos` (`passedByItems.length === 0`)**:
-     Die Abteilung der neuen Ware liegt auf dem normalen Weg noch vor dem Nutzer.
-     - `wasAddedLate` ist `false`, `addedLateOverride` ist `false`.
-     - Die Ware wird regulär an ihrer zukünftigen Laufposition `pos` unter den offenen Waren einsortiert.
+     Die Ware wird regulär an ihrer zukünftigen Laufposition `pos` (bzw. bei unbekannten Waren am Listenanfang gemäß Regel C) einsortiert.
 
 ---
 
-### 2.5 Präzises Einfügen & Verschieben von Supermarkt-Waren über die vorige Ware & Drag-and-Drop
+### 2.7 Präzises Einfügen, Verschieben & Drag-and-Drop mit automatischem Rand-Scrollen
 
-Um das Einrichten und Anpassen einer Supermarkt-Laufreihenfolge (`supermarket.itemOrder`) mit Dutzenden Stationen auf dem Smartphone maximal komfortabel zu machen, kombiniert SmartCart drei komplementäre Mechanismen:
+Um das Einrichten und Anpassen einer Supermarkt-Laufreihenfolge (`supermarket.itemOrder`) mit Dutzenden Stationen auf dem Smartphone und Desktop maximal komfortabel zu machen, kombiniert SmartCart vier komplementäre Mechanismen:
 
-1. **Einfügen neuer Waren anhand der vorigen Ware (`addSupermarketKnownItemAfter`)**:
-   - Statt nur pauschal „Am Anfang“ oder „Am Ende“ einzufügen, gibt der Nutzer beim Hinzufügen einer neuen Ware die **vorige Ware** an (unterstützt durch ein Autocomplete-Suchfeld `<datalist id="storeExistingItemsDatalist">`).
-   - Ist `previousItemName === '__START__'` (oder `'Ganz am Anfang (Position 1)'`), wird die Ware per `order.unshift(clean)` direkt auf Position 1 (Index `0`) gesetzt.
-   - Entspricht `previousItemName` einer vorhandenen Ware (`prevIdx = indexOfNormalized(order, previousItemName)`), wird die neue Ware per `order.splice(prevIdx + 1, 0, clean)` **unmittelbar hinter** dieser vorigen Ware eingefügt.
-   - Bleibt das Feld leer, wird die Ware am Ende angehängt.
-2. **Gezieltes Verschieben bestehender Waren über den `⇄`-Dialog (`moveSupermarketItemAfter`)**:
-   - Jede Zeile im Supermarkt-Konfigurator besitzt neben den `↑`/`↓`-Pfeilen einen `⇄`-Button (*„Gezielt verschieben“*).
-   - Im sich öffnenden Modal kann der Nutzer entweder *„⬆️ Ganz an den Anfang (Position 1)“* wählen oder per Autocomplete-Feld bzw. Schnellauswahl-Chip die neue **vorige Ware** antippen, hinter die das Produkt sofort springt.
-3. **Touch- & Maus-Drag-and-Drop über das `☰`-Handle (`bindStoreOrderDragAndDrop` & `reorderSupermarketItem`)**:
-   - Auf Desktop-Browsern nutzt `#store-order-list` natives HTML5 Drag & Drop (`dragstart`, `dragover`, `drop`, `dragend`).
-   - Auf Smartphones (Android/iOS) fängt ein dedizierter Touch-Controller (`touchstart`, `touchmove` mit `document.elementFromPoint`, `touchend`) das Ziehen am `☰`-Griff ab, hebt die Zielzeile visuell hervor (`.drag-over`) und führt beim Loslassen `reorderSupermarketItem(store, fromIdx, toIdx)` aus.
+1. **Einfügen neuer Waren (mit optionaler Spezifikation) anhand der vorigen Ware (`addSupermarketKnownItemAfter`)**:
+   - Im Formular `#add-store-item-form` können Artikelname (`#new-store-item-name`), optionale Spezifikation (`#new-store-item-spec`) sowie die **vorige Ware** (`#storeAddItemPreviousInput` mit `<datalist id="storeExistingItemsDatalist">`, inkl. formatierter Anzeige `"Name (Spezifikation)"`) angegeben werden.
+   - Bei `'__START__'` wird an Position 1 (Index `0`) eingefügt, bei gefundener voriger Ware per `resolvePreviousItemIndex` unmittelbar dahinter (`prevIdx + 1`), sonst am Ende.
+2. **Bearbeiten bestehender Supermarkt-Einträge (`openEditStoreItemModal` & `updateSupermarketKnownItem`)**:
+   - Über den `✎`-Button jeder Zeile lassen sich Name und Spezifikation eines Supermarkt-Eintrags jederzeit ändern, ohne seine Position zu verlieren.
+3. **Gezieltes Verschieben über den `⇄`-Dialog (`moveSupermarketItemAfter`)**:
+   - Jede Zeile besitzt neben `↑`/`↓` einen `⇄`-Button (*„Gezielt verschieben“*). Im Modal `#move-store-item-modal` kann Position 1 oder per Suche/Schnellauswahl-Chip die neue vorige Ware (inkl. Spezifikation) gewählt werden.
+4. **Touch- & Maus-Drag-and-Drop (`☰`) mit kontinuierlichem Rand-Auto-Scroll (`bindStoreOrderDragAndDrop`)**:
+   - **Scroll-Container & sichtbare Grenzen**: `getDragScrollContainer(listEl)` erkennt automatisch den tatsächlichen Scroll-Container (`window` oder einen scrollbaren Ancestor). `getVisibleDragBounds(scrollContainer)` zieht automatisch die Höhe des sticky `.app-header` oben und der fixierten `.bottom-nav` unten ab, sodass die Auto-Scroll-Zonen (ca. 72 px am oberen und unteren Rand) immer im tatsächlich sichtbaren Bereich liegen.
+   - **Kontinuierliche `requestAnimationFrame`-Schleife**: Sobald der Finger oder Mauszeiger beim Ziehen in die obere oder untere Randzone eintritt, berechnet `computeDragAutoScrollSpeed(clientY, bounds)` eine distanzabhängige Scrollgeschwindigkeit (sanft am Zonenrand, schneller je näher an der Kante) und scrollt in jedem Animation-Frame ruckelfrei weiter.
+   - **Live-Zielaktualisierung & Mobile-Ghost**: Während des automatischen Scrollens wird fortlaufend `updateDropTargetAtPoint(clientX, clientY)` ausgeführt, damit die hervorgehobene Zielzeile (`.drag-over`) immer exakt unter dem Finger/Cursor bleibt. Beim mobilen Touch-Drag folgt eine schwebende Vorschau (`.drag-ghost`) dem Finger.
+   - **Sauberes Aufräumen**: Beim Verlassen der Randzone, Loslassen (`drop`, `dragend`, `touchend`, `touchcancel`), Fenster-`blur` oder Tab-Wechsel (`switchTab`) beendet `stopDragAutoScroll()` sofort die rAF-Schleife, entfernt das Ghost-Element und setzt alle Drag-Indizes und CSS-Klassen zurück.
 
 ---
 
-### 2.6 Echte Kamera-OCR mit Tesseract.js v5 & HTML5-Canvas Bild-Vorverarbeitung
+### 2.8 Echte Kamera-OCR mit Tesseract.js v5 & HTML5-Canvas Bild-Vorverarbeitung
 
 Beim Fotografieren eines echten Einkaufszettels im Tab *„Foto-Scanner“* durchläuft das Bild eine mehrstufige Pipeline in [`src/core/ocr.js`](file:///home/manus/.gemini/antigravity/scratch/smartcart-app/src/core/ocr.js):
 
@@ -243,12 +276,33 @@ Beim Fotografieren eines echten Einkaufszettels im Tab *„Foto-Scanner“* durc
    - Nur wenn der Nutzer explizit auf einen der 3 Demo-Buttons (`'wochenende'`, `'fruehstueck'`, `'italienisch'`) tippt – deren generierte Data-URLs im `Set` `GENERATED_SAMPLE_DATA_URLS` registriert sind –, werden die Demo-Zeilen verwendet.
    - Für jedes echte Kamerafoto oder Galeriebild liefert `detectPresetFromSource` garantiert `null`, sodass **niemals** falsche Demo-Artikel für ein echtes Foto angezeigt werden.
 2. **Automatische Bild-Vorverarbeitung auf HTML5-Canvas (`preprocessImageForOcr`)**:
-   - Smartphone-Fotos haben oft 12–48 Megapixel und ungleichmäßige Schatten auf dem Papier.
-   - `preprocessImageForOcr` skaliert das Bild proportional auf maximal `1800px` Kantenlänge (bzw. vergrößert sehr kleine Bilder auf mindestens `700px`), wandelt alle Pixel nach der Luminanzformel `0.299*R + 0.587*G + 0.114*B` in Graustufen um und berechnet ein 256-Stufen-Histogramm.
-   - Anhand des 3 %- und 90 %-Perzentils erfolgt eine **Auto-Levels-Kontrastspreizung** kombiniert mit einer Schwellenwert-Aufhellung des Papierhintergrunds (`norm > 190 → 255` Weiß) und Abdunklung der Stiftschrift (`norm < 90 → norm * 0.45`).
+   - Skaliert das Bild proportional auf `700px .. 1800px` Kantenlänge, wandelt alle Pixel nach der Luminanzformel `0.299*R + 0.587*G + 0.114*B` in Graustufen um und spreizt den Kontrast anhand des 3 %- und 90 %-Perzentils (Auto-Levels + Hintergrund-Aufhellung auf Weiß und Abdunklung der Schrift).
 3. **Dynamisches Laden & Ausführen von Tesseract.js (`ensureTesseractLoaded` & `recognizeImageShoppingList`)**:
-   - Ist `window.Tesseract` noch nicht geladen, injiziert `ensureTesseractLoaded` automatisch Tesseract.js v5 von jsDelivr (mit Fallback auf unpkg).
-   - Anschließend führt `Tesseract.recognize(processedImage, 'deu', { logger })` die deutsche Texterkennung durch, meldet den prozentualen Fortschritt live an die UI und übergibt den erkannten Rohtext an `parseShoppingText(rawText)`.
+   - Lädt bei Bedarf Tesseract.js v5 von jsDelivr (Fallback unpkg) nach, führt `Tesseract.recognize(processedImage, 'deu', { logger })` aus und übergibt den Rohtext an `parseShoppingText(rawText)`.
+
+---
+
+### 2.9 Ausschließlich dateibasierter Export & Import (`.smartcart.json`)
+
+Um Einkaufslisten sauber und plattformübergreifend zwischen Geräten auszutauschen, unterstützt SmartCart ab Version `1.1.0` **ausschließlich dateibasierten Export und Import** in [`src/core/share.js`](file:///home/manus/.gemini/antigravity/scratch/smartcart-app/src/core/share.js). Alle früheren Share-Mechanismen (`SC1:`-Base64-Share-Codes, Plaintext-/Messenger-Text-Teilen, Zwischenablage-Kopieren, separates Supermarkt- oder Vollbackup-Sharing) wurden vollständig entfernt.
+
+1. **Dateiformat (`.smartcart.json`, Format-Version 2)**:
+   - Dateiname: `SmartCart_<bereinigter-Listenname>_YYYY-MM-DD.smartcart.json` (`buildShoppingListFilename`).
+   - Struktur: `{ app: "SmartCart", format: "smartcart-shopping-list", version: 2, type: "shopping_list", exportedAt, list: { id, name, supermarketId, liveOptimizationEnabled, updatedAt, items: [...] }, supermarket: { id, name, icon, color } | null }`.
+   - Jeder Artikel speichert vollständig `id`, `name`, `specification`, `quantity`, `category`, `checked`, `checkedAt`, `addedLateOverride` und `originalOrder`.
+2. **Export-Pfade**:
+   - **Auf Gerät speichern (`saveShoppingListFile`)**: Nutzt in einer nativen Capacitor-App `Capacitor.Plugins.Filesystem.writeFile` (Verzeichnis `DOCUMENTS`), andernfalls einen Browser-Blob-Download (`triggerBrowserDownload`).
+   - **Als Datei teilen (`shareShoppingListFile`)**: Teilt **strikt als Dateianhang** (niemals als Text oder über die Zwischenablage):
+     - Nativ über `Capacitor.Plugins.Filesystem` (`CACHE`) + `Capacitor.Plugins.Share.share({ files: [uri], ... })`.
+     - Im Browser/PWA über Web Share API Level 2 (`navigator.share({ files: [file], title })`), abgesichert durch `navigator.canShare({ files })` (inklusive MIME-Probe für `application/json` und Fallback-Probe `text/plain`, falls ein mobiler Browser `application/json` beim Dateisharing ablehnt).
+     - Nutzerabbruch (`AbortError`) wird sauber als `{ aborted: true, method: 'aborted' }` gemeldet, ohne ungewollten Download. Wird direktes Datei-Teilen vom Browser nicht unterstützt (z. B. Desktop-Browser), speichert `fallbackToSave: true` automatisch die Datei auf dem Gerät (`method: 'save-fallback'`).
+3. **Import-Validierung & Modi (`readShoppingListFile`, `parseShoppingListFileContent`, `applyImportedShoppingList`)**:
+   - Akzeptiert `.smartcart.json` und `.json` bis maximal **5 MB** (`MAX_IMPORT_FILE_BYTES`), entfernt optionale UTF-8-BOMs und weist leere, defekte, fremde oder veraltete `SC1:`-Daten mit klaren deutschen Fehlermeldungen ab. Ältere v1-JSON-Dateien ohne `specification`-Feld werden abwärtskompatibel eingelesen (`specification: ''`).
+   - Beim Anwenden stehen drei Modi zur Wahl:
+     - **`'new'` (Standard)**: Legt einen neuen benannten Einkaufszettel mit frischen IDs an (bei Namenskollision automatisch mit Suffix `(Import)`).
+     - **`'merge'`**: Führt importierte Artikel in den aktuell aktiven Einkaufszettel ein und dedupliziert per `getStoreEntryKey(name, specification)` (dieselbe Ware mit unterschiedlicher Spezifikation bleibt getrennt erhalten!).
+     - **`'replace'`**: Ersetzt die Artikel der aktuellen Liste unter Beibehaltung ihrer Listen-ID.
+   - Der passende lokale Supermarkt wird automatisch per ID → Marktname → Fallback ermittelt (`resolveTargetSupermarket`) und die Liste unmittelbar über `sortShoppingList` sortiert, sodass sie sofort einsatzbereit ist.
 
 ---
 
@@ -261,205 +315,184 @@ Im Folgenden sind **alle 7 Module** und **jede einzelne Funktion** des Projekts 
 ### 3.1 Modul 1: `src/core/models.js`
 
 **Pfad**: [`src/core/models.js`](file:///home/manus/.gemini/antigravity/scratch/smartcart-app/src/core/models.js)  
-**Verantwortung**: Domänenmodelle (`Item`, `Supermarket`, `ShoppingList`), Übernahme von Sortier-Vorlagen beim Anlegen neuer Supermärkte, sprachliche Normalisierung deutscher Artikelnamen, Synonym-/Plural-Auflösung, Abteilungs-Erkennung und Standard-Supermärkte (`REWE`, `ALDI`, `LIDL`).
+**Verantwortung**: Domänenmodelle (`Item` mit optionaler `specification`, `Supermarket` mit `{ name, specification }[]`-Sortiereinträgen, `ShoppingList`), Übernahme von Sortier-Vorlagen beim Anlegen neuer Supermärkte, sprachliche Normalisierung deutscher Artikelnamen, Spezifikations-Normalisierung & -Matching, Synonym-/Plural-Auflösung, Abteilungs-Erkennung und Standard-Supermärkte (`REWE`, `ALDI`, `LIDL`).
 
 #### 1. `generateId(prefix = 'id')`
 - **Parameter**: `prefix` (`string`, optional, Standard: `'id'`) – Präfix für die generierte ID (z. B. `'item'`, `'store'`, `'list'`).
 - **Rückgabewert**: `string` – Eindeutige ID im Format `<prefix>_<timestampBase36>_<randomBase36>`.
 - **Was macht die Funktion?** Erzeugt eine kollisionsfreie, menschenlesbare eindeutige ID für Waren, Supermärkte und Einkaufslisten.
-- **Wie ist sie aktuell umgesetzt?** Kombiniert `Date.now().toString(36)` mit einem 6-stelligen Zufallsstring aus `Math.random().toString(36).substring(2, 8)` per Template-String.
+- **Wie ist sie aktuell umgesetzt?** Kombiniert `Date.now().toString(36)` mit einem 6-stelligen Zufallsstring aus `Math.random().toString(36).substring(2, 8)`.
 
 #### 2. `normalizeItemName(name)`
 - **Parameter**: `name` (`string`) – Roher Artikelname (z. B. `"  Äpfel (Bio) "`).
 - **Rückgabewert**: `string` – Normalisierter Vergleichsschlüssel (z. B. `"aepfel bio"`).
 - **Was macht die Funktion?** Bereinigt und normalisiert deutsche Artikelnamen für einen fehlertoleranten Vergleich zwischen Benutzereingaben und Supermarkt-Konfigurationen (unabhängig von Groß-/Kleinschreibung, Umlauten oder Sonderzeichen).
-- **Wie ist sie aktuell umgesetzt?** Prüft auf `null`/`undefined`, wandelt in Kleinbuchstaben um (`.toLowerCase()`), ersetzt deutsche Umlaute explizit (`ä -> ae`, `ö -> oe`, `ü -> ue`, `ß -> ss`), führt eine Unicode-NFD-Dekomposition durch, entfernt diakritische Zeichen per Regex `/[\u0300-\u036f]/g`, ersetzt Nicht-Alphanumerika durch Leerzeichen und reduziert mehrfache Leerzeichen auf ein einzelnes.
+- **Wie ist sie aktuell umgesetzt?** Wandelt in Kleinbuchstaben um, ersetzt deutsche Umlaute (`ä -> ae`, `ö -> oe`, `ü -> ue`, `ß -> ss`), entfernt diakritische Zeichen via NFD-Dekomposition und bereinigt Sonder- sowie mehrfache Leerzeichen.
 
-#### 3. `getCanonicalItemKey(name)`
+#### 3. `cleanSpecification(specification)` & `normalizeSpecification(specification)`
+- **Parameter**: `specification` (`string | null | undefined`) – Optionale Spezifikation / Marke (z. B. `"  Weihenstephan  1,5% "`).
+- **Rückgabewert**: `string` – Bereinigter Anzeigetext (`cleanSpecification`, Standard `''`) bzw. normalisierter Vergleichsschlüssel (`normalizeSpecification`, Standard `''`).
+- **Was machen die Funktionen?** `cleanSpecification` trimmt den Wert für Speicherung und Anzeige. `normalizeSpecification` erzeugt den exakten Matching- und Deduplizierungsschlüssel per Unicode-NFC, `trim()`, `toLowerCase()` und Zusammenfassung interner Leerzeichen (`/\s+/g -> ' '`), bewusst ohne Synonym- oder Fuzzy-Erweiterung.
+
+#### 4. `createStoreEntry(entryOrName, specification)` *(Alias: `normalizeStoreEntry`)*
+- **Parameter**: `entryOrName` (`string | { name: string, specification?: string }`), `specification` (`string`, optional).
+- **Rückgabewert**: `{ name: string, specification: string } | null`.
+- **Was macht die Funktion?** Normalisiert sowohl ältere String-Einträge (`"Milch"`) als auch Objekt-Einträge (`{ name: 'Milch', specification: 'Oatly' }`) in das kanonische Supermarkt-Eintragsformat `{ name, specification }`. Gibt `null` zurück, wenn kein gültiger Produktname vorhanden ist.
+
+#### 5. `getStoreEntryKey(entryOrName, specification)`
+- **Parameter**: `entryOrName` (`string | Object`), `specification` (`string`, optional).
+- **Rückgabewert**: `string` – Eindeutiger zusammengesetzter Schlüssel `"<normalizedName>::<normalizedSpecification>"` (oder `''`).
+- **Was macht die Funktion?** Erzeugt den Deduplizierungs- und Identitätsschlüssel für Supermarkt-Einträge sowie den Merge-Import, sodass dieselbe Warengruppe mehrfach mit verschiedenen Spezifikationen und/oder ohne Spezifikation koexistieren kann.
+
+#### 6. `formatItemDisplayName(itemOrName, specification)`
+- **Parameter**: `itemOrName` (`string | Object`), `specification` (`string`, optional).
+- **Rückgabewert**: `string` – `"Name (Spezifikation)"` falls eine Spezifikation gesetzt ist, sonst `"Name"`.
+- **Was macht die Funktion?** Formatiert Artikel und Supermarkt-Einträge konsistent für Rückfragetexte, Toasts und Autocomplete-Listen.
+
+#### 7. `getCanonicalItemKey(name)`
 - **Parameter**: `name` (`string`) – Artikelname im Singular, Plural oder als Synonym (z. B. `"Vollmilch"`, `"Brötchen"`, `"Semmeln"`, `"Klopapier"`).
 - **Rückgabewert**: `string` – Kanonischer Grundbegriff (z. B. `"milch"`, `"broetchen"`, `"toilettenpapier"`).
-- **Was macht die Funktion?** Führt deutsche Singular-/Pluralformen und gängige regionale Synonyme auf einen gemeinsamen kanonischen Schlüssel zusammen, damit z. B. `"Apfel"` auf dem Einkaufszettel zuverlässig die Station `"Äpfel"` im Supermarkt findet.
-- **Wie ist sie aktuell umgesetzt?** Beim Laden des Moduls werden 48 Äquivalenzgruppen (`EQUIVALENCE_GROUPS`) in eine schnelle `Map` (`SYNONYM_LOOKUP`) geladen, die jeden normalisierten Begriff auf das erste Element seiner Gruppe abbildet. `getCanonicalItemKey` ruft `normalizeItemName(name)` auf und schlägt den Wert in `SYNONYM_LOOKUP` nach (mit Fallback auf den normalisierten Namen selbst).
+- **Was macht die Funktion?** Führt deutsche Singular-/Pluralformen und gängige regionale Synonyme über 48 `EQUIVALENCE_GROUPS` in einer `SYNONYM_LOOKUP`-Map zusammen.
 
-#### 4. `indexOfNormalized(itemOrder, itemName)`
+#### 8. `findStoreEntryMatch(itemOrder, itemNameOrEntry, specification)`
 - **Parameter**:
-  - `itemOrder` (`string[]`) – Geordnetes Array der Warennamen eines Supermarkts.
-  - `itemName` (`string`) – Gesuchter Artikelname.
-- **Rückgabewert**: `number` – 0-basierter Index in `itemOrder` oder `-1`, falls nicht enthalten.
-- **Was macht die Funktion?** Sucht die genaue Laufweg-Position einer Ware innerhalb der Supermarkt-Konfiguration.
-- **Wie ist sie aktuell umgesetzt?** Zweistufige Suche: In einer ersten `for`-Schleife wird auf exakte Übereinstimmung von `normalizeItemName(itemOrder[i]) === targetNorm` geprüft. Wird kein Treffer gefunden, prüft eine zweite Schleife auf Synonym-/Plural-Gleichheit über `getCanonicalItemKey(itemOrder[i]) === targetCanonical`.
+  - `itemOrder` (`Array<string | { name: string, specification?: string }>`) – Geordnete Sortierliste des Supermarkts.
+  - `itemNameOrEntry` (`string | Object`) – Gesuchte Ware.
+  - `specification` (`string`, optional) – Optionale Spezifikation.
+- **Rückgabewert**: `{ index: number, matchType: 'exact-spec'|'exact-generic'|'fallback-generic'|'none', entry: { name: string, specification: string } | null }`.
+- **Was macht die Funktion?** Implementiert die zweistufige Spezifikations-Matching-Regel: Hat die Einkaufslisten-Ware eine Spezifikation, wird zuerst auf exakte `normalizedSpecification` (exakter Name, dann Synonym → `'exact-spec'`) geprüft; andernfalls erfolgt der Fallback auf den unspezifizierten Warengruppen-Eintrag (`normSpec === ''` → `'fallback-generic'`). Hat die Ware keine Spezifikation, matcht sie ausschließlich Einträge mit `normSpec === ''` (`'exact-generic'`) und niemals rein spezifizierte Einträge.
 
-#### 5. `guessItemCategory(name)`
-- **Parameter**: `name` (`string`) – Name der Ware.
+#### 9. `indexOfNormalized(itemOrder, itemNameOrEntry, specification)`
+- **Parameter**: `itemOrder`, `itemNameOrEntry`, optional `specification`.
+- **Rückgabewert**: `number` – 0-basierter Index in `itemOrder` oder `-1`.
+- **Was macht die Funktion?** Kurzform von `findStoreEntryMatch(...).index` für die Positionsbestimmung im Supermarkt inklusive Fallback-Regel.
+
+#### 10. `findExactStoreEntryIndex(itemOrder, itemNameOrEntry, specification)`
+- **Parameter**: `itemOrder`, `itemNameOrEntry`, optional `specification`.
+- **Rückgabewert**: `number` – 0-basierter Index oder `-1`.
+- **Was macht die Funktion?** Sucht den exakten Supermarkt-Eintrag über `getStoreEntryKey(...)` **ohne** Fallback auf unspezifizierte Einträge (genutzt für Deduplizierung, Einfügen, Bearbeiten, Verschieben und Löschen im Supermarkt).
+
+#### 11. `guessItemCategory(nameOrEntry)`
+- **Parameter**: `nameOrEntry` (`string | Object`) – Name oder Eintrag der Ware.
 - **Rückgabewert**: `string` – Deutsche Abteilungsbezeichnung (`'Obst & Gemüse'`, `'Backwaren'`, `'Kühlregal & Milch'`, `'Fleisch & Wurst'`, `'Trockensortiment'`, `'Getränke'`, `'Tiefkühl'`, `'Haushalt & Drogerie'` oder `'Sonstiges'`).
 - **Was macht die Funktion?** Ordnet jedem Artikelnamen automatisch eine passende Supermarkt-Abteilung für UI-Badges zu.
-- **Wie ist sie aktuell umgesetzt?** Ermittelt den kanonischen Schlüssel via `getCanonicalItemKey(name)` und durchsucht ein vordefiniertes Array aus 8 Abteilungs-Objekten mittels `.some((term) => key === term || key.includes(term))`.
 
-#### 6. `createItem({ id, name, quantity, category, checked, checkedAt, addedLateOverride, originalOrder })`
-- **Parameter**: Options-Objekt mit `id` (`string`), `name` (`string`), `quantity` (`string|number`, Standard `'1x'`), `category` (`string|null`), `checked` (`boolean`, Standard `false`), `checkedAt` (`number|null`), `addedLateOverride` (`boolean`, Standard `false`), `originalOrder` (`number`, Standard `0`).
-- **Rückgabewert**: `Item`-Objekt (`{ id, name, normalizedName, quantity, category, checked, checkedAt, addedLateOverride, originalOrder }`).
-- **Was macht die Funktion?** Erzeugt ein validiertes, normiertes Einkaufslisten-Artikel-Objekt.
-- **Wie ist sie aktuell umgesetzt?** Trimmt `name` und `quantity`, berechnet `normalizedName` über `normalizeItemName`, bestimmt bei fehlender `category` die Abteilung per `guessItemCategory`, setzt `checkedAt` auf `Date.now()` wenn `checked === true` (sonst `null`) und stellt sicher, dass `addedLateOverride` bei bereits abgehakten Artikeln immer `false` ist.
+#### 12. `createItem({ id, name, specification, quantity, category, checked, checkedAt, addedLateOverride, originalOrder })`
+- **Parameter**: Options-Objekt mit `id`, `name`, `specification` (`string`, Standard `''`), `quantity` (Standard `'1x'`), `category`, `checked`, `checkedAt`, `addedLateOverride`, `originalOrder`.
+- **Rückgabewert**: `Item`-Objekt (`{ id, name, normalizedName, specification, normalizedSpecification, quantity, category, checked, checkedAt, addedLateOverride, originalOrder }`).
+- **Was macht die Funktion?** Erzeugt ein validiertes, normiertes Einkaufslisten-Artikel-Objekt inklusive bereinigter und normalisierter Spezifikation.
 
-#### 7. `createSupermarket({ id, name, icon, color, itemOrder, sourceSupermarketId, supermarkets, updatedAt })`
-- **Parameter**: Options-Objekt mit `id` (`string`), `name` (`string`), `icon` (`string`, Standard `'🛒'`), `color` (`string`, Standard `'#2563eb'`), `itemOrder` (`string[]`), optional `sourceSupermarketId` (`string`) & `supermarkets` (`Supermarket[]`), `updatedAt` (`number|null`).
-- **Rückgabewert**: `Supermarket`-Objekt (`{ id, name, icon, color, itemOrder, updatedAt }`).
-- **Was macht die Funktion?** Erzeugt eine validierte und duplikatfreie Supermarkt-Konfiguration. Wird kein `itemOrder`, dafür aber `sourceSupermarketId` übergeben, delegiert sie automatisch an `createSupermarketWithSorting`.
-- **Wie ist sie aktuell umgesetzt?** Prüft zunächst auf `sourceSupermarketId`; iteriert danach über `itemOrder`, normalisiert jeden Eintrag mit `normalizeItemName` und nutzt ein `Set` (`seen`), um doppelte Einträge herauszufiltern, während die exakte Reihenfolge erhalten bleibt.
+#### 13. `createSupermarket({ id, name, icon, color, itemOrder, sourceSupermarketId, supermarkets, updatedAt })`
+- **Parameter**: Options-Objekt mit `id`, `name`, `icon`, `color`, `itemOrder` (`Array<string | { name, specification }>`), optional `sourceSupermarketId` & `supermarkets`, `updatedAt`.
+- **Rückgabewert**: `Supermarket`-Objekt (`{ id, name, icon, color, itemOrder: Array<{ name, specification }>, updatedAt }`).
+- **Was macht die Funktion?** Erzeugt eine validierte Supermarkt-Konfiguration, migriert ältere `string[]`-Einträge transparent zu `{ name, specification }` und dedupliziert per `getStoreEntryKey` (`"<normalizedName>::<normalizedSpecification>"`), sodass unterschiedliche Spezifikationen derselben Warengruppe erhalten bleiben.
 
-#### 8. `getDefaultSupermarkets()`
+#### 14. `getDefaultSupermarkets()`
 - **Parameter**: Keine.
-- **Rückgabewert**: `Supermarket[]` – Array mit 3 vollständig konfigurierten deutschen Standard-Supermärkten (`REWE`, `ALDI`, `LIDL`).
-- **Was macht die Funktion?** Liefert frische Instanzen der drei Standard-Supermärkte mit jeweils 46 typischen Waren in realistischer, marktspezifischer Laufreihenfolge (z. B. startet REWE mit Obst & Gemüse → Backwaren → Fleisch/Wurst → Kühlregal, während ALDI mit Backwaren → Obst & Gemüse → Trockensortiment → Kühlwand startet).
-- **Wie ist sie aktuell umgesetzt?** Ruft dreimal `createSupermarket(...)` mit den kuratierten `itemOrder`-Listen für `'rewe'`, `'aldi'` und `'lidl'` auf und gibt das Array zurück (zusätzlich als Konstante `DEFAULT_SUPERMARKETS` exportiert).
+- **Rückgabewert**: `Supermarket[]` – Array mit 3 vollständig konfigurierten deutschen Standard-Supermärkten (`REWE`, `ALDI`, `LIDL`) im kanonischen `{ name, specification }`-Format.
 
-#### 9. `getDefaultItemOrder()`
+#### 15. `getDefaultItemOrder()`
 - **Parameter**: Keine.
-- **Rückgabewert**: `string[]` – Frische Kopie der Standard-Warenreihenfolge (46 Waren aus `DEFAULT_SUPERMARKETS[0].itemOrder`).
-- **Was macht die Funktion?** Liefert die Standard-Laufreihenfolge als unabhängiges Array, wenn beim Anlegen eines neuen Supermarkts die Option *„Standard (Standard-Sortierung)“* gewählt wird.
-- **Wie ist sie aktuell umgesetzt?** Klont `DEFAULT_SUPERMARKETS[0].itemOrder` per Spread-Operator `[...baseStore.itemOrder]`.
+- **Rückgabewert**: `Array<{ name: string, specification: string }>` – Frische tiefe Kopie der Standard-Warenreihenfolge.
 
-#### 10. `createSupermarketWithSorting({ id, name, icon = '🛒', color = '#2563eb', sourceSupermarketId = 'default', supermarkets = [], itemOrder = null, updatedAt = null })`
-- **Parameter**: Options-Objekt mit `id` (`string`, optional), `name` (`string`), `icon` (`string`), `color` (`string`), `sourceSupermarketId` (`string`, Standard `'default'` oder ID/Name eines bestehenden Marktes), `supermarkets` (`Supermarket[]`), `itemOrder` (`string[]|null`), `updatedAt` (`number|null`).
-- **Rückgabewert**: `Supermarket` – Neu angelegter Supermarkt mit der übernommenen Warenreihenfolge.
-- **Was macht die Funktion?** Erstellt einen neuen Supermarkt und übernimmt dessen initiale Sortierung (`itemOrder`) entweder aus der Standard-Sortierung (`sourceSupermarketId === 'default'`) oder als Kopie eines bestehenden Supermarkts aus `supermarkets`.
-- **Wie ist sie aktuell umgesetzt?** Prüft, ob `sourceSupermarketId` vom Wert `'default'` abweicht, sucht den Quell-Supermarkt per ID oder normalisiertem Namen in `supermarkets` (mit Fallback auf `DEFAULT_SUPERMARKETS`), kopiert dessen `itemOrder` (`[...sourceStore.itemOrder]`) oder nutzt `getDefaultItemOrder()` und gibt das Ergebnis über `createSupermarket` zurück.
+#### 16. `createSupermarketWithSorting({ id, name, icon = '🛒', color = '#2563eb', sourceSupermarketId = 'default', supermarkets = [], itemOrder = null, updatedAt = null })`
+- **Parameter**: Options-Objekt mit optionaler `sourceSupermarketId` (`'default'` oder ID/Name eines bestehenden Marktes).
+- **Rückgabewert**: `Supermarket` – Neu angelegter Supermarkt mit übernommener Warenreihenfolge (inkl. aller Spezifikationen des Quellmarkts).
 
-#### 11. `createShoppingList({ id, name, supermarketId, liveOptimizationEnabled, items, updatedAt })`
-- **Parameter**: Options-Objekt mit `id` (`string`), `name` (`string`, Standard `'Mein Einkaufszettel'`), `supermarketId` (`string`, Standard `'rewe'`), `liveOptimizationEnabled` (`boolean`, Standard `true`), `items` (`Array`), `updatedAt` (`number|null`).
+#### 17. `createShoppingList({ id, name, supermarketId, liveOptimizationEnabled, items, updatedAt })`
+- **Parameter**: Options-Objekt für die Einkaufsliste.
 - **Rückgabewert**: `ShoppingList`-Objekt (`{ id, name, supermarketId, liveOptimizationEnabled, items, updatedAt }`).
-- **Was macht die Funktion?** Erzeugt ein normiertes Einkaufslisten-Objekt inklusive normalisierter `Item`-Einträge.
-- **Wie ist sie aktuell umgesetzt?** Konvertiert alle Elemente in `items` über `createItem` (unter Beibehaltung von `originalOrder`), setzt Standardwerte für `supermarketId` (`'rewe'`) und `liveOptimizationEnabled` (`true`) und vergibt einen `updatedAt`-Zeitstempel.
 
 ---
 
 ### 3.2 Modul 2: `src/core/optimizer.js`
 
 **Pfad**: [`src/core/optimizer.js`](file:///home/manus/.gemini/antigravity/scratch/smartcart-app/src/core/optimizer.js)  
-**Verantwortung**: Sortier-Engine für Supermarkt-Laufwege, Rückgängig-Logik beim Uncheck, „Bereits vorbeigelaufen“-Erkennung beim nachträglichen Hinzufügen, selbstlernende Live-Optimierung sowie präzises Einfügen und Verschieben von Waren hinter einer benannten vorigen Ware.
+**Verantwortung**: Sortier-Engine für Supermarkt-Laufwege (Regeln A–D inkl. unbekannter Waren am Anfang und Spezifikations-Matching), Aufnahme unbekannter Waren (`addItemToSupermarket`), Rückgängig-Logik beim Uncheck, „Bereits vorbeigelaufen“-Erkennung, selbstlernende Live-Optimierung sowie präzises Einfügen, Bearbeiten und Verschieben von Supermarkt-Einträgen.
 
 #### 1. `sortShoppingList(listOrItems, supermarket)`
-- **Parameter**:
-  - `listOrItems` (`ShoppingList | Item[]`) – Einkaufslisten-Objekt oder Array von Artikeln.
-  - `supermarket` (`Supermarket`) – Aktive Supermarkt-Konfiguration mit `itemOrder`.
-- **Rückgabewert**: `{ sortedItems: Item[], checkedItems: Item[], uncheckedItems: Item[] }`.
-- **Was macht die Funktion?** Sortiert alle Artikel einer Einkaufsliste nach den drei SmartCart-Kernregeln (Regel A: Abgehakte nach oben; Regel C: Spät hinzugefügte Artikel mit `addedLateOverride` an die Spitze der offenen Artikel; Regel B: Alle weiteren offenen Artikel in der Laufreihenfolge `supermarket.itemOrder`).
-- **Wie ist sie aktuell umgesetzt?** Klont zunächst alle Items und annotiert jedes Item mit `storePosition = indexOfNormalized(itemOrder, item.name)`. Danach werden die Items per `.filter()` in `checkedItems` und `uncheckedItems` aufgeteilt. `checkedItems` werden nach `storePosition` sortiert. `uncheckedItems` werden mit einer mehrstufigen Comparator-Funktion sortiert (zuerst `addedLateOverride === true`, danach bekannte `storePosition` aufsteigend, zuletzt unbekannte Artikel nach `originalOrder`) und schließlich zu `sortedItems = [...checkedItems, ...uncheckedItems]` zusammengefügt.
+- **Parameter**: `listOrItems` (`ShoppingList | Item[]`), `supermarket` (`Supermarket`).
+- **Rückgabewert**: `{ sortedItems: Item[], checkedItems: Item[], uncheckedItems: Item[], unknownItems: Item[] }`.
+- **Was macht die Funktion?** Sortiert alle Artikel nach Regeln A–D: (A) `checkedItems` oben (bekannte nach `storePosition`, erledigte unbekannte nach `originalOrder`), (B) `addedLateOverride` zuerst unter offenen Waren, (C) unbekannte offene Waren (`isUnknownInStore: true`, `storePosition === -1`) **am Anfang** vor den bekannten offenen Waren, (D) bekannte offene Waren in Laufreihenfolge.
+- **Wie ist sie aktuell umgesetzt?** Annotiert jedes geklonte Item über `findStoreEntryMatch(itemOrder, item.name, cleanSpec)` mit `specification`, `normalizedSpecification`, `storePosition`, `storeMatchType`, `matchedStoreEntry` und `isUnknownInStore` und liefert zusätzlich `unknownItems` als gefiltertes Array zurück.
 
-#### 2. `addItemToList(list, supermarket, { name, quantity = '1x', category = null })`
-- **Parameter**:
-  - `list` (`ShoppingList`) – Aktuelle Einkaufsliste.
-  - `supermarket` (`Supermarket`) – Aktiver Supermarkt.
-  - `{ name, quantity, category }` (`Object`) – Daten der neuen Ware.
+#### 2. `addItemToList(list, supermarket, { name, specification = '', quantity = '1x', category = null })`
+- **Parameter**: `list`, `supermarket`, `{ name, specification, quantity, category }`.
 - **Rückgabewert**: `{ list: ShoppingList, addedItem: Item, wasAddedLate: boolean, passedByItems: Item[] }`.
-- **Was macht die Funktion?** Fügt eine Ware zur Einkaufsliste hinzu und erkennt automatisch, ob der Nutzer die Position dieser Ware im Supermarkt bereits passiert hat (anhand bereits abgehakter Waren mit höherem Positionsindex). Falls ja, wird die neue Ware sofort als nächste offene Ware ganz oben eingereiht.
-- **Wie ist sie aktuell umgesetzt?** Bestimmt `pos = indexOfNormalized(itemOrder, name)`. Wenn `pos !== -1`, durchläuft eine Schleife alle existierenden Items der Liste: Ist ein Item bereits abgehakt (`existing.checked === true`) und hat `checkedPos = indexOfNormalized(itemOrder, existing.name)` mit `checkedPos > pos`, wird es in `passedByItems` gesammelt. Ist `passedByItems.length > 0`, wird `wasAddedLate = true` und am neuen Item `addedLateOverride: true` gesetzt. Anschließend wird die Liste mit `sortShoppingList` neu sortiert.
+- **Was macht die Funktion?** Fügt eine Ware (inkl. optionaler Spezifikation) zur Einkaufsliste hinzu, prüft über `indexOfNormalized(itemOrder, name, cleanSpec)` auf bereits passierte Stationen und sortiert die Liste neu.
 
 #### 3. `addMultipleItemsToList(list, supermarket, itemInputs = [])`
-- **Parameter**:
-  - `list` (`ShoppingList`) – Aktuelle Einkaufsliste.
-  - `supermarket` (`Supermarket`) – Aktiver Supermarkt.
-  - `itemInputs` (`Array<{ name: string, quantity?: string, category?: string }>`) – Liste hinzuzufügender Waren (z. B. aus dem Foto-/OCR-Scanner).
+- **Parameter**: `list`, `supermarket`, `itemInputs` (`Array<{ name, specification?, quantity?, category? }>`).
 - **Rückgabewert**: `{ list: ShoppingList, addedItems: Item[], lateItems: Item[] }`.
-- **Was macht die Funktion?** Fügt mehrere Waren in einem Schritt hinzu und wendet für jede einzelne Ware die „Bereits vorbeigelaufen“-Erkennung an.
-- **Wie ist sie aktuell umgesetzt?** Iteriert über `itemInputs`, ignoriert leere Einträge, ruft für jedes Element `addItemToList` auf und sammelt alle hinzugefügten Artikel in `addedItems` sowie alle Artikel mit `wasAddedLate === true` in `lateItems`.
+- **Was macht die Funktion?** Fügt mehrere Waren in einem Schritt hinzu und wendet für jede Ware die „Bereits vorbeigelaufen“-Erkennung an.
 
 #### 4. `toggleItemCheck(list, supermarket, itemId)`
-- **Parameter**:
-  - `list` (`ShoppingList`) – Aktuelle Einkaufsliste.
-  - `supermarket` (`Supermarket`) – Aktiver Supermarkt.
-  - `itemId` (`string`) – ID der angeklickten Ware.
-- **Rückgabewert**: `{ list: ShoppingList, action: 'checked'|'unchecked'|'noop', outOfOrderDetected: boolean, checkedItem?: Item, uncheckedItem?: Item, skippedItems: Item[], promptMessage: string|null }`.
-- **Was macht die Funktion?** Schaltet den Erledigt-Status einer Ware um. Beim Abhaken prüft sie (sofern `liveOptimizationEnabled` aktiv ist), ob der Nutzer frühere offene Waren übersprungen hat, und generiert die deutsche Rückfrage für das Live-Optimierungs-Modal. Beim Rückgängig-Machen (Uncheck) setzt sie den Status zurück und sortiert die Ware wieder exakt an ihrer Supermarkt-Position unter den offenen Waren ein.
-- **Wie ist sie aktuell umgesetzt?** Berechnet vor der Statusänderung `const { uncheckedItems } = sortShoppingList(list, supermarket)`.
-  - Wenn `!target.checked` (Abhaken): Ermittelt `targetUncheckedIdx`. Falls `targetUncheckedIdx > 0` und `!target.addedLateOverride`, werden alle davor liegenden offenen Waren ohne `addedLateOverride` per `uncheckedItems.slice(0, targetUncheckedIdx)` als `skippedItems` extrahiert. Das Item erhält `checked: true`, `checkedAt: Date.now()`, `addedLateOverride: false`. Wenn `Boolean(list.liveOptimizationEnabled) && skippedItems.length > 0`, wird `outOfOrderDetected = true` und `promptMessage` befüllt.
-  - Wenn `target.checked` (Uncheck / Rückgängig): Setzt `checked: false`, `checkedAt: null`, `addedLateOverride: false` und sortiert die Liste über `sortShoppingList` neu, wodurch das Item exakt an seinen `storePosition`-Index zurückkehrt.
+- **Parameter**: `list`, `supermarket`, `itemId` (`string`).
+- **Rückgabewert**: `{ list, action: 'checked'|'unchecked'|'noop', outOfOrderDetected, checkedItem?, uncheckedItem?, skippedItems, promptMessage }`.
+- **Was macht die Funktion?** Schaltet den Erledigt-Status um. Beim Abhaken werden nur bekannte übersprungene offene Waren (`!item.addedLateOverride && item.storePosition !== -1`) gezählt, sodass unbekannte Waren am Listenanfang keine falsche Live-Optimierungs-Rückfrage auslösen; `promptMessage` verwendet `formatItemDisplayName`. Beim Uncheck wird die Ware wieder an ihrer regulären Position (bzw. bei Unbekannten am Anfang) einsortiert.
 
-#### 5. `applyLiveOptimizationUpdate(supermarket, checkedItemName, skippedItemNames)`
-- **Parameter**:
-  - `supermarket` (`Supermarket`) – Zu aktualisierende Supermarkt-Konfiguration.
-  - `checkedItemName` (`string | Item`) – Name oder Objekt der vorgezogenen Ware.
-  - `skippedItemNames` (`Array<string | Item> | string`) – Übersprungene Waren.
-- **Rückgabewert**: `Supermarket` – Neue Supermarkt-Konfiguration mit aktualisiertem `itemOrder`.
-- **Was macht die Funktion?** Lernt eine neue Laufreihenfolge im Supermarkt, indem die zuerst abgehakte Ware (`checkedItemName`) in `supermarket.itemOrder` direkt **vor** die erste übersprungene Ware (`skippedItemNames`) verschoben bzw. eingefügt wird.
-- **Wie ist sie aktuell umgesetzt?** Extrahiert die bereinigten Namen aus Strings oder Item-Objekten. Kopiert `supermarket.itemOrder`, entfernt `checkedItemName` an seiner bisherigen Position (falls vorhanden via `indexOfNormalized` + `splice`), sucht den kleinste Index `targetInsertIdx` aller `skippedItemNames` im Array und fügt `canonicalCheckedName` per `order.splice(targetInsertIdx, 0, canonicalCheckedName)` unmittelbar davor ein. Sind auch die übersprungenen Waren noch nicht in `itemOrder` enthalten, werden `canonicalCheckedName` und danach die `skippedItemNames` ans Ende angehängt.
+#### 5. `applyLiveOptimizationUpdate(supermarket, checkedItemOrName, skippedItemsOrNames)`
+- **Parameter**: `supermarket`, `checkedItemOrName` (`string | Object`), `skippedItemsOrNames` (`Array<string | Object> | string | Object`).
+- **Rückgabewert**: `Supermarket` – Aktualisierte Supermarkt-Konfiguration.
+- **Was macht die Funktion?** Verschiebt bzw. fügt den exakten Eintrag `(name, specification)` der vorgezogenen Ware direkt vor der ersten übersprungenen Ware ein, ohne allgemeine Warengruppen-Einträge zu überschreiben, falls eine spezifische Marke vorgezogen wurde.
 
 #### 6. `changeListSupermarket(list, newSupermarket)`
-- **Parameter**: `list` (`ShoppingList`), `newSupermarket` (`Supermarket`).
-- **Rückgabewert**: `ShoppingList` – Aktualisierte und für `newSupermarket` neu sortierte Einkaufsliste.
-- **Was macht die Funktion?** Wechselt den Supermarkt einer Einkaufsliste und passt die Reihenfolge aller Waren sofort an den neuen Markt an.
-- **Wie ist sie aktuell umgesetzt?** Ruft `sortShoppingList(list.items, newSupermarket)` auf und gibt ein neues Listen-Objekt mit `supermarketId: newSupermarket.id` und den neu sortierten `items` zurück.
+- **Parameter**: `list`, `newSupermarket`. **Rückgabewert**: `ShoppingList`.
+- **Was macht die Funktion?** Wechselt den Supermarkt einer Einkaufsliste und sortiert alle Waren sofort neu.
 
 #### 7. `setLiveOptimization(list, enabled)`
-- **Parameter**: `list` (`ShoppingList`), `enabled` (`boolean`).
-- **Rückgabewert**: `ShoppingList` – Einkaufsliste mit aktualisiertem Flag `liveOptimizationEnabled`.
-- **Was macht die Funktion?** Schaltet die Live-Optimierung für die Einkaufsliste ein oder aus.
-- **Wie ist sie aktuell umgesetzt?** Gibt eine flache Kopie von `list` mit `liveOptimizationEnabled: Boolean(enabled)` und neuem `updatedAt`-Zeitstempel zurück.
+- **Parameter**: `list`, `enabled` (`boolean`). **Rückgabewert**: `ShoppingList`.
+- **Was macht die Funktion?** Schaltet `liveOptimizationEnabled` ein oder aus.
 
 #### 8. `removeItemFromList(list, supermarket, itemId)`
-- **Parameter**: `list` (`ShoppingList`), `supermarket` (`Supermarket`), `itemId` (`string`).
-- **Rückgabewert**: `ShoppingList` – Bereinigte und sortierte Einkaufsliste.
-- **Was macht die Funktion?** Löscht einen einzelnen Artikel anhand seiner `itemId` von der Einkaufsliste.
-- **Wie ist sie aktuell umgesetzt?** Filtert `list.items` über `.filter((item) => item.id !== itemId)` und sortiert das Ergebnis mit `sortShoppingList`.
+- **Parameter**: `list`, `supermarket`, `itemId`. **Rückgabewert**: `ShoppingList`.
+- **Was macht die Funktion?** Entfernt einen einzelnen Artikel per `itemId` und sortiert die Liste neu.
 
 #### 9. `updateItemInList(list, supermarket, itemId, updates = {})`
-- **Parameter**: `list` (`ShoppingList`), `supermarket` (`Supermarket`), `itemId` (`string`), `updates` (`{ name?: string, quantity?: string }`).
+- **Parameter**: `list`, `supermarket`, `itemId`, `updates` (`{ name?, specification?, quantity?, category? }`).
 - **Rückgabewert**: `ShoppingList` – Aktualisierte und neu sortierte Einkaufsliste.
-- **Was macht die Funktion?** Ändert den Namen oder die Menge eines bestehenden Artikels und sortiert die Liste bei Namensänderung automatisch neu ein.
-- **Wie ist sie aktuell umgesetzt?** Ersetzt das Ziel-Item per `.map()` durch einen neuen `createItem`-Aufruf mit den neuen Werten und ruft `sortShoppingList` auf.
+- **Was macht die Funktion?** Aktualisiert Name, optionale Spezifikation, Menge oder Kategorie eines Einkaufslisten-Artikels und berechnet die Sortierung (inkl. Spezifikations-Matching) sofort neu.
 
-#### 10. `clearCheckedItems(list, supermarket)`
-- **Parameter**: `list` (`ShoppingList`), `supermarket` (`Supermarket`).
-- **Rückgabewert**: `ShoppingList` – Einkaufsliste, die nur noch die offenen Waren enthält.
-- **Was macht die Funktion?** Entfernt alle bereits abgehakten Waren aus der oberen Erledigt-Sektion.
-- **Wie ist sie aktuell umgesetzt?** Filtert `list.items` auf `!item.checked` und übergibt die verbleibenden Artikel an `sortShoppingList`.
+#### 10. `clearCheckedItems(list, supermarket)` & `uncheckAllItems(list, supermarket)`
+- **Parameter**: `list`, `supermarket`. **Rückgabewert**: `ShoppingList`.
+- **Was machen die Funktionen?** Entfernen alle erledigten Waren bzw. setzen alle Waren wieder auf offen (`checked: false`) in sauberer Supermarkt-Sortierung.
 
-#### 11. `uncheckAllItems(list, supermarket)`
-- **Parameter**: `list` (`ShoppingList`), `supermarket` (`Supermarket`).
-- **Rückgabewert**: `ShoppingList` – Vollständig zurückgesetzte Einkaufsliste in Supermarkt-Laufreihenfolge.
-- **Was macht die Funktion?** Setzt alle Artikel einer Einkaufsliste wieder auf „offen“ (`checked: false`), z. B. für die Wiederverwendung eines Standard-Wocheneinkaufs.
-- **Wie ist sie aktuell umgesetzt?** Setzt für jedes Item `checked: false`, `checkedAt: null` und `addedLateOverride: false` und sortiert anschließend über `sortShoppingList`.
+#### 11. `reorderSupermarketItem(supermarket, fromIndex, toIndex)`
+- **Parameter**: `supermarket`, `fromIndex`, `toIndex`. **Rückgabewert**: `Supermarket`.
+- **Was macht die Funktion?** Verschiebt einen `{ name, specification }`-Eintrag per Index (genutzt für Drag & Drop mit Auto-Scroll und `↑`/`↓`).
 
-#### 12. `reorderSupermarketItem(supermarket, fromIndex, toIndex)`
-- **Parameter**: `supermarket` (`Supermarket`), `fromIndex` (`number`), `toIndex` (`number`).
+#### 12. `attachStorePositionMetadata(updatedStore, meta)`, `isStartMarker(prev)` & `resolvePreviousItemIndex(order, previousItem)` *(interne Hilfsfunktionen)*
+- **Was machen die Funktionen?** `attachStorePositionMetadata` hängt nicht-enumerable Metadaten (`.supermarket`, `.insertedAtIndex`, `.newIndex`, `.foundPrevious`, `.previousItem`, `.movedItem`) an. `isStartMarker` erkennt Position-1-Marker (`'__START__'`, `'anfang'` usw.). `resolvePreviousItemIndex` löst `previousItem` wahlweise als `{ name, specification }`-Objekt, exakten generischen Namen, formatierten Anzeigenamen `"Name (Spezifikation)"` (aus der UI-Datalist) oder Synonym auf.
+
+#### 13. `addSupermarketKnownItemAfter(supermarket, itemOrName, previousItemName = null, specification = undefined)`
+- **Parameter**: `supermarket`, `itemOrName` (`string | { name, specification? }`), `previousItemName` (`string | Object | null`), optional `specification`.
+- **Rückgabewert**: `Supermarket` (mit Positionierungs-Metadaten; `movedItem`/`previousItem` sind `{ name, specification }`-Objekte bzw. `'__START__'`/`null`).
+- **Was macht die Funktion?** Fügt einen Eintrag mit exakter `(name, specification)`-Identität unmittelbar hinter `previousItemName` (oder an Index `0` bzw. am Ende) ein, ohne andere Spezifikationen derselben Warengruppe zu beeinträchtigen.
+
+#### 14. `moveSupermarketItemAfter(supermarket, itemOrIndex, previousItemName)`
+- **Parameter**: `supermarket`, `itemOrIndex` (`number | string | { name, specification? }`), `previousItemName`.
+- **Rückgabewert**: `Supermarket` (mit Positionierungs-Metadaten).
+- **Was macht die Funktion?** Verschiebt einen bestehenden Supermarkt-Eintrag (bevorzugt per Index oder exaktem Objekt) gezielt hinter `previousItemName` oder an Position 1.
+
+#### 15. `addSupermarketKnownItem(supermarket, itemOrName, insertIndex = -1, specification = undefined)`
+- **Parameter**: `supermarket`, `itemOrName`, `insertIndex` (`number | string | Object`), optional `specification`.
+- **Rückgabewert**: `Supermarket`.
+- **Was macht die Funktion?** Fügt eine Ware mit optionaler Spezifikation an einem Index (oder bei Übergabe eines Strings/Objekts über `addSupermarketKnownItemAfter`) ein; dedupliziert über `findExactStoreEntryIndex`.
+
+#### 16. `updateSupermarketKnownItem(supermarket, indexOrEntry, updates = {})`
+- **Parameter**: `supermarket`, `indexOrEntry` (`number | string | { name, specification? }`), `updates` (`{ name?, specification? }`).
 - **Rückgabewert**: `Supermarket` – Aktualisierte Supermarkt-Konfiguration.
-- **Was macht die Funktion?** Verschiebt eine Ware innerhalb der Laufreihenfolge (`supermarket.itemOrder`) von Position `fromIndex` nach `toIndex` (genutzt für Drag & Drop sowie die `↑`/`↓`-Pfeilbuttons).
-- **Wie ist sie aktuell umgesetzt?** Prüft die Array-Grenzen, entnimmt das Element mit `order.splice(fromIndex, 1)` und fügt es mit `order.splice(toIndex, 0, moved)` an der Zielposition wieder ein.
+- **Was macht die Funktion?** Ändert Name und/oder Spezifikation eines bestehenden Supermarkt-Eintrags an Ort und Stelle (genutzt vom Bearbeiten-Modal `#edit-store-item-modal`).
 
-#### 13. `attachStorePositionMetadata(updatedStore, meta = {})` & `isStartMarker(prev)` *(interne Hilfsfunktionen)*
-- **Parameter**: `updatedStore` (`Supermarket`), `meta` (`Object`) bzw. `prev` (`any`).
-- **Rückgabewert**: `Supermarket` mit nicht-aufzählbaren Metadaten-Properties bzw. `boolean`.
-- **Was machen die Funktionen?** `attachStorePositionMetadata` versieht das zurückgegebene `Supermarket`-Objekt per `Object.defineProperties` mit nicht-enumerablen Feldern (`.supermarket`, `.insertedAtIndex`, `.newIndex`, `.foundPrevious`, `.previousItem`, `.movedItem`), sodass Aufrufer das Ergebnis sowohl direkt als `Supermarket` als auch per Destructuring `{ supermarket, insertedAtIndex, foundPrevious }` verwenden können. `isStartMarker` erkennt Schlüsselwörter für Position 1 (`'__START__'`, `'anfang'`, `'ganz am anfang'`, `'position 1'`).
+#### 17. `removeSupermarketKnownItem(supermarket, itemOrIndex, specification = undefined)`
+- **Parameter**: `supermarket`, `itemOrIndex` (`number | string | { name, specification? }`), optional `specification`.
+- **Rückgabewert**: `Supermarket`.
+- **Was macht die Funktion?** Löscht ausschließlich den per Index oder exaktem `getStoreEntryKey(itemOrIndex, specification)` adressierten Eintrag, sodass andere Spezifikationen derselben Warengruppe erhalten bleiben.
 
-#### 14. `addSupermarketKnownItemAfter(supermarket, itemName, previousItemName = null)`
-- **Parameter**:
-  - `supermarket` (`Supermarket`) – Zu aktualisierender Supermarkt.
-  - `itemName` (`string`) – Name der neu einzufügenden (oder neu zu positionierenden) Ware.
-  - `previousItemName` (`string|null`, optional) – Name der vorigen Ware im Markt oder `'__START__'` für Position 1.
-- **Rückgabewert**: `Supermarket` (inklusive `.supermarket`, `.insertedAtIndex`, `.newIndex`, `.foundPrevious`, `.previousItem`, `.movedItem`).
-- **Was macht die Funktion?** Fügt eine Ware exakt hinter der angegebenen *vorigen Ware* (`previousItemName`) in `supermarket.itemOrder` ein (oder an Position 1 bei `'__START__'`, bzw. am Ende, wenn keine vorige Ware angegeben wurde).
-- **Wie ist sie aktuell umgesetzt?** Entfernt `itemName` zunächst an einer eventuell bestehenden alten Position. Prüft dann per `isStartMarker(previousItemName)` auf Position 1 (`order.unshift(clean)`). Andernfalls sucht sie `prevIdx = indexOfNormalized(order, previousItemName)` und fügt die Ware per `order.splice(prevIdx + 1, 0, clean)` direkt dahinter ein (mit Fallback auf `order.push(clean)`).
-
-#### 15. `moveSupermarketItemAfter(supermarket, itemNameOrIndex, previousItemName)`
-- **Parameter**:
-  - `supermarket` (`Supermarket`) – Zu aktualisierender Supermarkt.
-  - `itemNameOrIndex` (`string | number`) – Name oder aktueller 0-basierter Index der zu verschiebenden Ware.
-  - `previousItemName` (`string|null`) – Name der vorigen Ware, hinter die verschoben werden soll, oder `'__START__'` für Position 1.
-- **Rückgabewert**: `Supermarket` (inklusive `.supermarket`, `.insertedAtIndex`, `.newIndex`, `.foundPrevious`, `.previousItem`, `.movedItem`).
-- **Was macht die Funktion?** Verschiebt eine bestehende Ware innerhalb von `supermarket.itemOrder` gezielt direkt hinter `previousItemName` (oder an den Anfang auf Position 1).
-- **Wie ist sie aktuell umgesetzt?** Ermittelt den aktuellen Index `currentIdx` (per Index oder `indexOfNormalized`), entnimmt die Ware per `splice`, sucht den neuen Zielindex von `previousItemName` und fügt die Ware bei `prevIdx + 1` (bzw. Index `0` bei `isStartMarker`) wieder ein.
-
-#### 16. `addSupermarketKnownItem(supermarket, itemName, insertIndex = -1)`
-- **Parameter**: `supermarket` (`Supermarket`), `itemName` (`string`), `insertIndex` (`number|string`, optional, Standard `-1` = am Ende).
-- **Rückgabewert**: `Supermarket` – Aktualisierte Supermarkt-Konfiguration.
-- **Was macht die Funktion?** Fügt eine neue bekannte Ware an einem numerischen Index (oder bei Übergabe eines Strings als `insertIndex` via `addSupermarketKnownItemAfter` hinter einer benannten Ware) in `supermarket.itemOrder` ein.
-- **Wie ist sie aktuell umgesetzt?** Delegiert bei `typeof insertIndex === 'string'` an `addSupermarketKnownItemAfter`; entfernt andernfalls eventuelle Duplikate und fügt das Element per `splice` bei `insertIndex` oder per `push` am Ende ein.
-
-#### 17. `removeSupermarketKnownItem(supermarket, itemName)`
-- **Parameter**: `supermarket` (`Supermarket`), `itemName` (`string`).
-- **Rückgabewert**: `Supermarket` – Aktualisierte Supermarkt-Konfiguration ohne die entfernte Ware.
-- **Was macht die Funktion?** Löscht eine Ware aus der gespeicherten Laufreihenfolge eines Supermarkts.
-- **Wie ist sie aktuell umgesetzt?** Filtert `supermarket.itemOrder` über `normalizeItemName(entry) !== normalizeItemName(itemName)` und erzeugt über `createSupermarket` das aktualisierte Markt-Objekt.
+#### 18. `addItemToSupermarket(supermarket, itemOrName, { specification, insertIndex = -1, previousItem = null, list = null } = {})`
+- **Parameter**: `supermarket`, `itemOrName` (Einkaufslisten-Item oder Name), Options-Objekt (`specification`, `insertIndex`, `previousItem`, optional `list`).
+- **Rückgabewert**: `{ supermarket: Supermarket, list: ShoppingList|null, added: boolean, alreadyExists: boolean, entry: { name, specification }|null, index: number }`.
+- **Was macht die Funktion?** Nimmt eine noch unbekannte Einkaufslisten-Ware (inklusive optionaler Spezifikation) über Long-Press oder API in die Supermarkt-Sortierliste auf, verhindert Duplikate bei bereits exakt vorhandenem Eintrag (`alreadyExists: true`) und sortiert eine übergebene `list` sofort neu.
 
 ---
 
@@ -555,19 +588,24 @@ Im Folgenden sind **alle 7 Module** und **jede einzelne Funktion** des Projekts 
 - **Was macht die Funktion?** Erzeugt beim allerersten App-Start eine realistische Einkaufsliste mit 8 Waren (davon 2 bereits abgehakt am Markteingang – *Äpfel* und *Brötchen* – sowie 6 offene Waren in Laufreihenfolge), damit der Nutzer die Zweiteilung und die Vorbeigelaufen-Erkennung sofort live erleben kann.
 - **Wie ist sie aktuell umgesetzt?** Erstellt 8 `Item`-Objekte über `createItem`, sortiert sie mit `sortShoppingList(rawItems, targetStore)` und gibt das Ergebnis über `createShoppingList` zurück.
 
-#### 4. Klasse `LocalStorageRepository` (sowie statische Methoden & Instanz `storageRepository`)
+#### 4. `needsSupermarketMigration(stores)` & `needsShoppingListMigration(lists)` *(interne Hilfsfunktionen)*
+- **Parameter**: `stores` (`Array<Object>`) bzw. `lists` (`Array<Object>`).
+- **Rückgabewert**: `boolean`.
+- **Was machen die Funktionen?** Prüfen beim Laden aus `localStorage`, ob noch Alt-Daten aus v1.0 vorliegen (Supermärkte mit `string[]`-`itemOrder` oder Artikel ohne `specification`/`normalizedSpecification`). Falls `true`, migrieren `loadSupermarkets()` bzw. `loadShoppingLists()` die Daten automatisch über `createSupermarket`/`createShoppingList` und persistieren das migrierte Format sofort zurück.
+
+#### 5. Klasse `LocalStorageRepository` (sowie statische Methoden & Instanz `storageRepository`)
 Alle Methoden von `LocalStorageRepository` können sowohl auf einer Instanz (`new LocalStorageRepository(customStorage)`) als auch direkt über `storageRepository` oder statisch (`LocalStorageRepository.loadState()`) aufgerufen werden:
 
 - **`constructor(storageBackend)`**: Initialisiert `this.storage = resolveStorageBackend(storageBackend)`.
 - **`_readJson(key, fallbackValue)`**: Liest einen JSON-String aus `this.storage.getItem(key)`, parst ihn mit `JSON.parse` und gibt bei Fehlern `fallbackValue` zurück.
 - **`_writeJson(key, value)`**: Serialisiert `value` mit `JSON.stringify` und speichert es unter `key`.
-- **`loadSupermarkets()`**: Lädt alle Supermärkte unter `smartcart_supermarkets_v1`. Falls noch keine gespeichert sind, werden automatisch die 3 Standard-Märkte (`REWE`, `ALDI`, `LIDL`) über `getDefaultSupermarkets()` erzeugt, gespeichert und zurückgegeben.
+- **`loadSupermarkets()`**: Lädt alle Supermärkte unter `smartcart_supermarkets_v1`, migriert ältere `string[]`-`itemOrder`-Einträge transparent zu `{ name, specification }[]` und erzeugt beim Erststart automatisch die 3 Standard-Märkte (`REWE`, `ALDI`, `LIDL`).
 - **`saveSupermarkets(supermarkets)`**: Normalisiert jedes Element im Array mit `createSupermarket` und speichert das Array unter `smartcart_supermarkets_v1`.
 - **`resetDefaultSupermarkets()`**: Setzt gespeicherte Supermärkte bei programmatischem Aufruf (z. B. in Unit-Tests) auf die 3 Standard-Märkte (`getDefaultSupermarkets()`) zurück (in der UI bewusst nicht mehr als Button eingeblendet, um versehentliches Überschreiben eigener Märkte zu verhindern).
 - **`getSupermarketById(supermarketId)`**: Sucht in `loadSupermarkets()` nach der übergebenen `supermarketId` und gibt bei Nichtfinden den ersten verfügbaren Markt zurück.
 - **`upsertSupermarket(supermarket)`**: Aktualisiert einen bestehenden Supermarkt anhand seiner `id` oder fügt ihn neu zur Liste hinzu und speichert sofort.
 - **`deleteSupermarket(supermarketId)`**: Entfernt einen Supermarkt anhand seiner `id`, stellt aber sicher, dass immer mindestens ein Supermarkt erhalten bleibt.
-- **`loadShoppingLists()`**: Lädt alle gespeicherten Einkaufslisten aus `smartcart_lists_v1`. Ist der Speicher leer, wird über `createDefaultSeedShoppingList` eine initiale Liste (*„Wocheneinkauf“*) angelegt und als aktiv gesetzt.
+- **`loadShoppingLists()`**: Lädt alle gespeicherten Einkaufslisten aus `smartcart_lists_v1` (inkl. automatischer Migration fehlender `specification`-Felder) oder legt beim Erststart über `createDefaultSeedShoppingList` die Liste *„Wocheneinkauf“* an.
 - **`saveShoppingLists(lists)`**: Validiert alle Listen im Array über `createShoppingList` und speichert sie in `smartcart_lists_v1`.
 - **`getActiveListId()` / `setActiveListId(listId)`**: Liest bzw. speichert die ID der aktuell ausgewählten Einkaufsliste unter `smartcart_active_list_id_v1`.
 - **`getActiveList()`**: Lädt die aktive Einkaufsliste anhand von `getActiveListId()`, ermittelt den zugehörigen Supermarkt via `getSupermarketById` und gibt die Liste frisch sortiert (`sortShoppingList`) zurück.
@@ -586,342 +624,154 @@ Alle Methoden von `LocalStorageRepository` können sowohl auf einer Instanz (`ne
 ### 3.5 Modul 5: `src/core/share.js`
 
 **Pfad**: [`src/core/share.js`](file:///home/manus/.gemini/antigravity/scratch/smartcart-app/src/core/share.js)  
-**Verantwortung**: Export und Import von Einkaufslisten, Supermarkt-Konfigurationen und Komplett-Backups per Text, `SC1:`-Share-Code, JSON-Download und Web Share API sowie Echtzeit-Synchronisations-Adapter (`SyncAdapter`).
+**Verantwortung**: Ausschließlich dateibasierter Export und Import von Einkaufslisten im Format `.smartcart.json` (Speichern auf Gerät, Teilen als Datei über WhatsApp/Mail/Messenger, Validierung & Import-Modi) sowie lokaler Tab-Synchronisations-Adapter (`SyncAdapter`).
 
-#### 1. `encodeUtf8Base64(str)` & `decodeUtf8Base64(b64)` *(interne Hilfsfunktionen)*
-- **Parameter**: `str` (`string`) bzw. `b64` (`string`).
-- **Rückgabewert**: Base64-String bzw. dekodierter UTF-8-String.
-- **Was machen die Funktionen?** Plattformübergreifende UTF-8-sichere Base64-Kodierung und -Dekodierung für Browser und Node.js.
-- **Wie sind sie aktuell umgesetzt?** Nutzen `Buffer.from(...)` unter Node.js und `btoa`/`atob` kombiniert mit `encodeURIComponent`/`decodeURIComponent` im Browser.
+#### Exportierte Konstanten
+- `FILE_FORMAT_ID = 'smartcart-shopping-list'`
+- `FILE_FORMAT_VERSION = 2`
+- `FILE_EXTENSION = '.smartcart.json'`
+- `FILE_MIME_TYPE = 'application/json'`
+- `ACCEPTED_FILE_TYPES = '.smartcart.json,.json,application/json'`
+- `MAX_IMPORT_FILE_BYTES = 5242880` (5 MB)
 
-#### 2. `formatListAsPlainText(list, supermarket, shareCode = '')`
-- **Parameter**: `list` (`ShoppingList`), `supermarket` (`Supermarket`), `shareCode` (`string`, optional).
-- **Rückgabewert**: `string` – Formatierter deutscher Nachrichtentext für WhatsApp, Telegram, Signal oder E-Mail.
-- **Was macht die Funktion?** Erstellt eine übersichtliche Textdarstellung des Einkaufszettels, getrennt nach offenen Waren (in Supermarkt-Laufreihenfolge mit Pfeil `➡️` auf die nächste Ware) und bereits erledigten Waren (`☑ ~Name~`), optional ergänzt um den kopierbaren `SC1:`-Import-Code.
-- **Wie ist sie aktuell umgesetzt?** Ruft `sortShoppingList(list, supermarket)` auf und baut ein Zeilen-Array mit Emoji-Markierungen und Mengenklammern zusammen.
+#### 1. `buildShoppingListFilename(list, date)` *(mit `sanitizeFilenameSegment`, `formatIsoDate`)*
+- **Parameter**: `list` (`ShoppingList`), `date` (`Date | number | string`, optional).
+- **Rückgabewert**: `string` – Plattformübergreifend sicherer Dateiname `SmartCart_<slug>_YYYY-MM-DD.smartcart.json`.
+- **Was macht die Funktion?** Wandelt deutsche Umlaute (`ä -> ae` usw.) und Sonderzeichen in einen sicheren Dateinamen für Android, iOS, Windows, macOS und Linux um.
 
-#### 3. `encodeShareCode(payload)`
-- **Parameter**: `payload` (`Object`) – Beliebiges SmartCart-Export-Objekt.
-- **Rückgabewert**: `string` – Kompakter Share-Code mit Präfix `'SC1:'` gefolgt vom Base64-Payload.
-- **Was macht die Funktion?** Verpackt eine Einkaufsliste oder Supermarkt-Konfiguration in einen einzeiligen Code zum schnellen Kopieren und Versenden per Messenger.
-- **Wie ist sie aktuell umgesetzt?** Serialisiert `payload` mit `JSON.stringify` und hängt das Ergebnis von `encodeUtf8Base64` an das Präfix `SC1:` an.
+#### 2. `serializeShoppingList(list, supermarket = null, options = {})`
+- **Parameter**: `list` (`ShoppingList`), `supermarket` (`Supermarket | null`), `options` (`{ date?, exportedAt?, filename? }`).
+- **Rückgabewert**: `{ payload: Object, json: string, filename: string, mimeType: string }`.
+- **Was macht die Funktion?** Serialisiert eine Einkaufsliste (inkl. aller Artikel-Felder wie `name`, `specification`, `quantity`, `category`, `checked`, `checkedAt`, `addedLateOverride`, `originalOrder` sowie optionaler `supermarket`-Metadaten) in das kanonische v2-Dateiformat.
 
-#### 4. `decodeShareCode(codeOrJson)`
-- **Parameter**: `codeOrJson` (`string`) – Ein `SC1:...`-Code, eine komplette WhatsApp-Nachricht, die irgendwo einen `SC1:...`-Code enthält, oder ein roher JSON-String.
-- **Rückgabewert**: `{ valid: boolean, type?: string, list?: ShoppingList, supermarket?: Supermarket, supermarkets?: Supermarket[], lists?: ShoppingList[], error?: string }`.
-- **Was macht die Funktion?** Liest und validiert importierte Share-Codes oder JSON-Backups und stellt daraus saubere Domänen-Objekte wieder her.
-- **Wie ist sie aktuell umgesetzt?** Sucht zuerst per Regex `/SC1:([A-Za-z0-9+/=_-]+)/` nach einem eingebetteten Share-Token (selbst wenn der Nutzer die gesamte WhatsApp-Nachricht inkl. Begleittext eingefügt hat) und dekodiert diesen via `decodeUtf8Base64`. Anschließend wird der JSON-String geparst und enthaltene `list`- bzw. `supermarket`-Objekte über `createShoppingList` und `createSupermarket` normalisiert.
+#### 3. `createShoppingListFile(list, supermarket = null, options = {})`
+- **Parameter**: `list`, `supermarket`, `options` (`{ filename?, mimeType? }`).
+- **Rückgabewert**: `{ payload, json, filename, mimeType, file: File|null, blob: Blob|null }`.
+- **Was macht die Funktion?** Erzeugt aus der serialisierten Einkaufsliste sowohl ein `File`- als auch ein `Blob`-Objekt (sofern in der Laufzeitumgebung verfügbar).
 
-#### 5. `exportShoppingList(list, supermarket = null)`
-- **Parameter**: `list` (`ShoppingList`), `supermarket` (`Supermarket|null`).
-- **Rückgabewert**: `{ payload: Object, json: string, shareCode: string, shareText: string }`.
-- **Was macht die Funktion?** Exportiert eine Einkaufsliste inklusive der zugehörigen Supermarkt-Konfiguration in allen drei Formaten (JSON, `SC1:`-Code und Messenger-Text).
-- **Wie ist sie aktuell umgesetzt?** Erstellt ein versioniertes Payload-Objekt (`type: 'shopping_list'`), generiert daraus `json`, `shareCode` (`encodeShareCode`) und `shareText` (`formatListAsPlainText`).
+#### 4. `canShareShoppingListFiles(sampleFilename)`
+- **Parameter**: `sampleFilename` (`string`, optional).
+- **Rückgabewert**: `{ supported: boolean, method: 'capacitor-share'|'web-share-file'|'none', mimeType: string|null }`.
+- **Was macht die Funktion?** Prüft synchron, ob das aktuelle Gerät bzw. der Browser echtes Datei-Sharing über Capacitor Share+Filesystem oder Web Share API Level 2 (`navigator.canShare({ files })`, mit Probe für `application/json` und Fallback `text/plain`) unterstützt.
 
-#### 6. `exportSupermarket(supermarket)`
-- **Parameter**: `supermarket` (`Supermarket`).
-- **Rückgabewert**: `{ payload: Object, json: string, shareCode: string, shareText: string }`.
-- **Was macht die Funktion?** Exportiert ausschließlich die Laufreihenfolge-Konfiguration eines einzelnen Supermarkts zum Teilen mit Familienmitgliedern oder Freunden, die im selben Markt einkaufen.
-- **Wie ist sie aktuell umgesetzt?** Erzeugt ein Payload-Objekt vom Typ `'supermarket'` mit dem bereinigten Markt-Objekt und generiert JSON, Share-Code und Beschreibungstext.
+#### 5. `saveShoppingListFile(list, supermarket = null, options = {})`
+- **Parameter**: `list`, `supermarket`, `options`.
+- **Rückgabewert**: `Promise<{ success: boolean, method: 'capacitor-filesystem'|'browser-download'|'invalid'|'unsupported', filename: string|null, uri?: string|null, error?: string }>`.
+- **Was macht die Funktion?** Speichert die Einkaufsliste als `.smartcart.json`-Datei auf dem Gerät – nativ über `Capacitor.Plugins.Filesystem.writeFile` (`DOCUMENTS`) oder im Browser per Blob-Download (`triggerBrowserDownload`).
 
-#### 7. `exportFullBackup({ supermarkets = [], lists = [] })`
-- **Parameter**: `{ supermarkets, lists }` (`Object`).
-- **Rückgabewert**: `{ payload: Object, json: string, shareCode: string }`.
-- **Was macht die Funktion?** Erstellt ein Komplett-Backup aller gespeicherten Supermärkte und aller gespeicherten Einkaufslisten.
-- **Wie ist sie aktuell umgesetzt?** Bündelt alle normalisierten Märkte und Listen in einem Payload vom Typ `'backup'` und gibt JSON sowie `SC1:`-Share-Code zurück.
+#### 6. `shareShoppingListFile(list, supermarket = null, options = {})`
+- **Parameter**: `list`, `supermarket`, `options` (`{ title?, dialogTitle?, fallbackToSave?: boolean }`).
+- **Rückgabewert**: `Promise<{ success: boolean, supported: boolean, method: 'capacitor-share'|'web-share-file'|'aborted'|'save-fallback'|'unsupported'|'error'|'invalid', filename: string|null, aborted?: boolean, fallbackSaved?: boolean, error?: string }>`.
+- **Was macht die Funktion?** Teilt die Einkaufsliste **ausschließlich als Datei** über das OS-Teilen-Menü (WhatsApp, E-Mail, Messenger) via Capacitor Share+Filesystem oder `navigator.share({ files: [file], title })`. Teilt niemals Klartext und kopiert niemals in die Zwischenablage. Nutzerabbruch wird sauber als `aborted: true` behandelt; bei fehlender Browser-Unterstützung und `fallbackToSave: true` wird automatisch die Datei gespeichert.
 
-#### 8. `shareViaWebApi({ title, text, url })`
-- **Parameter**: Options-Objekt mit `title` (`string`), `text` (`string`), `url` (`string`, optional).
-- **Rückgabewert**: `Promise<{ method: 'web-share'|'clipboard'|'aborted'|'manual', success: boolean }>`.
-- **Was macht die Funktion?** Öffnet auf Smartphones den nativen Android-/iOS-Teilen-Dialog (`navigator.share`) oder kopiert den Text automatisch in die Zwischenablage, wenn die Web Share API auf Desktop-Geräten nicht verfügbar ist.
-- **Wie ist sie aktuell umgesetzt?** Prüft `typeof navigator.share === 'function'`, ruft `await navigator.share(shareData)` auf und fällt bei Nichtverfügbarkeit auf `navigator.clipboard.writeText(text)` zurück.
+#### 7. `parseShoppingListFileContent(rawContent)`
+- **Parameter**: `rawContent` (`string`) – UTF-8-Inhalt der importierten Datei.
+- **Rückgabewert**: `{ valid: boolean, version?: number, exportedAt?: number, list?: ShoppingList, supermarketMeta?: Object|null, supermarket?: Supermarket|null, error?: string }`.
+- **Was macht die Funktion?** Validiert den Dateiinhalt strikt (entfernt UTF-8-BOM, lehnt leere Dateien, kaputtes JSON, fremde Formate, veraltete `SC1:`-Codes und fehlerhafte Artikel-Einträge ab) und normalisiert v2- sowie abwärtskompatible v1-Dateien (ohne `specification`) in ein sauberes `ShoppingList`-Objekt.
 
-#### 9. `downloadJsonFile(payloadOrJson, filename = 'smartcart-export.json')`
-- **Parameter**: `payloadOrJson` (`Object | string`), `filename` (`string`).
-- **Rückgabewert**: `boolean` – `true` bei erfolgreichem Download-Start.
-- **Was macht die Funktion?** Löst im Browser den Datei-Download einer `.json`-Backup-Datei aus.
-- **Wie ist sie aktuell umgesetzt?** Erzeugt ein `Blob` vom Typ `application/json`, generiert eine Objekt-URL via `URL.createObjectURL(blob)`, klickt programmatisch auf ein temporäres `<a download="...">`-Element und gibt die URL nach 1 Sekunde wieder frei.
+#### 8. `readShoppingListFile(file)` *(mit `readFileAsUtf8Text`)*
+- **Parameter**: `file` (`File | Blob`) – Vom `<input type="file">`-Element ausgewählte Datei.
+- **Rückgabewert**: `Promise<{ valid: boolean, filename?: string, version?: number, exportedAt?: number, list?: ShoppingList, supermarketMeta?: Object|null, supermarket?: Supermarket|null, error?: string }>`.
+- **Was macht die Funktion?** Prüft Dateigröße (`> 0` und `<= 5 MB`), liest die Datei asynchron als UTF-8 (`file.text()` mit `FileReader`-Fallback) und validiert sie über `parseShoppingListFileContent`.
+
+#### 9. `applyImportedShoppingList(importedList, options = {})` *(mit `resolveTargetSupermarket`)*
+- **Parameter**: `importedList` (`ShoppingList`), `options` (`{ mode: 'new'|'merge'|'replace', targetList?, existingLists?, supermarkets?, supermarketMeta?, fallbackSupermarketId?, disambiguateName?, keepTargetName? }`).
+- **Rückgabewert**: `{ list: ShoppingList, supermarket: Supermarket|null, mode: 'new'|'merge'|'replace', addedCount: number, skippedCount: number }`.
+- **Was macht die Funktion?** Übernimmt eine validierte importierte Einkaufsliste in den App-Zustand (`'new'` mit eindeutigem Namen und frischen IDs, `'merge'` mit Deduplizierung über `getStoreEntryKey(name, specification)` oder `'replace'` unter Beibehaltung der Ziel-Listen-ID), ordnet über `resolveTargetSupermarket` den passenden lokalen Supermarkt zu und sortiert die Liste sofort über `sortShoppingList`.
 
 #### 10. Klasse `SyncAdapter`
-- **Methoden**:
-  - `constructor(channelName = 'smartcart_live_sync_v1')`
-  - `connect() -> boolean`
-  - `disconnect() -> void`
-  - `onRemoteUpdate(callback) -> Function (unsubscribe)`
-  - `publishUpdate(type, data) -> Object (envelope)`
-  - `getStatus() -> { connected: boolean, clientId: string, transport: string }`
-- **Was macht die Klasse?** Stellt die Echtzeit-Synchronisationsschicht bereit: Verbindet mehrere offene Browser-Tabs sofort über `BroadcastChannel` und bietet einen Plug-in-Punkt (`this.remoteTransport`) für WebSocket-/Supabase-/Firebase-Echtzeit-Kanäle.
-- **Wie ist sie aktuell umgesetzt?** Vergibt pro Instanz eine eindeutige `clientId`, öffnet bei `connect()` einen `BroadcastChannel(this.channelName)`, filtert eigene Nachrichten anhand von `senderId !== this.clientId` heraus und verteilt eingehende Updates an alle via `onRemoteUpdate` registrierten Listener.
+- **Methoden**: `constructor(channelName = 'smartcart_live_sync_v1')`, `connect()`, `disconnect()`, `onRemoteUpdate(callback)`, `publishUpdate(type, data)`, `getStatus()`.
+- **Was macht die Klasse?** Synchronisiert Zustandsänderungen zwischen mehreren offenen Tabs desselben Browsers über `BroadcastChannel` und bietet `this.remoteTransport` als Erweiterungspunkt für zukünftigen Cloud-Sync.
 
 ---
 
 ### 3.6 Modul 6: `src/ui/app.js`
 
 **Pfad**: [`src/ui/app.js`](file:///home/manus/.gemini/antigravity/scratch/smartcart-app/src/ui/app.js)  
-**Verantwortung**: Mobiler UI-Controller (`window.SmartCartUI`), State-Verwaltung (`supermarkets`, `shoppingLists`, `shoppingList`, `dragState`), Einkaufszettel-Verwaltungsleiste, DOM-Rendering der 4 App-Tabs, Live-Optimierungs-Modal, Gezielt-Verschieben-Modal (`⇄`), Touch-/Mouse-Drag-and-Drop (`☰`), echte Tesseract-OCR-Interaktion und Event-Handling.
+**Verantwortung**: Mobiler UI-Controller (`window.SmartCartUI`), State-Verwaltung (`supermarkets`, `shoppingLists`, `shoppingList`, `dragState`, `longPressState`), Einkaufszettel-Verwaltungsleiste, DOM-Rendering der 4 App-Tabs (*Einkaufszettel*, *Foto-Scanner*, *Supermärkte*, *Export / Import*), Spezifikations-Modals (`#edit-item-modal`, `#edit-store-item-modal`), Long-Press-Aufnahme unbekannter Waren, Live-Optimierungs-Modal, Gezielt-Verschieben-Modal (`⇄`), Touch-/Mouse-Drag-and-Drop (`☰`) mit Rand-Auto-Scroll, echte Tesseract-OCR-Interaktion und reines Datei-Export/-Import-Handling.
 
 #### Initialisierung, State & Navigation
 
-1. **`getRepository()`** *(interne Hilfsfunktion)*
-   - **Parameter**: Keine. **Rückgabewert**: `LocalStorageRepository | null`.
-   - **Was macht die Funktion?** Liefert die aktive Persistenz-Instanz (`Core.storageRepository` bzw. `Core.LocalStorageRepository`).
+1. **`getRepository()`**, **`formatDisplayName(itemOrEntry, spec)`** & **`normalizeEntryObj(entry)`** *(interne Hilfsfunktionen)*
+   - Liefern die aktive Persistenz-Instanz (`Core.storageRepository`), formatieren Einträge als `"Name (Spezifikation)"` bzw. normalisieren Supermarkt-Einträge in `{ name, specification }`.
 2. **`initSmartCartApp()`**
-   - **Parameter**: Keine. **Rückgabewert**: `void`.
-   - **Was macht die Funktion?** Startet die gesamte Anwendung nach dem Laden des DOMs.
-   - **Wie ist sie aktuell umgesetzt?** Ruft nacheinander `loadInitialState()`, `initRealtimeSync()`, `bindEventListeners()`, `renderApp()`, `renderOcrPreviewFromText('')` (leerer Bereitschaftszustand ohne Fake-Daten) und `registerServiceWorkerIfSupported()` auf.
+   - Startet die Anwendung nach dem Laden des DOMs (`loadInitialState()`, `initRealtimeSync()`, `bindEventListeners()`, `renderApp()`, `renderOcrPreviewFromText('')`, `registerServiceWorkerIfSupported()`).
 3. **`initRealtimeSync()`**
-   - **Parameter**: Keine. **Rückgabewert**: `void`.
-   - **Was macht die Funktion?** Aktiviert die Live-Synchronisation zwischen mehreren Tabs/Fenstern.
-   - **Wie ist sie aktuell umgesetzt?** Instanziiert `new Core.SyncAdapter()`, ruft `.connect()` auf und aktualisiert bei eingehenden `'state_updated'`-Events `state.supermarkets`, `state.shoppingLists` und `state.shoppingList` inkl. `renderApp()`.
+   - Verbindet `Core.SyncAdapter` via `BroadcastChannel` für Cross-Tab-Synchronisation.
 4. **`loadInitialState()`**
-   - **Parameter**: Keine. **Rückgabewert**: `void`.
-   - **Was macht die Funktion?** Lädt alle gespeicherten Supermärkte, die Liste aller gespeicherten Einkaufszettel (`state.shoppingLists`) und den aktiven Einkaufszettel (`state.shoppingList`) beim Start aus dem `LocalStorageRepository` (oder legt beim Erststart Beispieldaten an).
-   - **Wie ist sie aktuell umgesetzt?** Ruft `repo.loadSupermarkets()`, `repo.loadShoppingLists()` und `repo.getActiveList()` auf, sortiert die aktive Liste über `Core.sortShoppingList` und speichert den initialisierten Zustand via `saveAppState()`.
+   - Lädt Supermärkte (inkl. Legacy-Migration), gespeicherte Einkaufslisten und aktive Liste aus dem `LocalStorageRepository`.
 5. **`createInitialStarterList(supermarket)`**
-   - **Parameter**: `supermarket` (`Supermarket`). **Rückgabewert**: `ShoppingList`.
-   - **Was macht die Funktion?** Erstellt eine reichhaltige Beispiel-Einkaufsliste mit 10 typischen Artikeln (Bananen, Tomaten, Brötchen, Vollmilch, Butter, Eier, Spaghetti, Passierte Tomaten, Mineralwasser, Tiefkühlpizza).
-   - **Wie ist sie aktuell umgesetzt?** Behält ID und Name des aktuellen Einkaufszettels bei, erzeugt eine Liste via `Core.createShoppingList` und fügt die 10 Artikel über `Core.addMultipleItemsToList(list, supermarket, starterItems)` sortiert ein.
-6. **`getActiveSupermarket()`**
-   - **Parameter**: Keine. **Rückgabewert**: `Supermarket`.
-   - **Was macht die Funktion?** Gibt das Supermarkt-Objekt zurück, das aktuell für den Einkaufszettel ausgewählt ist.
-   - **Wie ist sie aktuell umgesetzt?** Sucht in `state.supermarkets` nach `state.shoppingList.supermarketId` mit Fallback auf `state.supermarkets[0]`.
-7. **`getConfigSupermarket()`**
-   - **Parameter**: Keine. **Rückgabewert**: `Supermarket`.
-   - **Was macht die Funktion?** Gibt das Supermarkt-Objekt zurück, das im Tab *„Supermärkte“* gerade zur Bearbeitung der Laufreihenfolge ausgewählt ist.
-   - **Wie ist sie aktuell umgesetzt?** Sucht in `state.supermarkets` nach `state.configSelectedStoreId` mit Fallback auf `getActiveSupermarket()`.
-8. **`saveAppState()`**
-   - **Parameter**: Keine. **Rückgabewert**: `void`.
-   - **Was macht die Funktion?** Speichert sowohl alle Supermärkte als auch den aktiven Einkaufszettel (inkl. Synchronisation in `state.shoppingLists`) dauerhaft und benachrichtigt verbundene Sync-Clients.
-   - **Wie ist sie aktuell umgesetzt?** Ruft `repo.saveSupermarkets(state.supermarkets)`, `repo.saveActiveList(state.shoppingList)`, `repo.loadShoppingLists()` sowie `state.syncAdapter.publishUpdate('state_updated', ...)` auf.
-9. **`switchTab(tabId)`**
-   - **Parameter**: `tabId` (`'tab-list' | 'tab-ocr' | 'tab-stores' | 'tab-share'`). **Rückgabewert**: `void`.
-   - **Was macht die Funktion?** Schaltet die sichtbare Hauptansicht der App um.
-   - **Wie ist sie aktuell umgesetzt?** Setzt die CSS-Klasse `.active` auf der gewählten `.tab-view`-Section und dem zugehörigen `.nav-tab`-Button in der Bottom-Navigation und aktualisiert bei Bedarf den Supermarkt-Konfigurator.
+   - Erzeugt die 10-teilige Beispiel-Einkaufsliste über `Core.addMultipleItemsToList`.
+6. **`getActiveSupermarket()`** & **`getConfigSupermarket()`**
+   - Liefern den aktiven Supermarkt des Einkaufszettels bzw. den im Tab *„Supermärkte“* gewählten Markt.
+7. **`saveAppState()`**
+   - Persistiert Supermärkte sowie den aktiven Einkaufszettel und publiziert `'state_updated'` über `SyncAdapter`.
+8. **`switchTab(tabId)`**
+   - Schaltet zwischen `'tab-list'`, `'tab-ocr'`, `'tab-stores'` und `'tab-share'` um, ruft zur Sicherheit `stopDragAutoScroll()` und `cancelUnknownItemLongPress()` auf und aktualisiert bei Bedarf den Supermarkt-Konfigurator oder die Export-/Import-Zusammenfassung.
 
 #### Einkaufszettel-Verwaltung (Speichern, Benennen, Wechseln, Neu & Löschen)
 
-10. **`renderShoppingListsBar()`**
-    - **Parameter**: Keine. **Rückgabewert**: `void`.
-    - **Was macht die Funktion?** Rendert die Einkaufszettel-Verwaltungsleiste (`#shopping-lists-card`) ganz oben im Tab *„Einkaufszettel“* mit dem Dropdown `#shoppingListSelect` (zeigt für jeden gespeicherten Zettel Namen, offene/erledigte Waren und den Markt an, z. B. `📋 Wocheneinkauf (6 offen / 2 erledigt • REWE)`) sowie das Anzahl-Badge `#shopping-lists-count-badge`.
-    - **Wie ist sie aktuell umgesetzt?** Iteriert über `state.shoppingLists`, zählt pro Liste offene und erledigte Artikel und generiert die `<option>`-Einträge.
-11. **`handleSwitchShoppingList(listId)`**
-    - **Parameter**: `listId` (`string`). **Rückgabewert**: `void`.
-    - **Was macht die Funktion?** Wechselt bei Auswahl im Dropdown `#shoppingListSelect` sofort zum gewählten gespeicherten Einkaufszettel.
-    - **Wie ist sie aktuell umgesetzt?** Ruft `repo.switchShoppingList(listId)` auf, sortiert die geladene Liste für ihren zugeordneten Supermarkt, aktualisiert `state.shoppingList`, rendert die App neu und zeigt einen Toast an.
-12. **`openShoppingListModal(mode = 'create')`**
-    - **Parameter**: `mode` (`'create' | 'rename'`). **Rückgabewert**: `void`.
-    - **Was macht die Funktion?** Öffnet das Modal `#shopping-list-modal` zum Anlegen eines neuen Einkaufszettels (inkl. Name und Supermarkt-Auswahl) oder zum Umbenennen des aktuellen Einkaufszettels.
-    - **Wie ist sie aktuell umgesetzt?** Setzt `state.pendingListModalMode = mode`, konfiguriert Titel, Eingabefeld `#shopping-list-modal-name` und Supermarkt-Dropdown `#shopping-list-modal-store` und blendet das Modal über `.open` ein.
-13. **`closeShoppingListModal()`**
-    - **Parameter**: Keine. **Rückgabewert**: `void`.
-    - **Was macht die Funktion?** Schließt das Einkaufszettel-Modal (`#shopping-list-modal`).
-    - **Wie ist sie aktuell umgesetzt?** Setzt `state.pendingListModalMode = null` und entfernt die Klasse `.open`.
-14. **`handleShoppingListModalSubmit(event)`**
-    - **Parameter**: `event` (`Event`). **Rückgabewert**: `void`.
-    - **Was macht die Funktion?** Verarbeitet das Absenden des Einkaufszettel-Modals und delegiert je nach `state.pendingListModalMode` an `handleCreateNewShoppingList` oder `handleRenameShoppingList`.
-    - **Wie ist sie aktuell umgesetzt?** Liest Name und Supermarkt-ID aus den Modal-Feldern, schließt das Modal und ruft die entsprechende Handler-Funktion auf.
-15. **`handleCreateNewShoppingList(nameOrEvent, supermarketId)`**
-    - **Parameter**: `nameOrEvent` (`string | Event`), `supermarketId` (`string`, optional). **Rückgabewert**: `void`.
-    - **Was macht die Funktion?** Legt einen neuen benannten Einkaufszettel an, speichert ihn in `state.shoppingLists` und aktiviert ihn sofort.
-    - **Wie ist sie aktuell umgesetzt?** Öffnet bei Aufruf ohne String-Namen das Modal (`openShoppingListModal('create')`); ruft andernfalls `repo.createNewShoppingList({ name, supermarketId, liveOptimizationEnabled: true, items: [] })` auf, aktualisiert `state.shoppingLists` & `state.shoppingList`, rendert neu und zeigt einen Erfolgs-Toast.
-16. **`handleRenameShoppingList(newNameOrEvent)`**
-    - **Parameter**: `newNameOrEvent` (`string | Event`). **Rückgabewert**: `void`.
-    - **Was macht die Funktion?** Benennt den aktuellen Einkaufszettel um.
-    - **Wie ist sie aktuell umgesetzt?** Öffnet bei Klick-Event `openShoppingListModal('rename')`; ruft bei Übergabe eines Strings `repo.renameShoppingList(state.shoppingList.id, cleanName)` auf, speichert, rendert die App neu und zeigt einen Toast.
-17. **`handleSaveShoppingList()`**
-    - **Parameter**: Keine. **Rückgabewert**: `void`.
-    - **Was macht die Funktion?** Speichert den aktuellen Einkaufszettel bei Klick auf `💾 Speichern` explizit unter seinem Namen in der Einkaufszettel-Verwaltung und bestätigt dies per Toast (*„💾 Einkaufszettel ‚[Name]‘ gespeichert“*).
-    - **Wie ist sie aktuell umgesetzt?** Aktualisiert `state.shoppingList.updatedAt`, ruft `saveAppState()` und `renderApp()` auf und gibt die Toast-Bestätigung aus.
-18. **`handleDeleteShoppingList()`**
-    - **Parameter**: Keine. **Rückgabewert**: `void`.
-    - **Was macht die Funktion?** Löscht den aktuell ausgewählten Einkaufszettel (nach Sicherheitsabfrage via `window.confirm`, falls Waren enthalten sind) und wechselt zum nächsten gespeicherten Einkaufszettel.
-    - **Wie ist sie aktuell umgesetzt?** Ruft `repo.deleteShoppingList(currentList.id)` und `repo.getActiveList()` auf, aktualisiert `state.shoppingLists` & `state.shoppingList` und rendert die UI neu.
+9. **`renderShoppingListsBar()`**, **`handleSwitchShoppingList(listId)`**, **`openShoppingListModal(mode)`**, **`closeShoppingListModal()`**, **`handleShoppingListModalSubmit(event)`**, **`handleCreateNewShoppingList(nameOrEvent, supermarketId)`**, **`handleRenameShoppingList(newNameOrEvent)`**, **`handleSaveShoppingList()`**, **`handleDeleteShoppingList()`**
+   - Verwalten das Dropdown `#shoppingListSelect`, das Anlegen/Umbenennen-Modal `#shopping-list-modal`, explizites Speichern (`💾 Speichern`) und Löschen von Einkaufszetteln.
 
-#### Einkaufszettel, Abhaken, Rückgängig & Live-Optimierung
+#### Einkaufszettel, Spezifikationen, Unbekannte Waren, Abhaken & Live-Optimierung
 
-19. **`selectSupermarket(supermarketId)`**
-    - **Parameter**: `supermarketId` (`string`). **Rückgabewert**: `void`.
-    - **Was macht die Funktion?** Wechselt den Supermarkt des Einkaufszettels per Fingertipp und passt sofort die Reihenfolge aller Waren an den neuen Markt an.
-    - **Wie ist sie aktuell umgesetzt?** Ruft `Core.changeListSupermarket(state.shoppingList, newStore)` auf, speichert, rendert die App neu und zeigt einen Bestätigungs-Toast an.
-20. **`handleToggleLiveOptimization(enabled)`**
-    - **Parameter**: `enabled` (`boolean`). **Rückgabewert**: `void`.
-    - **Was macht die Funktion?** Schaltet den Schalter *„Live-Optimierung“* auf dem Einkaufszettel ein oder aus.
-    - **Wie ist sie aktuell umgesetzt?** Aktualisiert die Liste über `Core.setLiveOptimization(state.shoppingList, enabled)`, speichert den Zustand, aktualisiert das Header-Badge (`renderLiveOptimizationHeader()`) und zeigt einen Status-Toast.
-21. **`handleAddItemSubmit(event)`**
-    - **Parameter**: `event` (`Event`, optional). **Rückgabewert**: `void`.
-    - **Was macht die Funktion?** Liest Artikelname und Menge aus der Eingabeleiste, fügt die Ware hinzu und informiert den Nutzer per Spezial-Toast, falls die Ware aufgrund bereits abgehakter späterer Waren direkt als nächste offene Ware eingereiht wurde (`wasAddedLate === true`).
-    - **Wie ist sie aktuell umgesetzt?** Verhindert das Standard-Formular-Submit, liest `#add-item-name` und `#add-item-qty`, ruft `Core.addItemToList(state.shoppingList, activeStore, { name, quantity })` auf, leert die Eingabefelder, rendert die Liste neu und unterscheidet beim Toast zwischen `result.wasAddedLate === true` und normaler Einsortierung.
-22. **`handleItemToggleCheck(itemId)`**
-    - **Parameter**: `itemId` (`string`). **Rückgabewert**: `void`.
-    - **Was macht die Funktion?** Verarbeitet das Antippen einer offenen oder bereits erledigten Ware (Abhaken bzw. Rückgängig-Machen).
-    - **Wie ist sie aktuell umgesetzt?** Ruft `Core.toggleItemCheck(state.shoppingList, activeStore, itemId)` auf, speichert und rendert die UI. Wurde eine Ware abgehakt und `result.outOfOrderDetected === true` erkannt, öffnet sie automatisch das Modal `openLiveOptimizationModal(...)`. Wurde eine erledigte Ware wieder aktiviert (`result.action === 'unchecked'`), zeigt sie einen Toast, dass die Ware wieder an ihrer optimierten Supermarkt-Position eingereiht wurde.
-23. **`openLiveOptimizationModal(checkResult)`**
-    - **Parameter**: `checkResult` (`{ supermarket, checkedItem, skippedItems, promptMessage }`). **Rückgabewert**: `void`.
-    - **Was macht die Funktion?** Zeigt den modalen Dialog an, der den Nutzer fragt, ob die Supermarkt-Konfiguration an die tatsächliche Abhak-Reihenfolge angepasst werden soll.
-    - **Wie ist sie aktuell umgesetzt?** Speichert `checkResult` in `state.pendingLiveOpt`, befüllt `#live-opt-modal-text` und `#live-opt-modal-details` mit den Namen der vorgezogenen und übersprungenen Waren und blendet `#live-opt-modal` über die Klasse `.open` ein.
-24. **`confirmLiveOptimizationUpdate()`**
-    - **Parameter**: Keine. **Rückgabewert**: `void`.
-    - **Was macht die Funktion?** Führt nach Klick auf *„Ja, Reihenfolge anpassen“* die gelernte Reihenfolge-Änderung in der Supermarkt-Konfiguration durch.
-    - **Wie ist sie aktuell umgesetzt?** Ruft `Core.applyLiveOptimizationUpdate(supermarket, checkedItem, skippedItems)` auf, ersetzt den aktualisierten Supermarkt in `state.supermarkets`, sortiert die Einkaufsliste neu, schließt das Modal, speichert und zeigt einen Erfolgs-Toast.
-25. **`closeLiveOptimizationModal()`**
-    - **Parameter**: Keine. **Rückgabewert**: `void`.
-    - **Was macht die Funktion?** Schließt das Live-Optimierungs-Modal bei Klick auf *„Nein, nur abhaken“*, ohne die Supermarkt-Konfiguration zu verändern.
-    - **Wie ist sie aktuell umgesetzt?** Setzt `state.pendingLiveOpt = null` und entfernt die Klasse `.open` von `#live-opt-modal`.
-26. **`handleRemoveItem(itemId, event)`**
-    - **Parameter**: `itemId` (`string`), `event` (`Event`, optional). **Rückgabewert**: `void`.
-    - **Was macht die Funktion?** Löscht einen einzelnen Artikel bei Klick auf das `✕`-Symbol.
-    - **Wie ist sie aktuell umgesetzt?** Stoppt das Event-Bubbling (`event.stopPropagation()`), ruft `Core.removeItemFromList` auf, speichert und rendert neu.
-27. **`handleClearCheckedItems()`**
-    - **Parameter**: Keine. **Rückgabewert**: `void`.
-    - **Was macht die Funktion?** Entfernt alle erledigten Artikel auf einmal.
-    - **Wie ist sie aktuell umgesetzt?** Ruft `Core.clearCheckedItems(state.shoppingList, activeStore)` auf, speichert und rendert neu.
-28. **`seedDemoShoppingList()`**
-    - **Parameter**: Keine. **Rückgabewert**: `void`.
-    - **Was macht die Funktion?** Befüllt den aktuellen Einkaufszettel auf Wunsch mit der 10-teiligen Beispiel-Einkaufsliste.
-    - **Wie ist sie aktuell umgesetzt?** Ruft `createInitialStarterList(activeStore)` auf, speichert und rendert neu.
+10. **`selectSupermarket(supermarketId)`** & **`handleToggleLiveOptimization(enabled)`**
+    - Wechseln den aktiven Supermarkt (mit sofortiger Umsortierung) bzw. schalten die Live-Optimierung um.
+11. **`handleAddItemSubmit(event)`**
+    - Liest Artikelname (`#add-item-name`), optionale Spezifikation (`#add-item-spec`) und Menge (`#add-item-qty`), ruft `Core.addItemToList(state.shoppingList, activeStore, { name, specification, quantity })` auf und informiert per Toast (inkl. Hinweis auf Spät-Kauf-Priorisierung oder fehlenden Supermarkt-Eintrag).
+12. **`openEditItemModal(itemId, event)`**, **`closeEditItemModal()`** & **`handleEditItemModalSubmit(event)`**
+    - Öffnen und verarbeiten das Modal `#edit-item-modal` zum Bearbeiten von Ware, optionaler Spezifikation und Menge über `Core.updateItemInList`.
+13. **`handleAddUnknownItemToSupermarket(itemId)`**
+    - Wird durch Long-Press auf eine noch nicht im Supermarkt vorhandene Ware ausgelöst: Ruft `Core.addItemToSupermarket(activeStore, item, { list: state.shoppingList })` auf, ersetzt Supermarkt und neu sortierte Liste im State, speichert, rendert neu und bestätigt die Aufnahme per Toast (inkl. Hinweis auf freie Sortierung im Tab *„Supermärkte“*).
+14. **`handleItemToggleCheck(itemId)`**, **`openLiveOptimizationModal(checkResult)`**, **`confirmLiveOptimizationUpdate()`**, **`closeLiveOptimizationModal()`**
+    - Steuern das Abhaken, die Rückgängig-Funktion (Uncheck) sowie das Live-Optimierungs-Modal (mit Klick-Schutz nach ausgelöstem Long-Press via `suppressNextClickUntil`).
+15. **`handleRemoveItem(itemId, event)`**, **`handleClearCheckedItems()`**, **`seedDemoShoppingList()`**
+    - Löschen einzelner oder aller abgehakten Waren bzw. Befüllen mit der Demo-Liste.
 
 #### Rendering-Funktionen des Einkaufszettels
 
-29. **`renderApp()`**
-    - **Parameter**: Keine. **Rückgabewert**: `void`.
-    - **Was macht die Funktion?** Synchronisiert das gesamte DOM mit dem aktuellen `state`.
-    - **Wie ist sie aktuell umgesetzt?** Ruft `renderHeaderAndStorePills()`, `renderShoppingListsBar()`, `renderLiveOptimizationHeader()`, `renderShoppingListView()`, `renderQuickSuggestions()` und – falls der Supermarkt-Tab aktiv ist – `renderSupermarketConfigurator()` auf.
-30. **`renderHeaderAndStorePills()`**
-    - **Parameter**: Keine. **Rückgabewert**: `void`.
-    - **Was macht die Funktion?** Aktualisiert den Untertitel (`<Listenname> • <Marktname> (<N> Stationen)`), den Fortschrittszähler (`X / Y erledigt`) und rendert die klickbaren Supermarkt-Auswahl-Buttons (*REWE*, *ALDI*, *LIDL* + eigene Märkte).
-    - **Wie ist sie aktuell umgesetzt?** Berechnet die Anzahl erledigter Artikel und erzeugt für jeden Markt in `state.supermarkets` einen `<button class="store-pill" data-store-id="...">`.
-31. **`renderLiveOptimizationHeader()`**
-    - **Parameter**: Keine. **Rückgabewert**: `void`.
-    - **Was macht die Funktion?** Aktualisiert Schalterstellung, Status-Badge (*„Ein“* / *„Aus“*) und Erklärungstext der Live-Optimierung.
-    - **Wie ist sie aktuell umgesetzt?** Liest `state.shoppingList.liveOptimizationEnabled` und setzt Klassen sowie Textinhalte von `#live-opt-card`, `#live-opt-badge`, `#live-opt-toggle` und `#live-opt-desc`.
-32. **`renderShoppingListView()`**
-    - **Parameter**: Keine. **Rückgabewert**: `void`.
-    - **Was macht die Funktion?** Rendert die zweigeteilte Einkaufsliste: Oben die ausgegraute Sektion *„Bereits abgehakt (Erledigt)“* (mit Rückgängig-Hinweis bei jedem Artikel) und direkt darunter *„Noch einzukaufen (Optimierte Reihenfolge)“* mit Gang-Nummern, Abteilungs-Badges, Hervorhebung der nächsten Ware (`👉 Nächste Ware im Gang`) und Spät-Kauf-Priorisierung (`⚡ Nachträglich hinzugefügt • Als Nächstes`).
-    - **Wie ist sie aktuell umgesetzt?** Zerlegt die Liste über `Core.sortShoppingList(state.shoppingList, activeStore)` in `checkedItems` und `uncheckedItems` und generiert das HTML für `#checked-items-list` und `#unchecked-items-list`.
-33. **`renderQuickSuggestions()`**
-    - **Parameter**: Keine. **Rückgabewert**: `void`.
-    - **Was macht die Funktion?** Zeigt bis zu 10 Schnellauswahl-Chips (`+ Äpfel`, `+ Milch`, ...) für Waren des aktiven Supermarkts an, die noch nicht auf der Einkaufsliste stehen.
-    - **Wie ist sie aktuell umgesetzt?** Filtert `activeStore.itemOrder` gegen ein `Set` der bereits auf der Liste vorhandenen normalisierten Artikelnamen und rendert `<button class="suggestion-chip">` Elemente.
+16. **`renderApp()`**, **`renderHeaderAndStorePills()`**, **`renderLiveOptimizationHeader()`**
+    - Synchronisieren Header, Fortschrittszähler, Store-Pills, Multi-Listen-Bar, Live-Opt-Schalter, Einkaufsliste, Quick-Chips, Supermarkt-Konfigurator und Export-/Import-Zusammenfassung (`renderExportImportTabSummary()`).
+17. **`renderShoppingListView()`**
+    - Rendert `#checked-items-list` (ausgegraute erledigte Waren) und `#unchecked-items-list` (offene Waren inkl. `.unknown-in-store` + `data-unknown-item="true"` am Anfang, Spezifikations-Badges `.item-spec-badge`, `(Warengruppe)`-Hinweis bei `fallback-generic`, Gang-Nummern und Spät-Kauf-Priorisierung).
+18. **`renderQuickSuggestions()`**
+    - Rendert Schnellauswahl-Chips für noch nicht auf der Liste stehende `{ name, specification }`-Einträge des aktiven Supermarkts (dedupliziert über `Core.getStoreEntryKey`).
 
 #### Foto-Scanner / Echte Tesseract.js OCR-Funktionen (`#tab-ocr`)
 
-34. **`handleOcrFileUpload(event)`**
-    - **Parameter**: `event` (`Event`). **Rückgabewert**: `Promise<void>`.
-    - **Was macht die Funktion?** Nimmt ein mit der Smartphone-Kamera aufgenommenes oder aus der Galerie gewähltes Foto entgegen, zeigt das Vorschaubild an, leert alte Textvorschauen und führt die echte Tesseract.js-Texterkennung (inkl. Bild-Vorverarbeitung) aus.
-    - **Wie ist sie aktuell umgesetzt?** Liest die Datei über `readFileAsDataUrl(file)`, zeigt den Fortschritt (`⏳ Bild wird für Texterkennung optimiert…`, `🔍 Tesseract OCR liest Text (%)…`) in `#ocr-status-box` an und ruft `await Core.recognizeImageShoppingList(dataUrl, onProgress)` auf. Bei Erfolg schreibt sie den erkannten Text in `#ocr-raw-textarea` und aktualisiert die Vorschau via `renderOcrPreviewFromText`; bei unlesbarem Foto oder fehlender Offline-Engine zeigt sie eine klare Hinweismeldung ohne Fake-Artikel an.
-35. **`handleLoadDemoPhoto(presetName)`**
-    - **Parameter**: `presetName` (`string`). **Rückgabewert**: `Promise<void>`.
-    - **Was macht die Funktion?** Erzeugt per Klick eines der 3 integrierten Demo-Einkaufszettel-Fotos auf Canvas und lässt es durch die Demo-OCR-Pipeline laufen.
-    - **Wie ist sie aktuell umgesetzt?** Ruft `Core.generateSamplePhotoDataUrl(presetName)` und `await Core.recognizeImageShoppingList(sampleDataUrl)` auf und stellt Bild sowie erkannte Artikel dar.
-36. **`renderOcrPreviewFromText(rawText)`**
-    - **Parameter**: `rawText` (`string`). **Rückgabewert**: `void`.
-    - **Was macht die Funktion?** Parst den Text im OCR-Editorfeld live bei jeder Änderung und zeigt für jede erkannte Ware den Namen, die Menge und die zugehörige Supermarkt-Station an.
-    - **Wie ist sie aktuell umgesetzt?** Ruft `Core.parseShoppingText(rawText)` auf, speichert das Ergebnis in `state.parsedOcrItems` und rendert die Vorschau-Elemente in `#ocr-parsed-list`.
-37. **`handleImportOcrItems()`**
-    - **Parameter**: Keine. **Rückgabewert**: `void`.
-    - **Was macht die Funktion?** Übernimmt alle erkannten Waren aus dem Foto-Scanner in den aktiven Einkaufszettel (inkl. automatischer Laufweg-Sortierung und „Bereits vorbeigelaufen“-Prüfung) und wechselt zurück zum Einkaufszettel-Tab.
-    - **Wie ist sie aktuell umgesetzt?** Übergibt `state.parsedOcrItems` an `Core.addMultipleItemsToList(state.shoppingList, activeStore, state.parsedOcrItems)`, speichert, wechselt zu `'tab-list'` und zeigt einen Toast (inkl. Hinweis auf eventuell sofort als Nächstes priorisierte Waren `result.lateItems`).
+19. **`handleOcrFileUpload(event)`**, **`handleLoadDemoPhoto(presetName)`**, **`renderOcrPreviewFromText(rawText)`**, **`handleImportOcrItems()`**
+    - Steuern den Kamera-/Foto-Upload, die 3 isolierten Demo-Zettel, die Live-Textvorschau und die Übernahme erkannter Waren.
 
-#### Supermarkt-Konfigurator (`#tab-stores`: Sortier-Vorlage, Vorige Ware, Drag & Drop `☰` & Direkt-Verschieben `⇄`)
+#### Supermarkt-Konfigurator, Edit-Modal & Drag-and-Drop Auto-Scroll (`#tab-stores`)
 
-38. **`renderSupermarketConfigurator()`**
-    - **Parameter**: Keine. **Rückgabewert**: `void`.
-    - **Was macht die Funktion?** Rendert die komplette Bearbeitungsansicht im Tab *„Supermärkte“*:
-      1. das Markt-Auswahl-Dropdown `#config-store-select`,
-      2. das Vorlagen-Dropdown `#newStoreTemplateSelect` (*„Sortierung übernehmen von: Standard / Supermarkt: ...“*) für neue Märkte,
-      3. die Autocomplete-Datalist `#storeExistingItemsDatalist` aller vorhandenen Waren für das Feld *„Vorige Ware im Markt“*,
-      4. die sortierbare Warenliste `#store-order-list` mit Zieh-Griff `☰`, `⇄` Direkt-Verschieben-Button, `↑`/`↓`-Pfeilen und `✕`-Löschen-Button.
-    - **Wie ist sie aktuell umgesetzt?** Befüllt `#config-store-select`, `#newStoreTemplateSelect` und `#storeExistingItemsDatalist` dynamisch aus `state.supermarkets` bzw. `configStore.itemOrder` und rendert für jede Station ein `<li class="store-order-item" draggable="true" data-item-index="...">`.
-39. **`handleCreateSupermarket(event)`**
-    - **Parameter**: `event` (`Event`). **Rückgabewert**: `void`.
-    - **Was macht die Funktion?** Erstellt einen neuen Supermarkt (z. B. *„EDEKA Center“*) und übernimmt dabei die in `#newStoreTemplateSelect` ausgewählte Sortierung (`Standard-Sortierung` oder die Laufreihenfolge eines bestehenden Supermarkts).
-    - **Wie ist sie aktuell umgesetzt?** Liest `#new-store-name` und `#newStoreTemplateSelect`, ruft `Core.createSupermarketWithSorting({ name, sourceSupermarketId, supermarkets: state.supermarkets })` auf, fügt den neuen Markt zu `state.supermarkets` hinzu, aktiviert ihn und bestätigt die übernommene Sortier-Vorlage per Toast.
-40. **`handleRenameSupermarket()`**
-    - **Parameter**: Keine. **Rückgabewert**: `void`.
-    - **Was macht die Funktion?** Benennt den ausgewählten Supermarkt per Eingabedialog um.
-    - **Wie ist sie aktuell umgesetzt?** Fragt den neuen Namen über `window.prompt` ab, aktualisiert `store.name` und speichert.
-41. **`handleDeleteSupermarket()`**
-    - **Parameter**: Keine. **Rückgabewert**: `void`.
-    - **Was macht die Funktion?** Löscht den aktuell im Konfigurator ausgewählten Supermarkt (solange mehr als 1 Markt existiert).
-    - **Wie ist sie aktuell umgesetzt?** Filtert `state.supermarkets` und schaltet die aktive Liste bei Bedarf auf den ersten verbleibenden Markt um.
-42. **`isStartPositionKeyword(rawValue)`** *(interne Hilfsfunktion)*
-    - **Parameter**: `rawValue` (`string`). **Rückgabewert**: `boolean`.
-    - **Was macht die Funktion?** Prüft, ob die Eingabe im Feld „Vorige Ware“ bedeutet, dass die Ware ganz an den Anfang (Position 1) gesetzt werden soll (`'__start__'`, `'anfang'`, `'ganz am anfang (position 1)'`, `'pos. 1'`, `'eingang'`).
-43. **`handleMoveStoreItem(index, direction)`**
-    - **Parameter**: `index` (`number`), `direction` (`'up' | 'down'`). **Rückgabewert**: `void`.
-    - **Was macht die Funktion?** Verschiebt eine Ware in der Supermarkt-Laufreihenfolge per Pfeilbutton um eine Position Richtung Eingang (`'up'`) oder Richtung Kasse (`'down'`).
-    - **Wie ist sie aktuell umgesetzt?** Berechnet `toIndex` und ruft `Core.reorderSupermarketItem(store, index, toIndex)` sowie `Core.changeListSupermarket` auf.
-44. **`handleDragReorderStoreItem(fromIndex, toIndex)`**
-    - **Parameter**: `fromIndex` (`number`), `toIndex` (`number`). **Rückgabewert**: `void`.
-    - **Was macht die Funktion?** Verschiebt eine Ware nach einer Drag-and-Drop-Aktion (Maus oder Touch am `☰`-Griff) von `fromIndex` auf `toIndex`.
-    - **Wie ist sie aktuell umgesetzt?** Validiert die Indizes, ruft `Core.reorderSupermarketItem(store, fromIndex, toIndex)` auf, sortiert die aktive Einkaufsliste neu, speichert und zeigt einen Toast mit der neuen Positionsnummer (`toIndex + 1`) an.
-45. **`openMoveStoreItemModal(itemName, currentIndex)`**
-    - **Parameter**: `itemName` (`string`), `currentIndex` (`number`). **Rückgabewert**: `void`.
-    - **Was macht die Funktion?** Öffnet bei Klick auf `⇄` das Modal `#move-store-item-modal` zum gezielten Verschieben einer Ware hinter eine beliebige andere Ware oder an Position 1.
-    - **Wie ist sie aktuell umgesetzt?** Speichert `{ itemName, currentIndex }` in `state.pendingMoveItem`, leert `#moveStoreItemPreviousInput`, rendert für alle anderen Waren des Marktes klickbare Schnellauswahl-Chips (`#move-item-picker-list`) und öffnet das Modal.
-46. **`closeMoveStoreItemModal()`**
-    - **Parameter**: Keine. **Rückgabewert**: `void`.
-    - **Was macht die Funktion?** Schließt das Direkt-Verschieben-Modal (`#move-store-item-modal`).
-    - **Wie ist sie aktuell umgesetzt?** Setzt `state.pendingMoveItem = null` und entfernt die Klasse `.open`.
-47. **`handleMoveStoreItemAfter(itemNameOrIndex, previousItemRaw)`**
-    - **Parameter**: `itemNameOrIndex` (`string | number`), `previousItemRaw` (`string`). **Rückgabewert**: `void`.
-    - **Was macht die Funktion?** Führt das gezielte Verschieben einer Ware hinter `previousItemRaw` (oder an Position 1 bei `'__START__'`) aus.
-    - **Wie ist sie aktuell umgesetzt?** Wandelt Start-Schlüsselwörter über `isStartPositionKeyword` in `'__START__'` um, ruft `Core.moveSupermarketItemAfter(store, itemNameOrIndex, prevParam)` auf, aktualisiert `state.supermarkets` und `state.shoppingList`, schließt das Modal, speichert und zeigt einen Toast mit der neuen Position an.
-48. **`handleAddStoreKnownItem(event)`**
-    - **Parameter**: `event` (`Event`, optional). **Rückgabewert**: `void`.
-    - **Was macht die Funktion?** Nimmt eine neue Ware über `#add-store-item-form` in die Supermarkt-Konfiguration auf und platziert sie exakt hinter der im Autocomplete-Feld `#storeAddItemPreviousInput` angegebenen *vorigen Ware* (bzw. auf Position 1 oder am Ende).
-    - **Wie ist sie aktuell umgesetzt?** Liest `#new-store-item-name` und `#storeAddItemPreviousInput`, ruft `Core.addSupermarketKnownItemAfter(store, name, prevParam)` auf, aktualisiert den Markt und die Einkaufsliste, leert die Eingabefelder und informiert per Toast über die genaue Einfügeposition.
-49. **`handleRemoveStoreKnownItem(itemName)`**
-    - **Parameter**: `itemName` (`string`). **Rückgabewert**: `void`.
-    - **Was macht die Funktion?** Entfernt eine Ware aus der gespeicherten Laufreihenfolge des Supermarkts.
-    - **Wie ist sie aktuell umgesetzt?** Ruft `Core.removeSupermarketKnownItem(store, itemName)` auf, aktualisiert `state.supermarkets` und speichert.
-50. **`bindStoreOrderDragAndDrop(listEl)`**
-    - **Parameter**: `listEl` (`HTMLElement`) – Das `<ul id="store-order-list">`-Element. **Rückgabewert**: `void`.
-    - **Was macht die Funktion?** Verbindet sowohl Desktop-HTML5-Drag-and-Drop als auch mobiles Touch-Drag-and-Drop (`☰`-Griff) mit der Supermarkt-Warenliste.
-    - **Wie ist sie aktuell umgesetzt?** Registriert `dragstart`, `dragover`, `drop`, `dragend` sowie `touchstart`, `touchmove` (ermittelt das Zielelement unter dem Finger via `document.elementFromPoint(touch.clientX, touch.clientY)`) und `touchend` und ruft beim Loslassen `handleDragReorderStoreItem(fromIdx, toIdx)` auf.
+20. **`renderSupermarketConfigurator()`**, **`handleCreateSupermarket(event)`**, **`handleRenameSupermarket()`**, **`handleDeleteSupermarket()`**, **`isStartPositionKeyword(rawValue)`**
+    - Rendern Markt-Auswahl, Sortier-Vorlagen-Dropdown (`#newStoreTemplateSelect`), Datalist (`#storeExistingItemsDatalist` inkl. `"Name (Spezifikation)"`) und die sortierbare Liste `#store-order-list` mit `☰`-Handle, `.store-spec-badge`, `✎`-Edit-, `⇄`-Verschieben-, `↑`/`↓`- und `✕`-Buttons.
+21. **`handleMoveStoreItem(index, direction)`**, **`handleDragReorderStoreItem(fromIndex, toIndex)`**
+    - Verschieben Einträge per Pfeilbutton oder Drag & Drop über `Core.reorderSupermarketItem`.
+22. **`openEditStoreItemModal(entryIndex)`**, **`closeEditStoreItemModal()`**, **`handleEditStoreItemModalSubmit(event)`**
+    - Öffnen und verarbeiten `#edit-store-item-modal` zum Bearbeiten von Ware und optionaler Spezifikation über `Core.updateSupermarketKnownItem`.
+23. **`openMoveStoreItemModal(itemName, currentIndex)`**, **`closeMoveStoreItemModal()`**, **`handleMoveStoreItemAfter(itemNameOrIndex, previousItemRaw)`**
+    - Gezieltes Verschieben eines Supermarkt-Eintrags hinter eine beliebige andere Station (oder Position 1) über `Core.moveSupermarketItemAfter`.
+24. **`handleAddStoreKnownItem(event)`** & **`handleRemoveStoreKnownItem(itemOrIndex)`**
+    - Nehmen neue Waren inkl. `#new-store-item-spec` über `Core.addSupermarketKnownItemAfter` auf bzw. entfernen Einträge exakt per Zeilen-Index über `Core.removeSupermarketKnownItem`.
+25. **`stopDragAutoScroll()`**, **`getDragScrollContainer(element)`**, **`getVisibleDragBounds(scrollContainer)`**, **`computeDragAutoScrollSpeed(clientY, bounds)`**, **`bindStoreOrderDragAndDrop(listEl)`**
+    - Implementieren das mobile Touch-Drag-and-Drop (inkl. schwebender `.drag-ghost`-Vorschau) und Desktop-HTML5-Drag-and-Drop (inkl. guarded `document`-`dragover`/`drop` für Randbereiche) mit kontinuierlichem `requestAnimationFrame`-Rand-Auto-Scroll unter Berücksichtigung von `.app-header` und `.bottom-nav`, fortlaufender Zielzeilen-Aktualisierung und vollständigem Cleanup bei Drop, Abbruch, `blur` oder Tab-Wechsel.
+26. **`cancelUnknownItemLongPress()`** & **`bindUnknownItemLongPress(listEl)`**
+    - Implementieren die 550-ms-Long-Press-Geste auf `[data-unknown-item="true"]` (Pointer Events mit Touch-/Mouse-Fallback, 110-ms-Feedback `.long-pressing`, 10-px-Bewegungs- und Scroll-Abbruch, `contextmenu`-Unterdrückung, `window`-Release-Cleanup und `triggeredPointerId`-geschützte Klick-Unterdrückung nach `renderApp()`).
 
-#### Teilen, Export/Import & Allgemeine Hilfsfunktionen (`#tab-share`)
+#### Dateibasierter Export & Import (`#tab-share`) & Allgemeine Hilfsfunktionen
 
-51. **`handleShareShoppingList()`**
-    - **Parameter**: Keine. **Rückgabewert**: `Promise<void>`.
-    - **Was macht die Funktion?** Teilt den aktuellen Einkaufszettel samt `SC1:`-Share-Code über das native Smartphone-Share-Sheet (WhatsApp, Telegram, Signal etc.) oder kopiert ihn in die Zwischenablage.
-    - **Wie ist sie aktuell umgesetzt?** Ruft `Core.exportShoppingList` und anschließend `await Core.shareViaWebApi(...)` (mit Fallback auf `copyTextToClipboard`) auf.
-52. **`handleExportShareCode()`**
-    - **Parameter**: Keine. **Rückgabewert**: `void`.
-    - **Was macht die Funktion?** Generiert den kompakten `SC1:...`-Share-Code der aktuellen Liste und Supermarkt-Konfiguration und schreibt ihn in das Textfeld `#share-code-textarea`.
-    - **Wie ist sie aktuell umgesetzt?** Ruft `Core.exportShoppingList(state.shoppingList, activeStore)` auf und weist `exported.shareCode` dem Textfeld zu.
-53. **`handleImportShareCode()`**
-    - **Parameter**: Keine. **Rückgabewert**: `void`.
-    - **Was macht die Funktion?** Importiert einen in `#share-code-textarea` eingefügten `SC1:`-Share-Code oder JSON-String und übernimmt sowohl enthaltene Supermarkt-Konfigurationen als auch die Einkaufsliste.
-    - **Wie ist sie aktuell umgesetzt?** Dekodiert den Text über `Core.decodeShareCode(raw)`, führt enthaltene Supermärkte mit `state.supermarkets` zusammen, sortiert die importierte Liste über `Core.changeListSupermarket` und wechselt zum Einkaufszettel-Tab.
-54. **`handleDownloadBackupJson()`**
-    - **Parameter**: Keine. **Rückgabewert**: `void`.
-    - **Was macht die Funktion?** Lädt ein Komplett-Backup aller Märkte und aller gespeicherten Einkaufslisten (`state.shoppingLists`) als `.json`-Datei herunter.
-    - **Wie ist sie aktuell umgesetzt?** Ruft `Core.exportFullBackup` und `Core.downloadJsonFile` mit tagesaktuellem Dateinamen auf.
-55. **`bindEventListeners()`**
-    - **Parameter**: Keine. **Rückgabewert**: `void`.
-    - **Was macht die Funktion?** Verknüpft alle Buttons, Formulare, Listen, Drag-and-Drop-Container und Modals per Event-Delegation mit ihren Handler-Funktionen.
-    - **Wie ist sie aktuell umgesetzt?** Registriert Listener für Navigation, Store-Pills, Einkaufszettel-Verwaltungsleiste (`#shoppingListSelect`, `#btnNewShoppingList`, `#btnRenameShoppingList`, `#btnSaveShoppingList`, `#btnDeleteShoppingList`), Live-Opt-Toggle, Add-Item-Form, Quick-Chips, Listen-Klicks, OCR-Inputs, Supermarkt-Editor (`#btnInsertAtStoreStart`, `⇄`-Modal, `bindStoreOrderDragAndDrop`) und Share-Buttons.
-56. **`showToast(message, type = 'info')`**
-    - **Parameter**: `message` (`string`), `type` (`'info' | 'success' | 'late'`). **Rückgabewert**: `void`.
-    - **Was macht die Funktion?** Zeigt eine animierte, sich nach 4,2 Sekunden selbst ausblendende Benachrichtigung am unteren Bildschirmrand an.
-    - **Wie ist sie aktuell umgesetzt?** Erstellt ein `<div class="toast toast-${type}">` in `#toast-container` und entfernt es per `setTimeout`.
-57. **`readFileAsDataUrl(file)`**
-    - **Parameter**: `file` (`File`). **Rückgabewert**: `Promise<string>`.
-    - **Was macht die Funktion?** Liest eine Bilddatei asynchron als Base64-Data-URL ein.
-    - **Wie ist sie aktuell umgesetzt?** Kapselt eine `FileReader`-Instanz (`reader.readAsDataURL(file)`) in einem Promise.
-58. **`copyTextToClipboard(text)`**
-    - **Parameter**: `text` (`string`). **Rückgabewert**: `Promise<boolean>`.
-    - **Was macht die Funktion?** Kopiert einen String in die System-Zwischenablage.
-    - **Wie ist sie aktuell umgesetzt?** Ruft `await navigator.clipboard.writeText(text)` in einem `try/catch`-Block auf.
-59. **`escapeHtml(str)`**
-    - **Parameter**: `str` (`string`). **Rückgabewert**: `string`.
-    - **Was macht die Funktion?** Schützt vor XSS-Fehlern beim Einfügen von Benutzereingaben in HTML-Templates.
-    - **Wie ist sie aktuell umgesetzt?** Ersetzt `&`, `<`, `>`, `"` und `'` durch ihre entsprechenden HTML-Entities.
-60. **`registerServiceWorkerIfSupported()`**
-    - **Parameter**: Keine. **Rückgabewert**: `void`.
-    - **Was macht die Funktion?** Registriert den PWA-Service-Worker (`./sw.js`), wenn die App über HTTPS oder `localhost` läuft.
-    - **Wie ist sie aktuell umgesetzt?** Prüft `'serviceWorker' in navigator` sowie `!window.__SMARTCART_STANDALONE__` und ruft `navigator.serviceWorker.register('./sw.js')` auf.
+27. **`renderExportImportTabSummary()`**
+    - Zeigt im Tab *„Export / Import“* Namen, Artikelzahl und Dateiformat (`.smartcart.json`) der aktuell ausgewählten Einkaufsliste sowie die Dateisharing-Verfügbarkeit (`Core.canShareShoppingListFiles`) an.
+28. **`handleSaveShoppingListFile()`**
+    - Speichert die aktive Einkaufsliste per `await Core.saveShoppingListFile(state.shoppingList, activeStore)` auf dem Gerät und gibt eine Statusmeldung per Toast aus.
+29. **`handleShareShoppingListFile()`**
+    - Teilt die aktive Einkaufsliste ausschließlich als `.smartcart.json`-Datei per `await Core.shareShoppingListFile(state.shoppingList, activeStore, { fallbackToSave: true })` (WhatsApp, E-Mail, Messenger) und behandelt Nutzerabbruch sowie automatischen Datei-Speichern-Fallback sauber per Toast.
+30. **`handleImportShoppingListFile(event)`**
+    - Liest die über `<input type="file" id="import-list-file-input" accept=".smartcart.json,.json,application/json">` gewählte Datei per `await Core.readShoppingListFile(file)`, wendet den im Dropdown `#import-list-mode` gewählten Modus (`'new'`, `'merge'` oder `'replace'`) via `Core.applyImportedShoppingList(...)` an, speichert die aktualisierte Liste, schaltet auf den Tab *„Einkaufszettel“* um und setzt das Datei-Eingabefeld zurück.
+31. **`bindEventListeners()`**, **`showToast(message, type)`**, **`readFileAsDataUrl(file)`**, **`escapeHtml(str)`**, **`registerServiceWorkerIfSupported()`**
+    - Verknüpfen sämtliche UI-Events (inkl. neuer Spezifikations-Modals, Long-Press, Drag & Drop Auto-Scroll und Datei-Export/-Import), zeigen Toast-Hinweise an, schützen gegen XSS und registrieren `./sw.js`.
 
 ---
 
@@ -961,25 +811,25 @@ Alle Methoden von `LocalStorageRepository` können sowohl auf einer Instanz (`ne
 
 ## 4. Weiterentwicklung & Roadmap (Echtzeit-Sharing, Cloud-Sync & App Stores)
 
-Die aktuelle Architektur ist bereits gezielt darauf vorbereitet, von einer lokal gespeicherten Single-User-App mit Share-Code-Austausch zu einer **kollaborativen Multi-User-Plattform** ausgebaut zu werden:
+Die aktuelle Architektur ist bereits gezielt darauf vorbereitet, von einer lokal gespeicherten Single-User-App mit `.smartcart.json`-Dateiaustausch zu einer **kollaborativen Multi-User-Plattform** ausgebaut zu werden:
 
 ### 4.1 Echtzeit-Sharing von Einkaufslisten (Multi-User Haushalts-Sync)
 Wenn zwei Personen gleichzeitig im selben Supermarkt einkaufen, soll das Abhaken einer Ware auf Smartphone A innerhalb von Millisekunden auf Smartphone B sichtbar sein:
-- **Vorbereitete Schnittstelle**: In [`src/core/share.js`](file:///home/manus/.gemini/antigravity/scratch/smartcart-app/src/core/share.js#L322-L426) ist hierfür bereits die Klasse `SyncAdapter` implementiert.
+- **Vorbereitete Schnittstelle**: In [`src/core/share.js`](file:///home/manus/.gemini/antigravity/scratch/smartcart-app/src/core/share.js#L1052-L1140) ist hierfür bereits die Klasse `SyncAdapter` implementiert.
 - **Ausbaustufe 1 (Supabase Realtime / Firebase Firestore)**:
-  Ein leichtgewichtiger `SupabaseTransport` wird über `syncAdapter.remoteTransport = ...` eingehängt. Jede Einkaufsliste erhält eine geteilte `room_id` (z. B. per QR-Code oder Einladungs-Link `?join=<room_id>`).
+  Ein leichtgewichtiger `SupabaseTransport` wird über `syncAdapter.remoteTransport = ...` eingehängt. Jede Einkaufsliste erhält eine geteilte `room_id`.
 - **Ausbaustufe 2 (Konfliktfreie Zusammenführung mit CRDTs / Yjs oder Last-Write-Wins auf Item-Ebene)**:
-  Da jedes `Item` in `models.js` bereits eine eigene `id` sowie einen Zeitstempel `checkedAt` besitzt und jede Liste/jeder Markt `updatedAt` führt, lassen sich konkurrierende Änderungen auf Artikel-Ebene deterministisch per *Last-Write-Wins (LWW-Element-Set)* oder *Yjs* zusammenführen, ohne dass sich zwei Smartphones gegenseitig überschreiben.
+  Da jedes `Item` in `models.js` bereits eine eigene `id`, `specification` sowie einen Zeitstempel `checkedAt` besitzt und jede Liste/jeder Markt `updatedAt` führt, lassen sich konkurrierende Änderungen auf Artikel-Ebene deterministisch per *Last-Write-Wins (LWW-Element-Set)* oder *Yjs* zusammenführen, ohne dass sich zwei Smartphones gegenseitig überschreiben.
 
-### 4.2 Teilen & Community-Datenbank für Supermarkt-Konfigurationen
-- **Aktueller Stand**: Supermarkt-Laufreihenfolgen (`supermarket.itemOrder`) lassen sich bereits heute per `exportSupermarket(supermarket)` als `SC1:`-Share-Code oder JSON mit Freunden teilen oder beim Anlegen eines neuen Marktes als Vorlage (`createSupermarketWithSorting`) kopieren.
-- **Nächster Schritt**: Optionale Community-Vorlagen nach Postleitzahl/Filiale (z. B. *„REWE Musterstraße 12, 50667 Köln“*). Wenn mehrere Nutzer über die Live-Optimierung dieselbe Umstellung bestätigen (z. B. *„Kaffee liegt jetzt in Gang 3 vor Nudeln“*), kann die gelernte Reihenfolge anonymisiert als Filial-Vorlage vorgeschlagen werden.
+### 4.2 Community-Datenbank für Supermarkt-Konfigurationen
+- **Aktueller Stand**: Supermarkt-Laufreihenfolgen (`supermarket.itemOrder` inkl. Spezifikationen) lassen sich beim Anlegen neuer Märkte als Vorlage (`createSupermarketWithSorting`) kopieren und über die Live-Optimierung sowie Long-Press laufend verfeinern.
+- **Nächster Schritt**: Optionale Community-Vorlagen nach Postleitzahl/Filiale (z. B. *„REWE Musterstraße 12, 50667 Köln“*). Wenn mehrere Nutzer über die Live-Optimierung dieselbe Umstellung bestätigen, kann die gelernte Reihenfolge anonymisiert als Filial-Vorlage vorgeschlagen werden.
 
 ### 4.3 Veröffentlichung im Google Play Store & Apple App Store
 Da `capacitor.config.json` (`appId: "com.smartcart.einkaufsliste"`) bereits integriert ist, sind für ein Store-Release nur folgende Schritte nötig:
 1. **Android (Google Play Store)**:
    - In `.github/workflows/android-and-web.yml` (oder lokal in Android Studio) statt `./gradlew assembleDebug` ein signiertes Android App Bundle (`./gradlew bundleRelease`) mit Upload-Keystore erzeugen.
-   - Optionale native Plugins wie `@capacitor/camera` oder `@capacitor/share` ergänzen (die Web-APIs `<input capture="environment">` und `navigator.share` funktionieren in Capacitor WebViews bereits direkt).
+   - Optionale native Plugins wie `@capacitor/filesystem` und `@capacitor/share` (von `src/core/share.js` bereits nativ unterstützt) sowie `@capacitor/camera` ergänzen.
 2. **iOS (Apple App Store / TestFlight)**:
    - Auf einem macOS-System oder macOS-GitHub-Action-Runner `npx cap add ios && npx cap sync ios` ausführen und das Projekt in Xcode mit einem Apple-Developer-Zertifikat archivieren.
 

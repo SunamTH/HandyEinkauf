@@ -1,10 +1,10 @@
 {
   "name": "smartcart-einkaufsliste",
-  "version": "1.0.0",
-  "description": "Intelligente Einkaufslisten-App mit automatischer Supermarkt-Laufweg-Optimierung, Live-Anpassung und Foto/OCR-Erkennung (Android, iOS & Web PWA)",
+  "version": "1.1.0",
+  "description": "Intelligente Einkaufslisten-App mit automatischer Supermarkt-Laufweg-Optimierung, Spezifikationen, Live-Anpassung, Datei-Export/-Import und Foto/OCR-Erkennung (Android, iOS & Web PWA)",
   "main": "index.html",
   "scripts": {
-    "test": "node tests/engine.test.js",
+    "test": "node tests/engine.test.js && node tests/share.test.js",
     "bundle": "node scripts/bundle-standalone.js",
     "build": "node scripts/bundle-standalone.js",
     "serve": "npx serve . -l 8080",

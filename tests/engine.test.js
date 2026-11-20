@@ -320,27 +320,23 @@ async function main() {
     assert.strictEqual(ocrResult.items[0].quantity, '2x');
   });
 
-  // 7. Storage & Share Service
-  await runTest('10. LocalStorageRepository & ShareService persist and encode/decode SC1 share codes losslessly', () => {
+  // 7. Storage Persistence
+  await runTest('10. LocalStorageRepository seeds and persists supermarkets and shopping lists losslessly', () => {
     const mem = Core.createMemoryStorage();
     const repo = new Core.LocalStorageRepository(mem);
 
     const state = repo.loadState();
     assert.strictEqual(state.supermarkets.length, 3);
     assert.ok(state.activeList.items.length >= 6);
+    assert.strictEqual(state.activeList.name, 'Wocheneinkauf');
+    assert.strictEqual(state.activeSupermarket.id, 'rewe');
 
-    const exported = Core.ShareService.exportShoppingList(
-      state.activeList,
-      state.activeSupermarket
-    );
-    assert.ok(exported.shareCode.startsWith('SC1:'));
-    assert.ok(exported.shareText.includes('Wocheneinkauf'));
-
-    const decoded = Core.ShareService.decodeShareCode(exported.shareText);
-    assert.strictEqual(decoded.valid, true);
-    assert.strictEqual(decoded.list.name, 'Wocheneinkauf');
-    assert.strictEqual(decoded.list.items.length, state.activeList.items.length);
-    assert.strictEqual(decoded.supermarket.id, 'rewe');
+    // Reload via a second repository instance backed by the same storage
+    const repo2 = new Core.LocalStorageRepository(mem);
+    const reloaded = repo2.loadState();
+    assert.strictEqual(reloaded.supermarkets.length, 3);
+    assert.strictEqual(reloaded.activeList.name, 'Wocheneinkauf');
+    assert.strictEqual(reloaded.activeList.items.length, state.activeList.items.length);
   });
 
   // 8. Supermarket Creation with Sorting Template (getDefaultItemOrder & createSupermarketWithSorting)
@@ -351,9 +347,11 @@ async function main() {
 
     const defaultOrder = Core.getDefaultItemOrder();
     assert.deepStrictEqual(defaultOrder, rewe.itemOrder);
-    // Ensure it returns a fresh copy
-    defaultOrder.push('Test-Mutation');
+    // Ensure it returns a fresh deep copy
+    defaultOrder.push({ name: 'Test-Mutation', specification: '' });
+    defaultOrder[0].specification = 'Mutated';
     assert.notStrictEqual(defaultOrder.length, rewe.itemOrder.length);
+    assert.strictEqual(rewe.itemOrder[0].specification, '');
 
     // Create with 'default' sorting
     const edekaDefault = Core.createSupermarketWithSorting({
@@ -375,7 +373,7 @@ async function main() {
       supermarkets: stores
     });
     assert.deepStrictEqual(HoferAldi.itemOrder, aldi.itemOrder);
-    assert.strictEqual(HoferAldi.itemOrder[0], 'Brötchen'); // ALDI starts with Brötchen
+    assert.strictEqual(HoferAldi.itemOrder[0].name, 'Brötchen'); // ALDI starts with Brötchen
   });
 
   // 9. Exact Item Insertion & Moving by Preceding Item (addSupermarketKnownItemAfter & moveSupermarketItemAfter)
@@ -390,14 +388,10 @@ async function main() {
     const res1 = Core.addSupermarketKnownItemAfter(store, 'Mango', 'Bananen');
     assert.strictEqual(res1.foundPrevious, true);
     assert.strictEqual(res1.insertedAtIndex, 2);
-    assert.deepStrictEqual(res1.itemOrder, [
-      'Äpfel',
-      'Bananen',
-      'Mango',
-      'Brötchen',
-      'Milch',
-      'Nudeln'
-    ]);
+    assert.deepStrictEqual(
+      res1.itemOrder.map((e) => e.name),
+      ['Äpfel', 'Bananen', 'Mango', 'Brötchen', 'Milch', 'Nudeln']
+    );
     assert.strictEqual(res1.supermarket, res1);
     store = res1;
 
@@ -405,14 +399,14 @@ async function main() {
     const res2 = Core.addSupermarketKnownItemAfter(store, 'Blumenstrauß', '__START__');
     assert.strictEqual(res2.foundPrevious, true);
     assert.strictEqual(res2.insertedAtIndex, 0);
-    assert.strictEqual(res2.itemOrder[0], 'Blumenstrauß');
+    assert.strictEqual(res2.itemOrder[0].name, 'Blumenstrauß');
     store = res2;
 
     // 3) Append 'Kaugummi' at the end when previousItemName is empty
     const res3 = Core.addSupermarketKnownItemAfter(store, 'Kaugummi', '');
     assert.strictEqual(res3.foundPrevious, false);
     assert.strictEqual(res3.insertedAtIndex, store.itemOrder.length);
-    assert.strictEqual(res3.itemOrder[res3.itemOrder.length - 1], 'Kaugummi');
+    assert.strictEqual(res3.itemOrder[res3.itemOrder.length - 1].name, 'Kaugummi');
     store = res3;
 
     // 4) Move existing item 'Nudeln' so it stands immediately after 'Brötchen'
@@ -420,7 +414,7 @@ async function main() {
     assert.strictEqual(res4.foundPrevious, true);
     const broetchenIdx = Core.indexOfNormalized(res4.itemOrder, 'Brötchen');
     assert.strictEqual(res4.insertedAtIndex, broetchenIdx + 1);
-    assert.strictEqual(res4.itemOrder[broetchenIdx + 1], 'Nudeln');
+    assert.strictEqual(res4.itemOrder[broetchenIdx + 1].name, 'Nudeln');
     store = res4;
 
     // 5) Move item by index to '__START__'
@@ -428,7 +422,7 @@ async function main() {
     const res5 = Core.moveSupermarketItemAfter(store, milchIdx, '__START__');
     assert.strictEqual(res5.foundPrevious, true);
     assert.strictEqual(res5.insertedAtIndex, 0);
-    assert.strictEqual(res5.itemOrder[0], 'Milch');
+    assert.strictEqual(res5.itemOrder[0].name, 'Milch');
   });
 
   // 10. Real Photo OCR with Tesseract.js vs Non-Preset Safety
@@ -540,6 +534,403 @@ async function main() {
     assert.strictEqual(finalLists.length, 1);
     assert.strictEqual(finalLists[0].name, 'Mein Einkaufszettel');
     assert.strictEqual(finalLists[0].items.length, 0);
+  });
+
+  // 12. Requirement 1: Specification exact matching, fallback to unspecified & non-matching edge cases
+  await runTest('15. Specification matching: exact match, fallback to unspecified, and unspecified never matches specified-only entry', () => {
+    // Store A has: generic Milch (idx 1), Milch (Oatly) (idx 3), Milch (Weihenstephan) (idx 5)
+    const storeA = Core.createSupermarket({
+      id: 'spec_store_a',
+      name: 'Spec Markt A',
+      itemOrder: [
+        'Äpfel',
+        { name: 'Milch', specification: '' },
+        'Brot',
+        { name: 'Milch', specification: 'Oatly' },
+        'Nudeln',
+        { name: 'Milch', specification: 'Weihenstephan' },
+        { name: 'Butter', specification: 'Bärenmarke' }
+      ]
+    });
+
+    // Exact spec match (case-insensitive, trimmed, collapsed whitespace)
+    const m1 = Core.findStoreEntryMatch(storeA.itemOrder, 'Milch', '  WEIHENSTEPHAN ');
+    assert.strictEqual(m1.index, 5);
+    assert.strictEqual(m1.matchType, 'exact-spec');
+
+    const m2 = Core.findStoreEntryMatch(storeA.itemOrder, 'Milch', 'oatly');
+    assert.strictEqual(m2.index, 3);
+    assert.strictEqual(m2.matchType, 'exact-spec');
+
+    // Synonym product name + exact spec still matches specified entry
+    const mSynonymSpec = Core.findStoreEntryMatch(storeA.itemOrder, 'Vollmilch', 'Oatly');
+    assert.strictEqual(mSynonymSpec.index, 3);
+    assert.strictEqual(mSynonymSpec.matchType, 'exact-spec');
+
+    // Case-insensitive umlauts in specification
+    const mUmlaut = Core.findStoreEntryMatch(storeA.itemOrder, 'Butter', 'bärenmarke');
+    assert.strictEqual(mUmlaut.index, 6);
+    assert.strictEqual(mUmlaut.matchType, 'exact-spec');
+
+    // Non-matching specification falls back to unspecified product entry
+    const mFallback = Core.findStoreEntryMatch(storeA.itemOrder, 'Milch', 'Alpro');
+    assert.strictEqual(mFallback.index, 1);
+    assert.strictEqual(mFallback.matchType, 'fallback-generic');
+
+    // Partial/extended spec does NOT match 'Oatly' -> falls back to unspecified Milch
+    const mPartial = Core.findStoreEntryMatch(storeA.itemOrder, 'Milch', 'Oatly Barista');
+    assert.strictEqual(mPartial.index, 1);
+    assert.strictEqual(mPartial.matchType, 'fallback-generic');
+
+    // Unspecified shopping item matches ONLY the unspecified entry
+    const mGeneric = Core.findStoreEntryMatch(storeA.itemOrder, 'Milch', '');
+    assert.strictEqual(mGeneric.index, 1);
+    assert.strictEqual(mGeneric.matchType, 'exact-generic');
+
+    // Store has ONLY specified Butter ('Bärenmarke') and NO generic Butter:
+    // 1) Unspecified Butter MUST NOT match specified-only Butter -> unknown (-1)
+    const mButterGeneric = Core.findStoreEntryMatch(storeA.itemOrder, 'Butter', '');
+    assert.strictEqual(mButterGeneric.index, -1);
+    assert.strictEqual(mButterGeneric.matchType, 'none');
+
+    // 2) Different spec Butter ('Kerrygold') MUST NOT match 'Bärenmarke' -> unknown (-1)
+    const mButterOther = Core.findStoreEntryMatch(storeA.itemOrder, 'Butter', 'Kerrygold');
+    assert.strictEqual(mButterOther.index, -1);
+    assert.strictEqual(mButterOther.matchType, 'none');
+
+    // Sort shopping list with mixed specs against storeA
+    const list = Core.createShoppingList({
+      supermarketId: 'spec_store_a',
+      items: [
+        { id: 'a', name: 'Milch', specification: 'Weihenstephan' }, // pos 5
+        { id: 'b', name: 'Milch', specification: 'Alpro' },         // fallback pos 1
+        { id: 'c', name: 'Milch', specification: 'Oatly' },         // pos 3
+        { id: 'd', name: 'Milch', specification: '' },              // pos 1
+        { id: 'e', name: 'Butter', specification: '' },             // unknown (-1) -> beginning!
+        { id: 'f', name: 'Brot', specification: '' }                // pos 2
+      ]
+    });
+
+    const sorted = Core.sortShoppingList(list, storeA);
+    assert.deepStrictEqual(
+      sorted.uncheckedItems.map((i) => `${i.name}:${i.specification}`),
+      [
+        'Butter:',               // unknown at beginning
+        'Milch:Alpro',           // fallback pos 1 (originalOrder 1)
+        'Milch:',                // generic pos 1 (originalOrder 3)
+        'Brot:',                 // pos 2
+        'Milch:Oatly',           // pos 3
+        'Milch:Weihenstephan'    // pos 5
+      ]
+    );
+  });
+
+  // 13. Requirement 1: Coexistence of multiple specs + unspecified in supermarket & deduplication
+  await runTest('16. Supermarket itemOrder allows same product with multiple specs and without spec, deduplicates on (name, spec)', () => {
+    let store = Core.createSupermarket({
+      id: 'multi_spec_store',
+      name: 'Multi Spec Markt',
+      itemOrder: [
+        { name: 'Milch', specification: '' },
+        { name: 'Milch', specification: 'Oatly' },
+        { name: 'milch', specification: '  oatly  ' }, // duplicate of Milch + Oatly -> deduplicated
+        { name: 'Milch', specification: 'Weihenstephan' },
+        { name: 'MILCH', specification: '' },          // duplicate of unspecified Milch -> deduplicated
+        'Brot'
+      ]
+    });
+
+    assert.strictEqual(store.itemOrder.length, 4);
+    assert.deepStrictEqual(store.itemOrder, [
+      { name: 'Milch', specification: '' },
+      { name: 'Milch', specification: 'Oatly' },
+      { name: 'Milch', specification: 'Weihenstephan' },
+      { name: 'Brot', specification: '' }
+    ]);
+
+    // Adding another specification via addSupermarketKnownItem preserves existing specs & generic
+    store = Core.addSupermarketKnownItem(store, { name: 'Milch', specification: 'Alpro' });
+    assert.strictEqual(store.itemOrder.length, 5);
+    assert.deepStrictEqual(store.itemOrder[4], { name: 'Milch', specification: 'Alpro' });
+
+    // Moving Milch (Alpro) right after Milch (generic) works (not treated as self-move!)
+    const moved = Core.moveSupermarketItemAfter(
+      store,
+      { name: 'Milch', specification: 'Alpro' },
+      { name: 'Milch', specification: '' }
+    );
+    assert.strictEqual(moved.foundPrevious, true);
+    assert.strictEqual(moved.insertedAtIndex, 1);
+    assert.deepStrictEqual(moved.itemOrder[0], { name: 'Milch', specification: '' });
+    assert.deepStrictEqual(moved.itemOrder[1], { name: 'Milch', specification: 'Alpro' });
+    store = moved;
+
+    // Removing Milch (Oatly) leaves generic Milch, Alpro, and Weihenstephan intact
+    store = Core.removeSupermarketKnownItem(store, 'Milch', 'Oatly');
+    assert.strictEqual(store.itemOrder.length, 4);
+    assert.strictEqual(Core.findExactStoreEntryIndex(store.itemOrder, 'Milch', 'Oatly'), -1);
+    assert.notStrictEqual(Core.findExactStoreEntryIndex(store.itemOrder, 'Milch', ''), -1);
+    assert.notStrictEqual(Core.findExactStoreEntryIndex(store.itemOrder, 'Milch', 'Alpro'), -1);
+    assert.notStrictEqual(Core.findExactStoreEntryIndex(store.itemOrder, 'Milch', 'Weihenstephan'), -1);
+
+    // Updating a store entry's specification via updateSupermarketKnownItem
+    const alproIdx = Core.findExactStoreEntryIndex(store.itemOrder, 'Milch', 'Alpro');
+    store = Core.updateSupermarketKnownItem(store, alproIdx, { specification: 'Alpro Barista' });
+    assert.deepStrictEqual(store.itemOrder[alproIdx], {
+      name: 'Milch',
+      specification: 'Alpro Barista'
+    });
+
+    // Updating a shopping list item's specification via updateItemInList immediately re-sorts
+    let list = Core.createShoppingList({
+      supermarketId: store.id,
+      items: [
+        { id: 'item_b', name: 'Brot' },
+        { id: 'item_m', name: 'Milch', specification: 'Weihenstephan' }
+      ]
+    });
+    // Initially Milch (Weihenstephan) is at index 2, Brot is at index 3
+    assert.deepStrictEqual(
+      Core.sortShoppingList(list, store).uncheckedItems.map((i) => i.id),
+      ['item_m', 'item_b']
+    );
+    // Change Milch spec to Alpro Barista (index 1) -> stays before Brot, matched as exact-spec at pos 1
+    list = Core.updateItemInList(list, store, 'item_m', { specification: 'Alpro Barista' });
+    const updatedItem = list.items.find((i) => i.id === 'item_m');
+    assert.strictEqual(updatedItem.specification, 'Alpro Barista');
+    assert.strictEqual(updatedItem.storePosition, 1);
+    assert.strictEqual(updatedItem.storeMatchType, 'exact-spec');
+  });
+
+  // 14. Requirement 2: Unknown items placed at beginning of shopping list & sorted properly after checking off
+  await runTest('17. Unknown items appear at BEGINNING of unchecked list, sort properly when checked off, and do not falsely trigger live optimization', () => {
+    const rewe = Core.getDefaultSupermarkets().find((s) => s.id === 'rewe');
+    let list = Core.createShoppingList({
+      supermarketId: 'rewe',
+      liveOptimizationEnabled: true,
+      items: [
+        { id: 'k2', name: 'Toilettenpapier', checked: false }, // known, late in REWE
+        { id: 'u1', name: 'Trüffelöl', checked: false },        // unknown
+        { id: 'k1', name: 'Äpfel', checked: false },            // known, pos 0 in REWE
+        { id: 'u2', name: 'Matcha-Pulver', specification: 'Bio', checked: false } // unknown
+      ]
+    });
+
+    // Unchecked unknown items MUST be at the very beginning before known items (preserving originalOrder)
+    const initial = Core.sortShoppingList(list, rewe);
+    assert.deepStrictEqual(
+      initial.uncheckedItems.map((i) => i.name),
+      ['Trüffelöl', 'Matcha-Pulver', 'Äpfel', 'Toilettenpapier']
+    );
+    assert.strictEqual(initial.unknownItems.length, 2);
+    assert.strictEqual(initial.uncheckedItems[0].isUnknownInStore, true);
+    assert.strictEqual(initial.uncheckedItems[2].isUnknownInStore, false);
+
+    // Checking off the first KNOWN item ('Äpfel') while unknown items sit at the top must NOT falsely trigger live optimization
+    const checkKnownFirst = Core.toggleItemCheck(list, rewe, 'k1');
+    assert.strictEqual(checkKnownFirst.action, 'checked');
+    assert.strictEqual(checkKnownFirst.outOfOrderDetected, false);
+    list = checkKnownFirst.list;
+
+    // Now check off unknown item 'Trüffelöl' -> moves into checkedItems section (not stuck in uncheckedItems)
+    const checkUnknown = Core.toggleItemCheck(list, rewe, 'u1');
+    assert.strictEqual(checkUnknown.action, 'checked');
+    assert.strictEqual(checkUnknown.outOfOrderDetected, false);
+    list = checkUnknown.list;
+
+    const afterCheck = Core.sortShoppingList(list, rewe);
+    assert.deepStrictEqual(
+      afterCheck.checkedItems.map((i) => i.name),
+      ['Äpfel', 'Trüffelöl']
+    );
+    assert.deepStrictEqual(
+      afterCheck.uncheckedItems.map((i) => i.name),
+      ['Matcha-Pulver', 'Toilettenpapier']
+    );
+    assert.deepStrictEqual(
+      afterCheck.sortedItems.map((i) => i.name),
+      ['Äpfel', 'Trüffelöl', 'Matcha-Pulver', 'Toilettenpapier']
+    );
+
+    // Uncheck 'Trüffelöl' -> returns to the BEGINNING of uncheckedItems
+    const uncheckUnknown = Core.toggleItemCheck(list, rewe, 'u1');
+    assert.strictEqual(uncheckUnknown.action, 'unchecked');
+    const afterUncheck = Core.sortShoppingList(uncheckUnknown.list, rewe);
+    assert.deepStrictEqual(
+      afterUncheck.uncheckedItems.map((i) => i.name),
+      ['Trüffelöl', 'Matcha-Pulver', 'Toilettenpapier']
+    );
+
+    // Checking a known item OUT OF ORDER while an unknown item is present only reports skipped KNOWN items
+    const listOutOfOrder = Core.createShoppingList({
+      supermarketId: 'rewe',
+      liveOptimizationEnabled: true,
+      items: [
+        { id: 'u_x', name: 'Spezialgewürz', checked: false },
+        { id: 'k_a', name: 'Äpfel', checked: false },
+        { id: 'k_m', name: 'Milch', checked: false }
+      ]
+    });
+    const oooRes = Core.toggleItemCheck(listOutOfOrder, rewe, 'k_m');
+    assert.strictEqual(oooRes.outOfOrderDetected, true);
+    assert.deepStrictEqual(
+      oooRes.skippedItems.map((i) => i.name),
+      ['Äpfel']
+    );
+  });
+
+  // 15. Requirement 2: Adding an unknown shopping list item (with optional specification) to a supermarket
+  await runTest('18. addItemToSupermarket adds unknown item (including specification) to supermarket and re-sorts list', () => {
+    let store = Core.createSupermarket({
+      id: 'longpress_store',
+      name: 'Testmarkt',
+      itemOrder: ['Äpfel', 'Brot', 'Nudeln']
+    });
+
+    let list = Core.createShoppingList({
+      supermarketId: store.id,
+      items: [
+        { id: 'i1', name: 'Äpfel' },
+        { id: 'i2', name: 'Haferdrink', specification: 'Oatly Barista' },
+        { id: 'i3', name: 'Nudeln' }
+      ]
+    });
+
+    // Initially Haferdrink (Oatly Barista) is unknown -> placed at beginning of unchecked list
+    const before = Core.sortShoppingList(list, store);
+    assert.deepStrictEqual(
+      before.uncheckedItems.map((i) => i.name),
+      ['Haferdrink', 'Äpfel', 'Nudeln']
+    );
+    assert.strictEqual(before.uncheckedItems[0].isUnknownInStore, true);
+
+    // Long-press action: add unknown item (with specification) to supermarket
+    const targetItem = before.uncheckedItems[0];
+    const addRes = Core.addItemToSupermarket(store, targetItem, { list });
+    assert.strictEqual(addRes.added, true);
+    assert.strictEqual(addRes.alreadyExists, false);
+    assert.deepStrictEqual(addRes.entry, { name: 'Haferdrink', specification: 'Oatly Barista' });
+    assert.strictEqual(addRes.index, 3);
+    store = addRes.supermarket;
+    list = addRes.list;
+
+    // Now Haferdrink (Oatly Barista) is known at pos 3 (after Nudeln pos 2)
+    const afterAdd = Core.sortShoppingList(list, store);
+    assert.strictEqual(afterAdd.unknownItems.length, 0);
+    assert.deepStrictEqual(
+      afterAdd.uncheckedItems.map((i) => i.name),
+      ['Äpfel', 'Nudeln', 'Haferdrink']
+    );
+
+    // Calling addItemToSupermarket again for the exact same (name, spec) is idempotent
+    const dupRes = Core.addItemToSupermarket(store, targetItem, { list });
+    assert.strictEqual(dupRes.added, false);
+    assert.strictEqual(dupRes.alreadyExists, true);
+    assert.strictEqual(dupRes.supermarket.itemOrder.length, 4);
+
+    // User can manually sort the newly added item right after 'Äpfel' as usual
+    store = Core.moveSupermarketItemAfter(store, addRes.index, 'Äpfel');
+    const afterManualSort = Core.sortShoppingList(list, store);
+    assert.deepStrictEqual(
+      afterManualSort.uncheckedItems.map((i) => i.name),
+      ['Äpfel', 'Haferdrink', 'Nudeln']
+    );
+
+    // Adding a second specification of Haferdrink coexists without replacing 'Oatly Barista'
+    const secondSpecRes = Core.addItemToSupermarket(store, {
+      name: 'Haferdrink',
+      specification: 'Alpro'
+    });
+    assert.strictEqual(secondSpecRes.added, true);
+    assert.strictEqual(secondSpecRes.supermarket.itemOrder.length, 5);
+  });
+
+  // 16. Requirement 1: Storage backward compatibility & migration for legacy data without specifications
+  await runTest('19. LocalStorageRepository migrates legacy stored data lacking specification and persists specifications losslessly', () => {
+    const mem = Core.createMemoryStorage();
+
+    // Seed legacy v1 data without any `specification` fields (plain string[] itemOrder & legacy items)
+    mem.setItem(
+      Core.STORAGE_KEYS.SUPERMARKETS,
+      JSON.stringify([
+        {
+          id: 'legacy_rewe',
+          name: 'Legacy REWE',
+          icon: '🔴',
+          color: '#cc071e',
+          itemOrder: ['Äpfel', 'Milch', 'Brot']
+        }
+      ])
+    );
+    mem.setItem(
+      Core.STORAGE_KEYS.LISTS,
+      JSON.stringify([
+        {
+          id: 'legacy_list_1',
+          name: 'Alter Zettel',
+          supermarketId: 'legacy_rewe',
+          liveOptimizationEnabled: true,
+          items: [
+            { id: 'old_1', name: 'Brot', quantity: '1x', checked: false },
+            { id: 'old_2', name: 'Äpfel', quantity: '4 Stk.', checked: false }
+          ]
+        }
+      ])
+    );
+    mem.setItem(Core.STORAGE_KEYS.ACTIVE_LIST_ID, 'legacy_list_1');
+
+    const repo = new Core.LocalStorageRepository(mem);
+    const stores = repo.loadSupermarkets();
+    assert.strictEqual(stores.length, 1);
+    assert.deepStrictEqual(stores[0].itemOrder, [
+      { name: 'Äpfel', specification: '' },
+      { name: 'Milch', specification: '' },
+      { name: 'Brot', specification: '' }
+    ]);
+
+    const activeList = repo.getActiveList();
+    assert.strictEqual(activeList.name, 'Alter Zettel');
+    assert.deepStrictEqual(
+      activeList.items.map((i) => ({ name: i.name, specification: i.specification })),
+      [
+        { name: 'Äpfel', specification: '' },
+        { name: 'Brot', specification: '' }
+      ]
+    );
+
+    // Now persist multi-spec store entries & specified shopping list items and reload in a fresh repo
+    let updatedStore = Core.addSupermarketKnownItem(stores[0], {
+      name: 'Milch',
+      specification: 'Weihenstephan'
+    });
+    repo.upsertSupermarket(updatedStore);
+
+    const added = Core.addItemToList(activeList, updatedStore, {
+      name: 'Milch',
+      specification: 'Weihenstephan',
+      quantity: '2L'
+    });
+    repo.saveActiveList(added.list);
+
+    // Duplicate list should preserve specifications too
+    const dupList = repo.duplicateShoppingList(added.list.id, 'Kopie mit Marke');
+    const dupMilch = dupList.items.find((i) => i.name === 'Milch');
+    assert.strictEqual(dupMilch.specification, 'Weihenstephan');
+
+    // Fresh repository instance reads everything back cleanly
+    const repoFresh = new Core.LocalStorageRepository(mem);
+    const reloadedStore = repoFresh.getSupermarketById('legacy_rewe');
+    assert.deepStrictEqual(reloadedStore.itemOrder, [
+      { name: 'Äpfel', specification: '' },
+      { name: 'Milch', specification: '' },
+      { name: 'Brot', specification: '' },
+      { name: 'Milch', specification: 'Weihenstephan' }
+    ]);
+    const reloadedList = repoFresh.getActiveList();
+    const reloadedMilch = reloadedList.items.find((i) => i.name === 'Milch');
+    assert.strictEqual(reloadedMilch.specification, 'Weihenstephan');
+    assert.strictEqual(reloadedMilch.normalizedSpecification, 'weihenstephan');
+    assert.strictEqual(reloadedMilch.storePosition, 3);
   });
 
   console.log('\n====================================================');

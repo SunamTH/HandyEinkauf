@@ -81,23 +81,34 @@
       <!-- Quick Add Item Bar -->
       <section class="card">
         <form class="add-item-form" id="add-item-form" autocomplete="off">
-          <input
-            type="text"
-            id="add-item-name"
-            class="input-name"
-            placeholder="Ware hinzufügen (z. B. Milch, Äpfel)…"
-            required
-          />
-          <input
-            type="text"
-            id="add-item-qty"
-            class="input-qty"
-            placeholder="Menge"
-            aria-label="Menge (optional)"
-          />
-          <button type="submit" class="btn btn-primary" id="add-item-btn" title="Ware hinzufügen">
-            + Hinzu
-          </button>
+          <div class="add-item-row">
+            <input
+              type="text"
+              id="add-item-name"
+              class="input-name"
+              placeholder="Ware hinzufügen (z. B. Milch, Äpfel)…"
+              required
+            />
+            <input
+              type="text"
+              id="add-item-qty"
+              class="input-qty"
+              placeholder="Menge"
+              aria-label="Menge (optional)"
+            />
+          </div>
+          <div class="add-item-spec-row">
+            <input
+              type="text"
+              id="add-item-spec"
+              class="input-spec"
+              placeholder="Spezifikation / Marke (optional, z. B. Bio, Oatly)…"
+              aria-label="Spezifikation oder Marke (optional)"
+            />
+            <button type="submit" class="btn btn-primary" id="add-item-btn" title="Ware hinzufügen">
+              + Hinzu
+            </button>
+          </div>
         </form>
         <div class="quick-suggestions" id="quick-suggestions" aria-label="Schnellauswahl">
           <!-- Populated dynamically from current store's known items -->
@@ -250,20 +261,29 @@
           <span class="section-count" id="config-store-count">0 Positionen</span>
         </div>
         <p style="margin: 0 0 10px; font-size: 12px; color: var(--text-secondary);">
-          Position 1 ist direkt am Eingang (z. B. Obst &amp; Gemüse), die letzte Position kurz vor der Kasse. Ziehe Waren am Griff <strong>☰</strong>, nutze <strong>⇄</strong> zum gezielten Verschieben hinter eine Ware oder <strong>↑/↓</strong>.
+          Position 1 ist direkt am Eingang (z. B. Obst &amp; Gemüse), die letzte Position kurz vor der Kasse. Dieselbe Warengruppe kann mehrfach mit unterschiedlichen Spezifikationen (z. B. Marken) oder ohne Spezifikation angelegt werden. Ziehe Waren am Griff <strong>☰</strong> (scrollt am oberen/unteren Rand automatisch mit), nutze <strong>✎</strong> zum Bearbeiten, <strong>⇄</strong> zum gezielten Verschieben oder <strong>↑/↓</strong>.
         </p>
 
-        <!-- Add New Known Item to Supermarket Order with Exact Preceding Item Selection -->
+        <!-- Add New Known Item to Supermarket Order with Optional Specification & Preceding Item Selection -->
         <form id="add-store-item-form" class="store-add-item-form" autocomplete="off">
           <div class="store-add-row">
             <input
               type="text"
               id="new-store-item-name"
               class="input-name"
-              placeholder="Neue Ware (z. B. Haferflocken)…"
+              placeholder="Neue Ware (z. B. Haferflocken, Milch)…"
               required
             />
             <button type="submit" class="btn btn-primary btn-sm">+ Aufnehmen</button>
+          </div>
+          <div class="store-add-spec-row">
+            <input
+              type="text"
+              id="new-store-item-spec"
+              class="input-name input-sm"
+              placeholder="Spezifikation / Marke (optional, z. B. Weihenstephan, Oatly)…"
+              aria-label="Spezifikation oder Marke (optional)"
+            />
           </div>
           <div class="store-add-pos-row">
             <input
@@ -289,56 +309,69 @@
       </div>
     </section>
 
-    <!-- TAB 4: Teilen & Handy-Installation ("Teilen & Info") -->
+    <!-- TAB 4: Datei-Export, Datei-Import & Handy-Installation ("Export & Import") -->
     <section class="tab-view" id="tab-share" role="tabpanel">
-      <!-- Native Share & Export/Import -->
+      <!-- Dateibasierter Export (Speichern & Datei teilen via WhatsApp/Mail/Messenger) -->
       <div class="card">
-        <h2 style="margin: 0 0 6px; font-size: 17px;">🤝 Einkaufsliste &amp; Märkte teilen</h2>
-        <p style="margin: 0 0 12px; font-size: 13px; color: var(--text-secondary); line-height: 1.4;">
-          Teile deinen aktuellen Einkaufszettel oder deine optimierten Supermarkt-Konfigurationen per WhatsApp, Telegram, AirDrop oder Share-Code.
+        <h2 style="margin: 0 0 6px; font-size: 17px;">📤 Einkaufsliste als Datei exportieren</h2>
+        <p style="margin: 0 0 10px; font-size: 13px; color: var(--text-secondary); line-height: 1.4;">
+          Exportiere deinen aktuellen Einkaufszettel als SmartCart-Datei (<code>.smartcart.json</code>) – zum Speichern auf dem Gerät oder zum direkten Versenden per WhatsApp, E-Mail oder Messenger.
         </p>
 
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px;">
-          <button type="button" class="btn btn-primary" id="native-share-list-btn">
-            📤 Liste teilen
-          </button>
-          <button type="button" class="btn btn-secondary" id="native-share-store-btn">
-            🏪 Markt-Reihenfolge teilen
-          </button>
+        <div class="export-list-summary" id="export-current-list-summary">
+          Aktive Liste: <strong>Einkaufszettel</strong>
         </div>
 
-        <div style="display: flex; gap: 8px; margin-bottom: 8px;">
-          <button type="button" class="btn btn-outline btn-sm" id="export-code-btn" style="flex: 1;">
-            📋 Share-Code erzeugen
+        <div class="file-share-actions">
+          <button type="button" class="btn btn-primary" id="share-list-file-btn">
+            📤 Datei teilen (WhatsApp / Mail)
           </button>
-          <button type="button" class="btn btn-outline btn-sm" id="download-json-btn" style="flex: 1;">
-            💾 Backup-Datei (.json)
-          </button>
-        </div>
-
-        <textarea
-          id="share-code-textarea"
-          class="code-box"
-          rows="4"
-          placeholder="Hier erscheint dein Share-Code zum Kopieren – oder füge einen erhaltenen Share-Code / JSON hier ein, um ihn zu importieren…"
-        ></textarea>
-
-        <div style="display: flex; gap: 8px; margin-top: 8px;">
-          <button type="button" class="btn btn-secondary btn-sm" id="copy-share-code-btn" style="flex: 1;">
-            Code kopieren
-          </button>
-          <button type="button" class="btn btn-primary btn-sm" id="import-share-code-btn" style="flex: 1;">
-            📥 Code importieren
+          <button type="button" class="btn btn-secondary" id="save-list-file-btn">
+            💾 Datei speichern (.smartcart.json)
           </button>
         </div>
       </div>
 
+      <!-- Dateibasierter Import (Datei auswählen & sofort verwenden) -->
+      <div class="card">
+        <h2 style="margin: 0 0 6px; font-size: 17px;">📥 Einkaufsliste aus Datei importieren</h2>
+        <p style="margin: 0 0 10px; font-size: 13px; color: var(--text-secondary); line-height: 1.4;">
+          Importiere eine erhaltene Einkaufslisten-Datei (<code>.smartcart.json</code> oder <code>.json</code>), um sie sofort auf diesem Gerät zu verwenden.
+        </p>
+
+        <div class="import-mode-row">
+          <label for="import-list-mode" class="form-sub-label">Beim Importieren:</label>
+          <select id="import-list-mode" class="input-name input-sm select-input">
+            <option value="new" selected>Als neuen Einkaufszettel anlegen</option>
+            <option value="merge">Mit aktuellem Einkaufszettel zusammenführen</option>
+            <option value="replace">Aktuellen Einkaufszettel ersetzen</option>
+          </select>
+        </div>
+
+        <label class="file-import-dropzone" id="import-list-dropzone">
+          <input
+            type="file"
+            id="import-list-file-input"
+            accept=".smartcart.json,.json,application/json"
+          />
+          <div style="font-size: 28px; margin-bottom: 4px;">📂</div>
+          <div style="font-weight: 800; font-size: 14.5px; color: var(--primary-dark);">
+            Einkaufslisten-Datei auswählen
+          </div>
+          <div style="font-size: 12px; color: var(--text-secondary); margin-top: 3px;">
+            Unterstützt <code>.smartcart.json</code> &amp; <code>.json</code> inkl. Mengen &amp; Spezifikationen
+          </div>
+        </label>
+
+        <div id="import-file-status" class="import-status-box" style="display: none;"></div>
+      </div>
+
       <!-- Phone Installation Guide (Android & iOS) -->
       <div class="card">
-        <h3 style="margin: 0 0 8px; font-size: 15px;">📱 Auf dem Handy installieren &amp; weitergeben</h3>
+        <h3 style="margin: 0 0 8px; font-size: 15px;">📱 Auf dem Handy installieren</h3>
         <div style="font-size: 13px; color: var(--text-secondary); line-height: 1.5; display: flex; flex-direction: column; gap: 10px;">
           <div style="background: var(--bg-muted); padding: 10px 12px; border-radius: 10px; border: 1px solid var(--border-color);">
-            <strong style="color: var(--text-main);">1. Sofort per WhatsApp / Datei teilen (Offline-Einzeldatei):</strong><br />
+            <strong style="color: var(--text-main);">1. Offline-Einzeldatei (HTML):</strong><br />
             Die Datei <code>dist/SmartCart_Handy_App.html</code> enthält die komplette App in einer einzigen Datei. Einfach ans Handy senden und im Browser öffnen – funktioniert 100 % offline!
           </div>
           <div style="background: var(--bg-muted); padding: 10px 12px; border-radius: 10px; border: 1px solid var(--border-color);">
@@ -369,8 +402,8 @@
         <span>Supermärkte</span>
       </button>
       <button type="button" class="nav-tab" data-tab="tab-share">
-        <span class="nav-icon">🤝</span>
-        <span>Teilen &amp; App</span>
+        <span class="nav-icon">📁</span>
+        <span>Export / Import</span>
       </button>
     </nav>
 
@@ -467,6 +500,98 @@
               ✅ Einkaufszettel speichern
             </button>
             <button type="button" class="btn btn-secondary" id="shopping-list-modal-cancel-btn">
+              Abbrechen
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- WARE BEARBEITEN MODAL (Einkaufsliste: Ware, Spezifikation, Menge) -->
+    <div class="modal-backdrop" id="edit-item-modal" role="dialog" aria-modal="true" aria-labelledby="edit-item-modal-title">
+      <div class="modal-dialog">
+        <div class="modal-badge" style="background: var(--primary-light); color: var(--primary-dark);">✎ Ware bearbeiten</div>
+        <h3 class="modal-title" id="edit-item-modal-title">Artikel auf dem Einkaufszettel bearbeiten</h3>
+        <form id="edit-item-modal-form" autocomplete="off">
+          <div class="modal-body">
+            <label for="edit-item-name" class="form-sub-label" style="display: block; margin-bottom: 6px;">
+              Ware / Warengruppe:
+            </label>
+            <input
+              type="text"
+              id="edit-item-name"
+              class="input-name"
+              placeholder="z. B. Milch, Joghurt, Kaffee…"
+              style="width: 100%; margin-bottom: 10px;"
+              required
+            />
+            <label for="edit-item-spec" class="form-sub-label" style="display: block; margin-bottom: 6px;">
+              Spezifikation / Marke (optional):
+            </label>
+            <input
+              type="text"
+              id="edit-item-spec"
+              class="input-name"
+              placeholder="z. B. Weihenstephan, Oatly, Bio (leer = beliebig)"
+              style="width: 100%; margin-bottom: 10px;"
+            />
+            <label for="edit-item-qty" class="form-sub-label" style="display: block; margin-bottom: 6px;">
+              Menge:
+            </label>
+            <input
+              type="text"
+              id="edit-item-qty"
+              class="input-name"
+              placeholder="z. B. 1x, 500g, 2L"
+              style="width: 100%;"
+            />
+          </div>
+          <div class="modal-actions">
+            <button type="submit" class="btn btn-primary" id="edit-item-modal-confirm-btn">
+              ✅ Änderungen speichern
+            </button>
+            <button type="button" class="btn btn-secondary" id="edit-item-modal-cancel-btn">
+              Abbrechen
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- SUPERMARKT-STATION BEARBEITEN MODAL (Ware & Spezifikation in Laufreihenfolge) -->
+    <div class="modal-backdrop" id="edit-store-item-modal" role="dialog" aria-modal="true" aria-labelledby="edit-store-item-modal-title">
+      <div class="modal-dialog">
+        <div class="modal-badge" style="background: var(--accent-blue-bg); color: var(--accent-blue);">✎ Supermarkt-Eintrag bearbeiten</div>
+        <h3 class="modal-title" id="edit-store-item-modal-title">Ware in Laufreihenfolge bearbeiten</h3>
+        <form id="edit-store-item-modal-form" autocomplete="off">
+          <div class="modal-body">
+            <label for="edit-store-item-name" class="form-sub-label" style="display: block; margin-bottom: 6px;">
+              Ware / Warengruppe:
+            </label>
+            <input
+              type="text"
+              id="edit-store-item-name"
+              class="input-name"
+              placeholder="z. B. Milch, Müsli…"
+              style="width: 100%; margin-bottom: 10px;"
+              required
+            />
+            <label for="edit-store-item-spec" class="form-sub-label" style="display: block; margin-bottom: 6px;">
+              Spezifikation / Marke (optional):
+            </label>
+            <input
+              type="text"
+              id="edit-store-item-spec"
+              class="input-name"
+              placeholder="z. B. Weihenstephan, Oatly (leer = allgemeine Warengruppe)"
+              style="width: 100%;"
+            />
+          </div>
+          <div class="modal-actions">
+            <button type="submit" class="btn btn-primary" id="edit-store-item-modal-confirm-btn">
+              ✅ Eintrag speichern
+            </button>
+            <button type="button" class="btn btn-secondary" id="edit-store-item-modal-cancel-btn">
               Abbrechen
             </button>
           </div>

@@ -1,6 +1,8 @@
 # 🛒 SmartCart – Intelligente Einkaufslisten-App mit Supermarkt-Laufweg-Optimierung
 
-**SmartCart** ist eine moderne, vollständig offline-fähige Mobile-App (Android, iOS & Web/PWA) zur Erstellung, Verwaltung und intelligenten Sortierung von Einkaufszetteln. Sie lernt die exakte Laufreihenfolge deiner Supermärkte (z. B. REWE, ALDI, LIDL), sortiert deine Einkaufslisten automatisch entsprechend deines Weges durch die Gänge und passt sich durch **Live-Optimierung** dynamisch an, wenn Waren im Markt umgeräumt wurden.
+**Version:** `1.1.0`
+
+**SmartCart** ist eine moderne, vollständig offline-fähige Mobile-App (Android, iOS & Web/PWA) zur Erstellung, Verwaltung und intelligenten Sortierung von Einkaufszetteln. Sie lernt die exakte Laufreihenfolge deiner Supermärkte (z. B. REWE, ALDI, LIDL) inklusive optionaler **Spezifikationen/Marken**, sortiert deine Einkaufslisten automatisch entsprechend deines Weges durch die Gänge und passt sich durch **Live-Optimierung** dynamisch an, wenn Waren im Markt umgeräumt wurden.
 
 ---
 
@@ -21,32 +23,44 @@ Du kannst die fertige App direkt auf deinem Smartphone herunterladen (kein Entpa
 
 1. **Mehrere benannte Einkaufszettel verwalten (Speichern, Wechseln, Neu & Umbenennen)**
    - Direkt oben im Einkaufszettel-Tab befindet sich die **Einkaufszettel-Verwaltung**: Du kannst beliebig viele Einkaufszettel mit eigenem Namen anlegen (z. B. *„Wocheneinkauf“*, *„Grillparty Samstag“*, *„Drogerie & Vorrat“*), jederzeit zwischen gespeicherten Einkaufszetteln wechseln, sie per Klick umbenennen, explizit speichern (`💾 Speichern` zusätzlich zur automatischen Speicherung) oder löschen.
-2. **Manuelle & echte Foto-basierte Einkaufslisten-Erstellung (Tesseract.js OCR + Bild-Vorverarbeitung)**
-   - Schnelles Hinzufügen von Artikeln inklusive Mengenangaben (z. B. `2x Vollmilch`, `500g Mehl`).
+2. **Optionale Spezifikation / Marke für Waren & Supermarkt-Einträge**
+   - Sowohl Artikel auf dem Einkaufszettel als auch Einträge in der Supermarkt-Sortierliste unterstützen ein optionales Feld **„Spezifikation / Marke“** (z. B. `Milch` mit Spezifikation `Weihenstephan` oder `Oatly`, bearbeitbar per `✎`).
+   - **Mehrfache Einträge pro Warengruppe**: Dieselbe Warengruppe kann im selben Supermarkt mehrfach vorkommen – mit unterschiedlichen Spezifikationen **und/oder** als allgemeine Warengruppe ohne Spezifikation (z. B. `Milch (Oatly)` bei Pflanzendrinks und `Milch` im Kühlregal).
+   - **Exakte Matching-Regel mit Fallback**: Eine Einkaufslisten-Ware mit Spezifikation trifft auf einen spezifizierten Supermarkt-Eintrag nur bei **exakter Übereinstimmung der normalisierten Spezifikation** (Unicode NFC, Leerzeichen bereinigt, Groß-/Kleinschreibung ignoriert). Gibt es keinen exakten Treffer, fällt sie automatisch auf den allgemeinen Eintrag **ohne Spezifikation** derselben Warengruppe zurück. Eine unspezifizierte Ware matcht ausschließlich allgemeine Einträge ohne Spezifikation.
+   - Bestehende gespeicherte Daten ohne Spezifikation werden beim Laden automatisch und rückwärtskompatibel migriert.
+3. **Unbekannte Waren ganz am Anfang & Aufnahme per Long-Press**
+   - Waren, die noch nicht in der Sortierliste des ausgewählten Supermarkts vorhanden sind, erscheinen unter den offenen Waren **ganz am Anfang** (vor allen bekannten/sortierten Supermarkt-Waren) mit einer deutlichen Kennzeichnung.
+   - **Long-Press zum Hinzufügen**: Durch längeres Drücken (ca. 0,55 s) auf eine noch unbekannte Ware wird sie (inkl. optionaler Spezifikation) direkt in die Sortierliste des aktuellen Supermarkts aufgenommen und der Einkaufszettel sofort neu sortiert. Danach lässt sie sich im Supermarkt-Tab wie gewohnt an ihre exakte Position verschieben.
+   - **Sauberes Abhaken**: Werden unbekannte Waren abgehakt, wandern sie regulär in den erledigten Bereich (sortiert nach bekannten Marktpositionen, gefolgt von erledigten unbekannten Waren in Ursprungsreihenfolge) und lösen keine falschen Live-Optimierungs-Rückfragen aus.
+4. **Manuelle & echte Foto-basierte Einkaufslisten-Erstellung (Tesseract.js OCR + Bild-Vorverarbeitung)**
+   - Schnelles Hinzufügen von Artikeln inklusive Mengenangaben (z. B. `2x Vollmilch`, `500g Mehl`) und optionaler Spezifikation/Marke.
    - **Echter Kamera- & Foto-Scanner mit Tesseract.js**: Fotografiere handgeschriebene oder gedruckte Einkaufszettel direkt mit dem Smartphone (`capture="environment"`). Vor der Texterkennung optimiert eine HTML5-Canvas-Vorverarbeitung (`preprocessImageForOcr`) automatisch Auflösung, Graustufen-Kontrast (Auto-Levels) und Hintergrund-Aufhellung. Anschließend liest **Tesseract.js v5 (`deu`)** den echten Text auf dem Foto aus (ohne jemals falsche Demo-Daten für echte Fotos einzufügen). Zusätzlich stehen **3 integrierte Demo-Einkaufszettel** zum sofortigen Testen bereit.
-3. **Individuelle Supermarkt-Konfigurationen (Sortier-Vorlage wählen, Vorige Ware & Drag-and-Drop)**
+5. **Individuelle Supermarkt-Konfigurationen (Sortier-Vorlage, Vorige Ware & Drag-and-Drop mit Auto-Scroll)**
    - Vorgefertigte deutsche Standard-Märkte (**REWE**, **ALDI**, **LIDL**) mit realistischer Abteilungs- und Warenreihenfolge (Obst & Gemüse → Backwaren → Kühlregal → Fleisch/Wurst → Trockensortiment → Getränke → Tiefkühl → Haushalt/Drogerie).
    - **Sortierung beim Anlegen wählen**: Beim Erstellen eines neuen Supermarkts kannst du auswählen, ob die **Standard-Sortierung** oder die komplette **Sortierung eines bestehenden Supermarkts** übernommen werden soll (`createSupermarketWithSorting`).
-   - **Neues Produkt exakt über die vorige Ware einfügen**: Neue Waren lassen sich im Supermarkt-Konfigurator über ein Autocomplete-Suchfeld direkt hinter einer bestehenden *vorigen Ware* (oder per Schnellbutton auf Position 1 am Eingang) einfügen (`addSupermarketKnownItemAfter`).
-   - **Komfortables Verschieben per Drag & Drop (`☰`), Direkt-Verschieben (`⇄`) & Pfeiltasten (`↑`/`↓`)**: Verschiebe Waren im Supermarkt per Finger/Maus am Zieh-Griff (`☰`), über den Dialog **„Gezielt verschieben (`⇄`)“** direkt hinter eine beliebige andere Ware (`moveSupermarketItemAfter`) oder schrittweise per Pfeilbuttons (`↑`/`↓`).
-4. **Automatische Reihenfolge-Anpassung bei Marktwechsel**
+   - **Neues Produkt exakt über die vorige Ware einfügen**: Neue Waren (inkl. optionaler Spezifikation) lassen sich im Supermarkt-Konfigurator über ein Autocomplete-Suchfeld direkt hinter einer bestehenden *vorigen Ware* (oder per Schnellbutton auf Position 1 am Eingang) einfügen (`addSupermarketKnownItemAfter`).
+   - **Komfortables Verschieben per Drag & Drop (`☰`) mit automatischem Rand-Scrollen**: Verschiebe Waren im Supermarkt per Finger (Touch inkl. schwebender Vorschau) oder Maus am Zieh-Griff (`☰`). Sobald du eine Ware an den oberen oder unteren Rand des sichtbaren Listenbereichs ziehst, **scrollt die Liste automatisch und flüssig mit** (`requestAnimationFrame`), sodass auch lange Supermarkt-Listen mühelos umsortiert werden können. Zusätzlich stehen **Bearbeiten (`✎`)**, **Gezielt verschieben (`⇄`)** (`moveSupermarketItemAfter`) und Pfeilbuttons (`↑`/`↓`) bereit.
+6. **Automatische Reihenfolge-Anpassung bei Marktwechsel**
    - Ein Tipp auf einen anderen Supermarkt sortiert den gesamten Einkaufszettel sofort in Echtzeit nach der Laufreihenfolge des gewählten Marktes um.
-5. **Übersichtliches Abhaken & Rückgängig-Funktion (Uncheck)**
+7. **Übersichtliches Abhaken & Rückgängig-Funktion (Uncheck)**
    - **Erledigte Waren oben ausgegraut**: Abgehakte Artikel wandern nach oben in den ausgegrauten Bereich *„Bereits abgehakt (Erledigt)“*.
-   - **Offene Waren direkt darunter in Laufreihenfolge**: Alle noch zu kaufenden Artikel stehen kompakt und übersichtlich direkt darunter – mit Hervorhebung der nächsten Ware im Gang.
+   - **Offene Waren direkt darunter**: Erst eventuelle spät hinzugefügte Prioritäts-Artikel, dann noch unbekannte Waren (per Long-Press aufnehmbar) und direkt danach alle bekannten Artikel in exakter Supermarkt-Laufreihenfolge mit Hervorhebung der nächsten Ware im Gang.
    - **1-Tap Rückgängig**: Ein versehentlich abgehakter Artikel wird durch Antippen wieder aktiviert und **exakt an seiner ursprünglichen, supermarkt-optimierten Position** unter den offenen Waren einsortiert.
-6. **Intelligentes nachträgliches Hinzufügen („Bereits vorbeigelaufen“-Erkennung)**
-   - Fügst du während des Einkaufs eine Ware hinzu, an deren Abteilung du im Supermarkt bereits vorbeigelaufen bist (weil du schon Waren abgehakt hast, die im Markt *hinter* dieser neuen Ware liegen), erkennt SmartCart dies automatisch.
+8. **Intelligentes nachträgliches Hinzufügen („Bereits vorbeigelaufen“-Erkennung)**
+   - Fügst du während des Einkaufs eine bekannte Ware hinzu, an deren Abteilung du im Supermarkt bereits vorbeigelaufen bist (weil du schon Waren abgehakt hast, die im Markt *hinter* dieser neuen Ware liegen), erkennt SmartCart dies automatisch.
    - Die neue Ware wird mit dem Hinweis *„Nachträglich hinzugefügt • Als Nächstes“* **ganz oben als nächste offene Ware** eingereiht, damit du sie nicht vergisst und sofort umkehren bzw. sie als Nächstes greifen kannst.
-7. **Selbstlernende Live-Optimierung (Ein-/Ausschaltbar)**
+9. **Selbstlernende Live-Optimierung (Ein-/Ausschaltbar)**
    - Direkt auf dem Einkaufszettel lässt sich der Schalter **„Live-Optimierung“** aktivieren oder deaktivieren.
-   - **Wenn aktiviert (EIN)**: Hakst du eine Ware ab, obwohl laut Supermarkt-Konfiguration noch andere offene Waren *vor* ihr auf dem Weg gelegen hätten, fragt die App nach:
+   - **Wenn aktiviert (EIN)**: Hakst du eine bekannte Ware ab, obwohl laut Supermarkt-Konfiguration noch andere bekannte offene Waren *vor* ihr auf dem Weg gelegen hätten, fragt die App nach:
      > *„Reihenfolge im Supermarkt anpassen? Du hast ‚[Ware]‘ vor ‚[Übersprungene Waren]‘ abgehakt. Soll die Konfiguration für [Supermarkt] automatisch angepasst werden?“*
-   - Bei Bestätigung wird die Supermarkt-Konfiguration dauerhaft aktualisiert.
+   - Bei Bestätigung wird die Supermarkt-Konfiguration dauerhaft aktualisiert (unter Erhalt eventueller Spezifikationen).
    - **Wenn deaktiviert (AUS)**: Du kannst Waren in beliebiger Reihenfolge ohne Rückfrage abhaken.
-8. **Teilen & Zukunftssichere Sync-Architektur**
-   - Export und Import von Einkaufslisten und Supermarkt-Konfigurationen per **Web Share API** (WhatsApp, Telegram, Signal, E-Mail), **Base64-Share-Code** oder JSON-Datei.
-   - Vorbereiteter `SyncAdapter`-Layer für zukünftige Echtzeit-Synchronisation (Multi-User-Haushaltslisten).
+10. **Ausschließlich dateibasierter Export & Import von Einkaufslisten (`.smartcart.json`)**
+    - Im Tab **„Export / Import“** werden Einkaufslisten ausschließlich über standardisierte `.smartcart.json`-Dateien ausgetauscht (veraltete Share-Codes oder reine Text-Exporte wurden vollständig entfernt):
+      - **Auf Gerät speichern**: Speichert die aktive Einkaufsliste als `.smartcart.json`-Datei auf dem Gerät (Capacitor Filesystem oder Browser-Download).
+      - **Als Datei teilen (WhatsApp, Mail, Messenger)**: Teilt die `.smartcart.json`-Datei direkt über den nativen Teilen-Dialog des Betriebssystems (Capacitor Share / Web Share API Level 2 `navigator.share({ files })` mit `canShare`-Prüfung und automatischem Datei-Download-Fallback, falls direktes Datei-Teilen nicht unterstützt wird).
+      - **Aus Datei importieren**: Importiert `.smartcart.json`- oder `.json`-Dateien auf jedem anderen Gerät mit strikter Validierung und wählbarem Modus (*Als neuen Einkaufszettel anlegen*, *In aktuellen Zettel zusammenführen (Merge)* oder *Aktuellen Zettel ersetzen*). Mengen, Spezifikationen und Abhak-Status bleiben vollständig erhalten und die Liste wird sofort für den lokalen Supermarkt sortiert.
+    - Vorbereiteter `SyncAdapter`-Layer für lokale Tab-Synchronisation (`BroadcastChannel`) und zukünftige Echtzeit-Synchronisation.
 
 ---
 
@@ -69,7 +83,7 @@ Das Projekt ist vollständig für **Ionic Capacitor** (`com.smartcart.einkaufsli
 - **Lokal bauen** (mit installiertem Android Studio / Android SDK):
   ```bash
   npm install
-  npm run build:standalone
+  npm run build
   npx cap add android
   npx cap sync android
   cd android && ./gradlew assembleDebug
@@ -85,11 +99,15 @@ Das Projekt ist vollständig für **Ionic Capacitor** (`com.smartcart.einkaufsli
 ### Befehle
 
 ```bash
-# 1. Unit-Tests der Core-Engine ausführen (100% Zero-Dependency Node Test Runner, 14 Test-Suiten)
+# 1. Alle Unit-Tests ausführen (Core-Engine 19 Suiten + Datei-Export/-Import 9 Suiten)
+npm test
+# oder einzeln:
 node tests/engine.test.js
+node tests/share.test.js
 
-# 2. Eigenständige Single-File-Handy-App (dist/SmartCart_Handy_App.html) neu bauen
-node scripts/bundle-standalone.js
+# 2. Eigenständige Single-File-Handy-App (dist/SmartCart_Handy_App.html) neu bauen & dist/ synchronisieren
+npm run build
+# bzw.: node scripts/bundle-standalone.js
 
 # 3. Lokalen Entwicklungsserver starten (z. B. mit Python oder npx serve)
 npx serve .
@@ -103,29 +121,30 @@ npx serve .
 smartcart-app/
 ├── index.html                        # Haupt-Einstiegspunkt der Web-App / PWA (inkl. Tesseract.js v5 CDN)
 ├── manifest.json                     # Web App Manifest für Android/iOS Home-Screen Installation
-├── sw.js                             # Service Worker für Offline-Caching der PWA
+├── sw.js                             # Service Worker für Offline-Caching der PWA (Cache v2)
 ├── capacitor.config.json             # Capacitor-Konfiguration für native Android/iOS Builds
-├── package.json                      # NPM-Skripte und Metadaten
+├── package.json                      # NPM-Skripte und Metadaten (v1.1.0)
 ├── .gitignore                        # Git-Ausschlussregeln
 ├── .github/
 │   └── workflows/
 │       └── android-and-web.yml       # CI/CD: Unit-Tests, HTML-Bundle & Android-APK Build
 ├── src/
 │   ├── core/                         # Reine Geschäftslogik (Browser + Node.js kompatibel)
-│   │   ├── models.js                 # Datenmodelle, Normalisierung, Sortier-Vorlagen & Standard-Supermärkte
-│   │   ├── optimizer.js              # Sortier-, Rückgängig-, Spät-Kauf-, Vorige-Ware- & Live-Lern-Algorithmen
+│   │   ├── models.js                 # Domänenmodelle, Spezifikationen, Normalisierung, Matching & Standard-Märkte
+│   │   ├── optimizer.js              # Sortier- (inkl. Unbekannte am Anfang), Rückgängig-, Spät-Kauf- & Live-Lern-Engine
 │   │   ├── ocr.js                    # Text-Parser, echte Tesseract.js-OCR, Bild-Preprocessing & Demo-Zettel
-│   │   ├── storage.js                # Persistenz-Layer (LocalStorageRepository mit Multi-Listen-Verwaltung)
-│   │   └── share.js                  # Export/Import, Share-Codes, Web Share & SyncAdapter
+│   │   ├── storage.js                # Persistenz-Layer (LocalStorageRepository, Multi-Listen & Legacy-Migration)
+│   │   └── share.js                  # Dateibasierter Export & Import (.smartcart.json) + BroadcastChannel SyncAdapter
 │   └── ui/                           # Mobile Benutzeroberfläche
-│       ├── app.js                    # UI-Controller, Multi-Listen-Bar, Drag & Drop, OCR & Modals
-│       └── styles.css                # Mobiles Responsive-Design (Android Material / iOS Look)
+│       ├── app.js                    # UI-Controller, Spezifikations-Modals, Long-Press, DnD-Auto-Scroll & Datei-I/O
+│       └── styles.css                # Mobiles Responsive-Design (Spezifikations-Badges, Long-Press & Drag-Ghost)
 ├── scripts/
 │   └── bundle-standalone.js          # Packt HTML + CSS + Core + UI in eine einzige HTML-Datei
 ├── dist/
 │   └── SmartCart_Handy_App.html      # Fertige 1-Datei-App zum direkten Senden ans Smartphone
 ├── tests/
-│   └── engine.test.js                # Umfassende Unit-Tests aller Kernanforderungen (14 Suiten)
+│   ├── engine.test.js                # Unit-Tests für Core, Spezifikationen, Unbekannte Waren & Migration (19 Suiten)
+│   └── share.test.js                 # Unit-Tests für dateibasierten Export, Share-API & Import-Validierung (9 Suiten)
 └── docs/
     └── ARCHITEKTUR_UND_DOKUMENTATION.md # Vollständige Architektur- & Funktionsreferenz
 ```

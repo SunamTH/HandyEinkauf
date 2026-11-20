@@ -41,6 +41,109 @@
   }
 
   /**
+   * Cleans an optional specification/brand string for storage & display
+   * (trimmed string, empty string `''` when omitted/null/undefined).
+   * @param {string|null|undefined} specification
+   * @returns {string}
+   */
+  function cleanSpecification(specification) {
+    if (specification === null || specification === undefined) return '';
+    return String(specification).trim();
+  }
+
+  /**
+   * Normalizes an optional specification/brand string for exact matching and deduplication:
+   * - Unicode NFC normalization
+   * - Trimmed leading/trailing whitespace
+   * - Lowercased (case-insensitive)
+   * - Internal whitespace collapsed to a single space
+   * Note: No synonym or fuzzy expansion is performed on specifications.
+   * @param {string|null|undefined} specification
+   * @returns {string}
+   */
+  function normalizeSpecification(specification) {
+    if (specification === null || specification === undefined) return '';
+    return String(specification)
+      .normalize('NFC')
+      .trim()
+      .toLowerCase()
+      .replace(/\s+/g, ' ');
+  }
+
+  /**
+   * Normalizes a supermarket sort entry (either a legacy string or `{ name, specification }` object)
+   * into the canonical `{ name: string, specification: string }` shape.
+   * Returns `null` if the entry has no valid product name.
+   * @param {string|Object} entryOrName
+   * @param {string} [specification]
+   * @returns {{ name: string, specification: string } | null}
+   */
+  function createStoreEntry(entryOrName, specification = undefined) {
+    if (entryOrName === null || entryOrName === undefined) return null;
+
+    let rawName = '';
+    let rawSpec = '';
+
+    if (typeof entryOrName === 'object') {
+      rawName = entryOrName.name !== undefined && entryOrName.name !== null ? String(entryOrName.name) : '';
+      rawSpec =
+        specification !== undefined
+          ? cleanSpecification(specification)
+          : cleanSpecification(entryOrName.specification);
+    } else {
+      rawName = String(entryOrName);
+      rawSpec = specification !== undefined ? cleanSpecification(specification) : '';
+    }
+
+    const trimmedName = rawName.trim();
+    if (!trimmedName || !normalizeItemName(trimmedName)) return null;
+
+    return {
+      name: trimmedName,
+      specification: rawSpec
+    };
+  }
+
+  /**
+   * Computes a collision-free uniqueness key for a supermarket sort entry
+   * combining BOTH normalized product name AND normalized specification:
+   * `"<normalizedName>::<normalizedSpecification>"`.
+   * @param {string|Object} entryOrName
+   * @param {string} [specification]
+   * @returns {string}
+   */
+  function getStoreEntryKey(entryOrName, specification = undefined) {
+    const entry = createStoreEntry(entryOrName, specification);
+    if (!entry) return '';
+    const normName = normalizeItemName(entry.name);
+    if (!normName) return '';
+    const normSpec = normalizeSpecification(entry.specification);
+    return `${normName}::${normSpec}`;
+  }
+
+  /**
+   * Formats an item or supermarket entry for human-readable display,
+   * appending `(<specification>)` when a specification is present.
+   * @param {string|Object} itemOrName
+   * @param {string} [specification]
+   * @returns {string}
+   */
+  function formatItemDisplayName(itemOrName, specification = undefined) {
+    if (itemOrName === null || itemOrName === undefined) return '';
+    const rawName =
+      typeof itemOrName === 'object'
+        ? String(itemOrName.name || '').trim()
+        : String(itemOrName).trim();
+    const rawSpec =
+      specification !== undefined
+        ? cleanSpecification(specification)
+        : typeof itemOrName === 'object'
+        ? cleanSpecification(itemOrName.specification)
+        : '';
+    return rawSpec ? `${rawName} (${rawSpec})` : rawName;
+  }
+
+  /**
    * Common German singular/plural & synonym equivalence groups (normalized).
    */
   const EQUIVALENCE_GROUPS = [
@@ -113,40 +216,129 @@
   }
 
   /**
-   * Finds the index of an item name in a supermarket's itemOrder array using normalized matching.
-   * Checks exact normalized match first, then canonical synonym/plural match.
-   * @param {string[]} itemOrder
-   * @param {string} itemName
+   * Finds the matching entry in a supermarket's `itemOrder` for a shopping list item
+   * `(itemName, specification)` following SmartCart's exact specification matching rule:
+   *
+   * 1. If the shopping item has a non-empty specification (`normalizeSpecification(spec) !== ''`):
+   *    - First searches for an entry with exact normalized name AND exact normalized specification.
+   *    - Next searches for a canonical synonym/plural name AND exact normalized specification.
+   *    - If found, returns `{ index, matchType: 'exact-spec', entry }`.
+   *    - Otherwise falls back to Step 2 (corresponding product WITHOUT specification).
+   * 2. Unspecified / fallback matching:
+   *    - Searches for an entry with exact normalized name AND empty specification (`''`).
+   *    - Next searches for a canonical synonym/plural name AND empty specification (`''`).
+   *    - If found, returns `{ index, matchType: hasSpec ? 'fallback-generic' : 'exact-generic', entry }`.
+   * 3. If neither matches, returns `{ index: -1, matchType: 'none', entry: null }` (item is unknown in store).
+   *    Note: An unspecified shopping item NEVER matches a specified-only store entry, and a specified
+   *    shopping item NEVER matches a store entry with a different specification.
+   *
+   * @param {Array<string|Object>} itemOrder
+   * @param {string|Object} itemNameOrEntry
+   * @param {string} [specification]
+   * @returns {{ index: number, matchType: 'exact-spec'|'exact-generic'|'fallback-generic'|'none', entry: { name: string, specification: string } | null }}
+   */
+  function findStoreEntryMatch(itemOrder, itemNameOrEntry, specification = undefined) {
+    if (!Array.isArray(itemOrder) || !itemNameOrEntry) {
+      return { index: -1, matchType: 'none', entry: null };
+    }
+
+    const target = createStoreEntry(itemNameOrEntry, specification);
+    if (!target) {
+      return { index: -1, matchType: 'none', entry: null };
+    }
+
+    const targetNormName = normalizeItemName(target.name);
+    const targetCanonical = getCanonicalItemKey(target.name);
+    const targetNormSpec = normalizeSpecification(target.specification);
+
+    const normalizedEntries = itemOrder.map((raw) => {
+      const entry = createStoreEntry(raw);
+      if (!entry) return null;
+      return {
+        entry,
+        normName: normalizeItemName(entry.name),
+        canonical: getCanonicalItemKey(entry.name),
+        normSpec: normalizeSpecification(entry.specification)
+      };
+    });
+
+    // Step 1: When shopping item has a specification, require exact normalized specification match first
+    if (targetNormSpec !== '') {
+      for (let i = 0; i < normalizedEntries.length; i++) {
+        const cur = normalizedEntries[i];
+        if (cur && cur.normName === targetNormName && cur.normSpec === targetNormSpec) {
+          return { index: i, matchType: 'exact-spec', entry: cur.entry };
+        }
+      }
+      for (let i = 0; i < normalizedEntries.length; i++) {
+        const cur = normalizedEntries[i];
+        if (cur && cur.canonical === targetCanonical && cur.normSpec === targetNormSpec) {
+          return { index: i, matchType: 'exact-spec', entry: cur.entry };
+        }
+      }
+    }
+
+    // Step 2: Match unspecified supermarket entry (primary for unspecified items, fallback for specified items)
+    const genericMatchType = targetNormSpec !== '' ? 'fallback-generic' : 'exact-generic';
+    for (let i = 0; i < normalizedEntries.length; i++) {
+      const cur = normalizedEntries[i];
+      if (cur && cur.normName === targetNormName && cur.normSpec === '') {
+        return { index: i, matchType: genericMatchType, entry: cur.entry };
+      }
+    }
+    for (let i = 0; i < normalizedEntries.length; i++) {
+      const cur = normalizedEntries[i];
+      if (cur && cur.canonical === targetCanonical && cur.normSpec === '') {
+        return { index: i, matchType: genericMatchType, entry: cur.entry };
+      }
+    }
+
+    return { index: -1, matchType: 'none', entry: null };
+  }
+
+  /**
+   * Finds the index of an item (with optional specification) in a supermarket's `itemOrder`
+   * using SmartCart's specification matching + fallback-to-unspecified rule.
+   * @param {Array<string|Object>} itemOrder
+   * @param {string|Object} itemNameOrEntry
+   * @param {string} [specification]
    * @returns {number} Index in itemOrder, or -1 if not found
    */
-  function indexOfNormalized(itemOrder, itemName) {
-    if (!Array.isArray(itemOrder) || !itemName) return -1;
-    const targetNorm = normalizeItemName(itemName);
-    if (!targetNorm) return -1;
+  function indexOfNormalized(itemOrder, itemNameOrEntry, specification = undefined) {
+    return findStoreEntryMatch(itemOrder, itemNameOrEntry, specification).index;
+  }
+
+  /**
+   * Finds the exact index of a supermarket sort entry matching BOTH normalized name
+   * AND normalized specification (NO fallback to unspecified entries).
+   * Used for deduplication, adding, moving, and removing entries in `supermarket.itemOrder`.
+   * @param {Array<string|Object>} itemOrder
+   * @param {string|Object} itemNameOrEntry
+   * @param {string} [specification]
+   * @returns {number} Index in itemOrder, or -1 if not found
+   */
+  function findExactStoreEntryIndex(itemOrder, itemNameOrEntry, specification = undefined) {
+    if (!Array.isArray(itemOrder) || !itemNameOrEntry) return -1;
+    const targetKey = getStoreEntryKey(itemNameOrEntry, specification);
+    if (!targetKey) return -1;
 
     for (let i = 0; i < itemOrder.length; i++) {
-      if (normalizeItemName(itemOrder[i]) === targetNorm) {
+      if (getStoreEntryKey(itemOrder[i]) === targetKey) {
         return i;
       }
     }
-
-    const targetCanonical = getCanonicalItemKey(itemName);
-    for (let i = 0; i < itemOrder.length; i++) {
-      if (getCanonicalItemKey(itemOrder[i]) === targetCanonical) {
-        return i;
-      }
-    }
-
     return -1;
   }
 
   /**
    * Guesses a German store department/category for UI badges based on item name.
-   * @param {string} name
+   * @param {string|Object} nameOrEntry
    * @returns {string}
    */
-  function guessItemCategory(name) {
-    const key = getCanonicalItemKey(name);
+  function guessItemCategory(nameOrEntry) {
+    const rawName =
+      typeof nameOrEntry === 'object' && nameOrEntry !== null ? nameOrEntry.name : nameOrEntry;
+    const key = getCanonicalItemKey(rawName);
     const categories = [
       {
         label: 'Obst & Gemüse',
@@ -195,6 +387,7 @@
    * @param {Object} params
    * @param {string} [params.id]
    * @param {string} params.name
+   * @param {string} [params.specification='']
    * @param {string|number} [params.quantity='1x']
    * @param {string} [params.category]
    * @param {boolean} [params.checked=false]
@@ -206,6 +399,7 @@
   function createItem({
     id,
     name,
+    specification = '',
     quantity = '1x',
     category = null,
     checked = false,
@@ -214,6 +408,7 @@
     originalOrder = 0
   } = {}) {
     const cleanName = String(name || '').trim();
+    const cleanSpec = cleanSpecification(specification);
     const isChecked = Boolean(checked);
     const cleanQty =
       quantity !== undefined && quantity !== null && String(quantity).trim() !== ''
@@ -224,6 +419,8 @@
       id: id || generateId('item'),
       name: cleanName,
       normalizedName: normalizeItemName(cleanName),
+      specification: cleanSpec,
+      normalizedSpecification: normalizeSpecification(cleanSpec),
       quantity: cleanQty,
       category: category || guessItemCategory(cleanName),
       checked: isChecked,
@@ -234,14 +431,18 @@
   }
 
   /**
-   * Creates a Supermarket configuration with an ordered array of item names
-   * representing the walking path through the store.
+   * Creates a Supermarket configuration with an ordered array of sort entries
+   * `{ name: string, specification: string }` representing the walking path through the store.
+   * Accepts both legacy `string[]` and `{ name, specification }[]` entries, normalizing all
+   * entries to `{ name, specification }` and deduplicating by `(normalizedName, normalizedSpecification)`
+   * so the same product can coexist with multiple different specifications and/or without specification.
+   *
    * @param {Object} params
    * @param {string} [params.id]
    * @param {string} params.name
    * @param {string} [params.icon='🛒']
    * @param {string} [params.color='#2563eb']
-   * @param {string[]} [params.itemOrder=[]]
+   * @param {Array<string|{name: string, specification?: string}>} [params.itemOrder=[]]
    * @param {number} [params.updatedAt]
    * @returns {Object}
    */
@@ -275,11 +476,12 @@
 
     if (Array.isArray(itemOrder)) {
       for (const rawItem of itemOrder) {
-        const trimmed = String(rawItem || '').trim();
-        const norm = normalizeItemName(trimmed);
-        if (trimmed && norm && !seen.has(norm)) {
-          seen.add(norm);
-          deduplicatedOrder.push(trimmed);
+        const entry = createStoreEntry(rawItem);
+        if (!entry) continue;
+        const key = getStoreEntryKey(entry);
+        if (key && !seen.has(key)) {
+          seen.add(key);
+          deduplicatedOrder.push(entry);
         }
       }
     }
@@ -535,9 +737,9 @@
   const DEFAULT_SUPERMARKETS = getDefaultSupermarkets();
 
   /**
-   * Returns a fresh copy of the standard German supermarket walking order
-   * (from the default REWE configuration).
-   * @returns {string[]}
+   * Returns a fresh deep copy of the standard German supermarket walking order
+   * (from the default REWE configuration) as `{ name, specification }[]`.
+   * @returns {Array<{ name: string, specification: string }>}
    */
   function getDefaultItemOrder() {
     const baseStore =
@@ -545,7 +747,7 @@
         ? DEFAULT_SUPERMARKETS[0]
         : getDefaultSupermarkets()[0];
     return Array.isArray(baseStore && baseStore.itemOrder)
-      ? [...baseStore.itemOrder]
+      ? baseStore.itemOrder.map((entry) => createStoreEntry(entry)).filter(Boolean)
       : [];
   }
 
@@ -561,7 +763,7 @@
    * @param {string} [params.color='#2563eb']
    * @param {string} [params.sourceSupermarketId='default']
    * @param {Array<Object>} [params.supermarkets=[]]
-   * @param {string[]} [params.itemOrder]
+   * @param {Array<string|{name: string, specification?: string}>} [params.itemOrder]
    * @param {number} [params.updatedAt]
    * @returns {Object}
    */
@@ -578,7 +780,7 @@
     let resolvedItemOrder = [];
 
     if (Array.isArray(itemOrder) && itemOrder.length > 0) {
-      resolvedItemOrder = [...itemOrder];
+      resolvedItemOrder = itemOrder.map((entry) => createStoreEntry(entry)).filter(Boolean);
     } else if (
       sourceSupermarketId &&
       String(sourceSupermarketId).trim() !== '' &&
@@ -597,7 +799,9 @@
         DEFAULT_SUPERMARKETS.find((s) => s && s.id === targetId);
 
       if (sourceStore && Array.isArray(sourceStore.itemOrder)) {
-        resolvedItemOrder = [...sourceStore.itemOrder];
+        resolvedItemOrder = sourceStore.itemOrder
+          .map((entry) => createStoreEntry(entry))
+          .filter(Boolean);
       } else {
         resolvedItemOrder = getDefaultItemOrder();
       }
@@ -618,8 +822,16 @@
   const modelsExports = {
     generateId,
     normalizeItemName,
+    cleanSpecification,
+    normalizeSpecification,
+    createStoreEntry,
+    normalizeStoreEntry: createStoreEntry,
+    getStoreEntryKey,
+    formatItemDisplayName,
     getCanonicalItemKey,
+    findStoreEntryMatch,
     indexOfNormalized,
+    findExactStoreEntryIndex,
     guessItemCategory,
     createItem,
     createSupermarket,

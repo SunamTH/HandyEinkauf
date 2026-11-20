@@ -21,10 +21,33 @@
     pendingLiveOpt: null,
     pendingMoveItem: null,
     pendingListModalMode: null,
+    pendingEditItemId: null,
+    pendingEditStoreIndex: null,
+    longPressState: {
+      timerId: null,
+      feedbackTimerId: null,
+      activeRow: null,
+      itemId: null,
+      startX: 0,
+      startY: 0,
+      pointerId: null,
+      triggered: false,
+      triggeredPointerId: null,
+      windowCleanupBound: false,
+      suppressNextClickUntil: 0
+    },
     dragState: {
       dragFromIndex: null,
+      dragCurrentOverIndex: null,
       touchDragFromIndex: null,
-      touchCurrentOverIndex: null
+      touchCurrentOverIndex: null,
+      pointerClientX: 0,
+      pointerClientY: 0,
+      autoScrollRafId: null,
+      autoScrollLastTime: 0,
+      autoScrollSpeed: 0,
+      ghostEl: null,
+      ghostOffsetY: 0
     },
     parsedOcrItems: [],
     activeTab: 'tab-list',
@@ -37,6 +60,43 @@
    */
   function getRepository() {
     return Core.storageRepository || Core.LocalStorageRepository || null;
+  }
+
+  /**
+   * Formatiert eine Ware oder einen Supermarkt-Eintrag inkl. optionaler Spezifikation
+   * als lesbaren Anzeigetext (`"Ware (Spezifikation)"` bzw. `"Ware"`).
+   * @param {string|Object} itemOrEntry
+   * @param {string} [spec]
+   * @returns {string}
+   */
+  function formatDisplayName(itemOrEntry, spec) {
+    if (typeof Core.formatItemDisplayName === 'function') {
+      return Core.formatItemDisplayName(itemOrEntry, spec);
+    }
+    if (!itemOrEntry) return '';
+    if (typeof itemOrEntry === 'object') {
+      const n = String(itemOrEntry.name || '').trim();
+      const s = String(itemOrEntry.specification || '').trim();
+      return s ? `${n} (${s})` : n;
+    }
+    const n = String(itemOrEntry).trim();
+    const s = spec ? String(spec).trim() : '';
+    return s ? `${n} (${s})` : n;
+  }
+
+  /**
+   * Normalisiert einen Supermarkt-Sortiereintrag (String oder `{ name, specification }`)
+   * in ein kanonisches Objekt `{ name, specification }`.
+   * @param {string|Object} entry
+   * @returns {{ name: string, specification: string }}
+   */
+  function normalizeEntryObj(entry) {
+    if (!entry) return { name: '', specification: '' };
+    if (typeof entry === 'string') return { name: entry.trim(), specification: '' };
+    return {
+      name: String(entry.name || '').trim(),
+      specification: String(entry.specification || '').trim()
+    };
   }
 
   /**
@@ -252,6 +312,8 @@
    * @param {string} tabId - ID des Ziel-Tabs (`tab-list`, `tab-ocr`, `tab-stores`, `tab-share`)
    */
   function switchTab(tabId) {
+    stopDragAutoScroll();
+    cancelUnknownItemLongPress();
     state.activeTab = tabId;
     document.querySelectorAll('.tab-view').forEach((section) => {
       section.classList.toggle('active', section.id === tabId);
@@ -266,6 +328,8 @@
       const store = getActiveSupermarket();
       const targetSpan = document.getElementById('ocr-target-store-name');
       if (targetSpan && store) targetSpan.textContent = store.name;
+    } else if (tabId === 'tab-share') {
+      renderExportImportTabSummary();
     }
   }
 
@@ -618,30 +682,165 @@
   function handleAddItemSubmit(event) {
     if (event) event.preventDefault();
     const nameInput = document.getElementById('add-item-name');
+    const specInput = document.getElementById('add-item-spec');
     const qtyInput = document.getElementById('add-item-qty');
     const name = nameInput ? nameInput.value.trim() : '';
+    const specification = specInput ? specInput.value.trim() : '';
     const quantity = qtyInput && qtyInput.value.trim() ? qtyInput.value.trim() : '1x';
 
     if (!name) return;
 
     const activeStore = getActiveSupermarket();
-    const result = Core.addItemToList(state.shoppingList, activeStore, { name, quantity });
+    const result = Core.addItemToList(state.shoppingList, activeStore, {
+      name,
+      specification,
+      quantity
+    });
     state.shoppingList = result.list;
 
     if (nameInput) nameInput.value = '';
+    if (specInput) specInput.value = '';
     if (qtyInput) qtyInput.value = '';
 
     saveAppState();
     renderApp();
 
+    const addedLabel = formatDisplayName(result.addedItem);
     if (result.wasAddedLate) {
-      const passedNames = (result.passedByItems || []).map((i) => i.name).join(', ');
+      const passedNames = (result.passedByItems || [])
+        .map((i) => formatDisplayName(i))
+        .join(', ');
       showToast(
-        `⚡ „${result.addedItem.name}“ als nächste offene Ware einsortiert, da du an der Stelle im Markt (vor ${passedNames}) schon vorbei bist!`,
+        `⚡ „${addedLabel}“ als nächste offene Ware einsortiert, da du an der Stelle im Markt (vor ${passedNames}) schon vorbei bist!`,
         'late'
       );
+    } else if (result.addedItem && result.addedItem.isUnknownInStore) {
+      showToast(
+        `🆕 „${addedLabel}“ am Anfang der Liste ergänzt (noch nicht in ${activeStore.name} – zum Hinzufügen lange gedrückt halten).`,
+        'info'
+      );
     } else {
-      showToast(`✅ „${result.addedItem.name}“ in Laufreihenfolge (${activeStore.name}) einsortiert.`, 'success');
+      showToast(`✅ „${addedLabel}“ in Laufreihenfolge (${activeStore.name}) einsortiert.`, 'success');
+    }
+  }
+
+  /**
+   * Öffnet das Modal zum Bearbeiten einer Ware (Name, optionale Spezifikation, Menge)
+   * auf dem aktuellen Einkaufszettel.
+   * @param {string} itemId
+   * @param {Event} [event]
+   */
+  function openEditItemModal(itemId, event) {
+    if (event) event.stopPropagation();
+    const items = (state.shoppingList && state.shoppingList.items) || [];
+    const item = items.find((i) => i.id === itemId);
+    if (!item) return;
+
+    state.pendingEditItemId = itemId;
+    const modal = document.getElementById('edit-item-modal');
+    const nameInput = document.getElementById('edit-item-name');
+    const specInput = document.getElementById('edit-item-spec');
+    const qtyInput = document.getElementById('edit-item-qty');
+
+    if (nameInput) nameInput.value = item.name || '';
+    if (specInput) specInput.value = item.specification || '';
+    if (qtyInput) qtyInput.value = item.quantity || '1x';
+
+    if (modal) {
+      modal.classList.add('open');
+      if (nameInput) setTimeout(() => nameInput.focus(), 40);
+    }
+  }
+
+  /**
+   * Schließt das Ware-bearbeiten-Modal (`#edit-item-modal`).
+   */
+  function closeEditItemModal() {
+    state.pendingEditItemId = null;
+    const modal = document.getElementById('edit-item-modal');
+    if (modal) modal.classList.remove('open');
+  }
+
+  /**
+   * Speichert die geänderten Daten (Name, Spezifikation, Menge) einer Ware auf der Einkaufsliste.
+   * @param {Event} [event]
+   */
+  function handleEditItemModalSubmit(event) {
+    if (event) event.preventDefault();
+    const itemId = state.pendingEditItemId;
+    if (!itemId || !state.shoppingList) {
+      closeEditItemModal();
+      return;
+    }
+
+    const nameInput = document.getElementById('edit-item-name');
+    const specInput = document.getElementById('edit-item-spec');
+    const qtyInput = document.getElementById('edit-item-qty');
+    const name = nameInput ? nameInput.value.trim() : '';
+    const specification = specInput ? specInput.value.trim() : '';
+    const quantity = qtyInput && qtyInput.value.trim() ? qtyInput.value.trim() : '1x';
+
+    if (!name) return;
+
+    const activeStore = getActiveSupermarket();
+    if (typeof Core.updateItemInList === 'function') {
+      state.shoppingList = Core.updateItemInList(state.shoppingList, activeStore, itemId, {
+        name,
+        specification,
+        quantity
+      });
+    }
+
+    closeEditItemModal();
+    saveAppState();
+    renderApp();
+    showToast(`✎ „${formatDisplayName(name, specification)}“ aktualisiert.`, 'success');
+  }
+
+  /**
+   * Fügt eine auf der Einkaufsliste noch unbekannte Ware (inkl. optionaler Spezifikation)
+   * per langem Gedrückthalten dem aktuellen Supermarkt hinzu, sodass sie dort wie gewohnt
+   * manuell einsortiert werden kann.
+   * @param {string} itemId - ID der Einkaufslisten-Ware
+   */
+  function handleAddUnknownItemToSupermarket(itemId) {
+    if (!itemId || !state.shoppingList) return;
+    const items = state.shoppingList.items || [];
+    const targetItem = items.find((i) => i.id === itemId);
+    if (!targetItem) return;
+
+    const activeStore = getActiveSupermarket();
+    if (!activeStore || typeof Core.addItemToSupermarket !== 'function') return;
+
+    const res = Core.addItemToSupermarket(activeStore, targetItem, {
+      list: state.shoppingList
+    });
+
+    if (!res || !res.supermarket) return;
+
+    state.supermarkets = state.supermarkets.map((s) =>
+      s.id === res.supermarket.id ? res.supermarket : s
+    );
+    if (res.list) {
+      state.shoppingList = res.list;
+    } else {
+      state.shoppingList = Core.changeListSupermarket(state.shoppingList, res.supermarket);
+    }
+
+    saveAppState();
+    renderApp();
+
+    const displayLabel = formatDisplayName(res.entry || targetItem);
+    if (res.added) {
+      showToast(
+        `🏪 „${displayLabel}“ zu ${res.supermarket.name} (Pos. ${res.index + 1}) hinzugefügt! Du kannst die Position unter „Supermärkte“ frei sortieren.`,
+        'success'
+      );
+    } else if (res.alreadyExists) {
+      showToast(
+        `ℹ️ „${displayLabel}“ ist bereits in ${res.supermarket.name} (Pos. ${res.index + 1}) vorhanden.`,
+        'info'
+      );
     }
   }
 
@@ -667,7 +866,7 @@
       }
     } else if (result.action === 'unchecked' && result.uncheckedItem) {
       showToast(
-        `↩️ „${result.uncheckedItem.name}“ wieder an der optimierten Position für ${activeStore.name} eingereiht.`,
+        `↩️ „${formatDisplayName(result.uncheckedItem)}“ wieder an der optimierten Position für ${activeStore.name} eingereiht.`,
         'info'
       );
     }
@@ -684,22 +883,26 @@
     const textEl = document.getElementById('live-opt-modal-text');
     const detailsEl = document.getElementById('live-opt-modal-details');
 
-    const skippedNames = (checkResult.skippedItems || []).map((i) => i.name).join(', ');
+    const checkedLabel = formatDisplayName(checkResult.checkedItem);
+    const skippedNames = (checkResult.skippedItems || [])
+      .map((i) => formatDisplayName(i))
+      .join(', ');
     const storeName = checkResult.supermarket ? checkResult.supermarket.name : 'diesen Supermarkt';
 
     if (textEl) {
       textEl.textContent =
         checkResult.promptMessage ||
-        `Reihenfolge im Supermarkt anpassen? Du hast „${checkResult.checkedItem.name}“ vor „${skippedNames}“ abgehakt. Soll die Konfiguration für ${storeName} automatisch angepasst werden?`;
+        `Reihenfolge im Supermarkt anpassen? Du hast „${checkedLabel}“ vor „${skippedNames}“ abgehakt. Soll die Konfiguration für ${storeName} automatisch angepasst werden?`;
     }
 
     if (detailsEl) {
-      const firstSkipped = checkResult.skippedItems && checkResult.skippedItems[0]
-        ? checkResult.skippedItems[0].name
-        : skippedNames;
+      const firstSkipped =
+        checkResult.skippedItems && checkResult.skippedItems[0]
+          ? formatDisplayName(checkResult.skippedItems[0])
+          : skippedNames;
       detailsEl.innerHTML =
         `<strong>Geplante Anpassung in ${escapeHtml(storeName)}:</strong><br />` +
-        `„${escapeHtml(checkResult.checkedItem.name)}“ wird in der Laufreihenfolge vor „${escapeHtml(firstSkipped)}“ verschoben.`;
+        `„${escapeHtml(checkedLabel)}“ wird in der Laufreihenfolge vor „${escapeHtml(firstSkipped)}“ verschoben.`;
     }
 
     if (modal) modal.classList.add('open');
@@ -738,9 +941,10 @@
     saveAppState();
     renderApp();
 
-    const firstSkipped = skippedItems && skippedItems[0] ? skippedItems[0].name : '';
+    const firstSkipped =
+      skippedItems && skippedItems[0] ? formatDisplayName(skippedItems[0]) : '';
     showToast(
-      `🏪 ${updatedStore.name}-Konfiguration angepasst: „${checkedItem.name}“ liegt jetzt vor „${firstSkipped}“!`,
+      `🏪 ${updatedStore.name}-Konfiguration angepasst: „${formatDisplayName(checkedItem)}“ liegt jetzt vor „${firstSkipped}“!`,
       'success'
     );
   }
@@ -799,6 +1003,7 @@
     renderLiveOptimizationHeader();
     renderShoppingListView();
     renderQuickSuggestions();
+    renderExportImportTabSummary();
     if (state.activeTab === 'tab-stores') {
       renderSupermarketConfigurator();
     }
@@ -899,21 +1104,40 @@
     if (checkedListEl) {
       checkedListEl.innerHTML = checkedItems
         .map((item) => {
-          const posIdx = Core.indexOfNormalized(activeStore.itemOrder, item.name);
-          const posLabel = posIdx !== -1 ? `Station #${posIdx + 1}` : 'Freie Position';
+          const posIdx =
+            typeof item.storePosition === 'number'
+              ? item.storePosition
+              : Core.indexOfNormalized(activeStore.itemOrder, item.name, item.specification);
+          const isUnknown = posIdx === -1;
+          const posLabel = !isUnknown ? `Station #${posIdx + 1}` : 'Noch nicht im Markt';
+          const specBadge = item.specification
+            ? `<span class="item-spec-badge">${escapeHtml(item.specification)}</span>`
+            : '';
+          const classes = ['shopping-item', 'checked'];
+          if (isUnknown) classes.push('unknown-in-store');
           return `
-            <li class="shopping-item checked" data-item-id="${escapeHtml(item.id)}" title="Antippen zum Rückgängig machen">
+            <li
+              class="${classes.join(' ')}"
+              data-item-id="${escapeHtml(item.id)}"
+              ${isUnknown ? 'data-unknown-item="true"' : ''}
+              title="${isUnknown ? 'Antippen zum Rückgängig machen • Gedrückt halten zum Hinzufügen zum Supermarkt' : 'Antippen zum Rückgängig machen'}"
+            >
               <div class="item-checkbox" aria-label="Abgehakt">✓</div>
               <div class="item-content">
                 <div class="item-top-line">
                   <span class="item-name">${escapeHtml(item.name)}</span>
+                  ${specBadge}
                   <span class="item-qty-badge">${escapeHtml(item.quantity || '1x')}</span>
                 </div>
                 <div class="item-badges">
-                  <span class="badge badge-undo-hint">↩️ Antippen für Rückgängig (${posLabel})</span>
+                  <span class="badge badge-undo-hint">↩️ Antippen für Rückgängig (${escapeHtml(posLabel)})</span>
+                  ${isUnknown ? `<span class="badge badge-unknown-pos">🆕 Gedrückt halten → zu ${escapeHtml(activeStore.name)} hinzufügen</span>` : ''}
                 </div>
               </div>
-              <button type="button" class="item-delete-btn" data-delete-id="${escapeHtml(item.id)}" title="Ware entfernen">✕</button>
+              <div class="item-actions">
+                <button type="button" class="item-edit-btn" data-edit-item-id="${escapeHtml(item.id)}" title="Ware bearbeiten">✎</button>
+                <button type="button" class="item-delete-btn" data-delete-id="${escapeHtml(item.id)}" title="Ware entfernen">✕</button>
+              </div>
             </li>
           `;
         })
@@ -936,14 +1160,25 @@
         return;
       }
 
+      const firstKnownIdx = uncheckedItems.findIndex(
+        (it) => !it.addedLateOverride && (typeof it.storePosition === 'number' ? it.storePosition !== -1 : Core.indexOfNormalized(activeStore.itemOrder, it.name, it.specification) !== -1)
+      );
+
       uncheckedListEl.innerHTML = uncheckedItems
         .map((item, idx) => {
-          const isNext = idx === 0;
           const isLate = Boolean(item.addedLateOverride);
-          const posIdx = Core.indexOfNormalized(activeStore.itemOrder, item.name);
+          const posIdx =
+            typeof item.storePosition === 'number'
+              ? item.storePosition
+              : Core.indexOfNormalized(activeStore.itemOrder, item.name, item.specification);
+          const isUnknown = posIdx === -1;
+          const isNext = !isLate && !isUnknown && idx === firstKnownIdx;
+
           const classes = ['shopping-item'];
           if (isLate) {
             classes.push('late-override');
+          } else if (isUnknown) {
+            classes.push('unknown-in-store');
           } else if (isNext) {
             classes.push('next-in-aisle');
           }
@@ -957,29 +1192,45 @@
             badges.push(`<span class="badge badge-next">👉 Nächste Ware im Gang</span>`);
           }
 
-          if (posIdx !== -1) {
+          if (!isUnknown) {
+            const matchHint =
+              item.storeMatchType === 'fallback-generic' ? ' (Warengruppe)' : '';
+            const catSuffix = item.category ? ` • ${escapeHtml(item.category)}` : '';
             badges.push(
-              `<span class="badge badge-walk-index">🧭 ${escapeHtml(activeStore.name)} #${posIdx + 1} • ${escapeHtml(item.category || '')}</span>`
+              `<span class="badge badge-walk-index">🧭 ${escapeHtml(activeStore.name)} #${posIdx + 1}${matchHint}${catSuffix}</span>`
             );
           } else {
             badges.push(
-              `<span class="badge badge-unknown-pos">🆕 Neue Ware (am Ende / lernfähig)</span>`
+              `<span class="badge badge-unknown-pos">🆕 Noch nicht in ${escapeHtml(activeStore.name)} • Gedrückt halten zum Hinzufügen</span>`
             );
           }
 
+          const specBadge = item.specification
+            ? `<span class="item-spec-badge">${escapeHtml(item.specification)}</span>`
+            : '';
+
           return `
-            <li class="${classes.join(' ')}" data-item-id="${escapeHtml(item.id)}">
+            <li
+              class="${classes.join(' ')}"
+              data-item-id="${escapeHtml(item.id)}"
+              ${isUnknown ? 'data-unknown-item="true"' : ''}
+              ${isUnknown ? `title="Lange gedrückt halten, um diese Ware zu ${escapeHtml(activeStore.name)} hinzuzufügen"` : ''}
+            >
               <div class="item-checkbox" aria-label="Abhaken"></div>
               <div class="item-content">
                 <div class="item-top-line">
                   <span class="item-name">${escapeHtml(item.name)}</span>
+                  ${specBadge}
                   <span class="item-qty-badge">${escapeHtml(item.quantity || '1x')}</span>
                 </div>
                 <div class="item-badges">
                   ${badges.join('')}
                 </div>
               </div>
-              <button type="button" class="item-delete-btn" data-delete-id="${escapeHtml(item.id)}" title="Ware entfernen">✕</button>
+              <div class="item-actions">
+                <button type="button" class="item-edit-btn" data-edit-item-id="${escapeHtml(item.id)}" title="Ware bearbeiten">✎</button>
+                <button type="button" class="item-delete-btn" data-delete-id="${escapeHtml(item.id)}" title="Ware entfernen">✕</button>
+              </div>
             </li>
           `;
         })
@@ -997,19 +1248,31 @@
 
     const activeStore = getActiveSupermarket();
     const currentItems = (state.shoppingList && state.shoppingList.items) || [];
-    const existingNorms = new Set(
-      currentItems.map((i) => Core.normalizeItemName(i.name))
+    const existingKeys = new Set(
+      currentItems.map((i) =>
+        typeof Core.getStoreEntryKey === 'function'
+          ? Core.getStoreEntryKey(i)
+          : `${Core.normalizeItemName(i.name)}::${String(i.specification || '').trim().toLowerCase()}`
+      )
     );
 
     const suggestions = (activeStore.itemOrder || [])
-      .filter((name) => !existingNorms.has(Core.normalizeItemName(name)))
+      .map((raw) => normalizeEntryObj(raw))
+      .filter((entry) => {
+        if (!entry.name) return false;
+        const key =
+          typeof Core.getStoreEntryKey === 'function'
+            ? Core.getStoreEntryKey(entry)
+            : `${Core.normalizeItemName(entry.name)}::${entry.specification.toLowerCase()}`;
+        return !existingKeys.has(key);
+      })
       .slice(0, 10);
 
     container.innerHTML = suggestions
-      .map(
-        (name) =>
-          `<button type="button" class="suggestion-chip" data-suggest-name="${escapeHtml(name)}">+ ${escapeHtml(name)}</button>`
-      )
+      .map((entry) => {
+        const label = formatDisplayName(entry);
+        return `<button type="button" class="suggestion-chip" data-suggest-name="${escapeHtml(entry.name)}" data-suggest-spec="${escapeHtml(entry.specification)}">+ ${escapeHtml(label)}</button>`;
+      })
       .join('');
   }
 
@@ -1188,11 +1451,15 @@
 
       listEl.innerHTML = parsed
         .map((item) => {
-          const posIdx = Core.indexOfNormalized(activeStore.itemOrder, item.name);
+          const posIdx = Core.indexOfNormalized(
+            activeStore.itemOrder,
+            item.name,
+            item.specification || ''
+          );
           const posBadge =
             posIdx !== -1
               ? `${activeStore.name} #${posIdx + 1}`
-              : 'Neu (am Ende)';
+              : 'Neu (am Anfang)';
           return `
             <li class="ocr-parsed-item">
               <div>
@@ -1235,7 +1502,7 @@
     switchTab('tab-list');
 
     if (result.lateItems && result.lateItems.length > 0) {
-      const lateNames = result.lateItems.map((i) => i.name).join(', ');
+      const lateNames = result.lateItems.map((i) => formatDisplayName(i)).join(', ');
       showToast(
         `📷 ${result.addedItems.length} Waren übernommen! (${lateNames} direkt als Nächstes eingereiht, da Position bereits passiert)`,
         'late'
@@ -1296,10 +1563,11 @@
     }
 
     if (datalistEl) {
-      const itemsOptions = (configStore.itemOrder || []).map(
-        (itemName, idx) =>
-          `<option value="${escapeHtml(itemName)}">Pos. ${idx + 1}: ${escapeHtml(itemName)}</option>`
-      );
+      const itemsOptions = (configStore.itemOrder || []).map((rawEntry, idx) => {
+        const entry = normalizeEntryObj(rawEntry);
+        const label = formatDisplayName(entry);
+        return `<option value="${escapeHtml(label)}">Pos. ${idx + 1}: ${escapeHtml(label)}</option>`;
+      });
       datalistEl.innerHTML = [
         `<option value="Ganz am Anfang (Position 1)">Position 1 – Direkt am Eingang</option>`,
         ...itemsOptions
@@ -1311,16 +1579,22 @@
 
     if (listEl) {
       listEl.innerHTML = (configStore.itemOrder || [])
-        .map((itemName, idx) => {
+        .map((rawEntry, idx) => {
+          const entry = normalizeEntryObj(rawEntry);
+          const displayLabel = formatDisplayName(entry);
           const isFirst = idx === 0;
           const isLast = idx === configStore.itemOrder.length - 1;
-          const dept = Core.guessItemCategory ? Core.guessItemCategory(itemName) : '';
+          const dept = Core.guessItemCategory ? Core.guessItemCategory(entry) : '';
+          const specBadge = entry.specification
+            ? `<span class="store-spec-badge">${escapeHtml(entry.specification)}</span>`
+            : '';
           return `
             <li
               class="store-order-item"
               draggable="true"
               data-item-index="${idx}"
-              data-item-name="${escapeHtml(itemName)}"
+              data-item-name="${escapeHtml(entry.name)}"
+              data-item-spec="${escapeHtml(entry.specification)}"
             >
               <span
                 class="drag-handle"
@@ -1330,15 +1604,21 @@
               >☰</span>
               <span class="store-order-num">${idx + 1}</span>
               <div class="store-order-name">
-                <div>${escapeHtml(itemName)}</div>
+                <div>${escapeHtml(entry.name)}${specBadge}</div>
                 <div style="font-size: 11px; color: var(--text-muted); font-weight: 500;">${escapeHtml(dept)}</div>
               </div>
               <div class="store-order-actions">
                 <button
                   type="button"
+                  class="icon-btn"
+                  data-edit-store-idx="${idx}"
+                  title="Ware &amp; Spezifikation bearbeiten"
+                >✎</button>
+                <button
+                  type="button"
                   class="icon-btn move-after-btn"
                   data-move-after-idx="${idx}"
-                  data-move-after-item="${escapeHtml(itemName)}"
+                  data-move-after-item="${escapeHtml(displayLabel)}"
                   title="Gezielt hinter eine bestimmte Ware (oder an Position 1) verschieben"
                 >⇄</button>
                 <button
@@ -1360,7 +1640,7 @@
                 <button
                   type="button"
                   class="icon-btn"
-                  data-remove-store-item="${escapeHtml(itemName)}"
+                  data-remove-store-idx="${idx}"
                   title="Aus Supermarkt-Reihenfolge entfernen"
                   style="color: var(--danger);"
                 >✕</button>
@@ -1537,7 +1817,7 @@
       return;
     }
 
-    const movedName = store.itemOrder[fromIndex];
+    const movedLabel = formatDisplayName(store.itemOrder[fromIndex]);
     const updatedStore = Core.reorderSupermarketItem(store, fromIndex, toIndex);
 
     state.supermarkets = state.supermarkets.map((s) =>
@@ -1551,22 +1831,109 @@
     saveAppState();
     renderApp();
     showToast(
-      `☰ „${movedName}“ auf Position ${toIndex + 1} in ${updatedStore.name} verschoben.`,
+      `☰ „${movedLabel}“ auf Position ${toIndex + 1} in ${updatedStore.name} verschoben.`,
       'info'
+    );
+  }
+
+  /**
+   * Öffnet das Modal zum Bearbeiten einer Ware (Name & optionale Spezifikation)
+   * in der Laufreihenfolge des aktuellen Konfigurator-Supermarkts.
+   * @param {number} entryIndex - Index des Eintrags in `itemOrder`
+   */
+  function openEditStoreItemModal(entryIndex) {
+    const store = getConfigSupermarket();
+    if (!store || !Array.isArray(store.itemOrder)) return;
+    if (typeof entryIndex !== 'number' || entryIndex < 0 || entryIndex >= store.itemOrder.length) {
+      return;
+    }
+
+    const entry = normalizeEntryObj(store.itemOrder[entryIndex]);
+    state.pendingEditStoreIndex = entryIndex;
+
+    const modal = document.getElementById('edit-store-item-modal');
+    const nameInput = document.getElementById('edit-store-item-name');
+    const specInput = document.getElementById('edit-store-item-spec');
+
+    if (nameInput) nameInput.value = entry.name;
+    if (specInput) specInput.value = entry.specification;
+
+    if (modal) {
+      modal.classList.add('open');
+      if (nameInput) setTimeout(() => nameInput.focus(), 40);
+    }
+  }
+
+  /**
+   * Schließt das Supermarkt-Eintrag-bearbeiten-Modal (`#edit-store-item-modal`).
+   */
+  function closeEditStoreItemModal() {
+    state.pendingEditStoreIndex = null;
+    const modal = document.getElementById('edit-store-item-modal');
+    if (modal) modal.classList.remove('open');
+  }
+
+  /**
+   * Speichert Änderungen an einem Eintrag (Name & optionale Spezifikation) in der
+   * Supermarkt-Laufreihenfolge.
+   * @param {Event} [event]
+   */
+  function handleEditStoreItemModalSubmit(event) {
+    if (event) event.preventDefault();
+    const idx = state.pendingEditStoreIndex;
+    const store = getConfigSupermarket();
+    if (!store || typeof idx !== 'number' || idx < 0 || idx >= store.itemOrder.length) {
+      closeEditStoreItemModal();
+      return;
+    }
+
+    const nameInput = document.getElementById('edit-store-item-name');
+    const specInput = document.getElementById('edit-store-item-spec');
+    const name = nameInput ? nameInput.value.trim() : '';
+    const specification = specInput ? specInput.value.trim() : '';
+    if (!name) return;
+
+    if (typeof Core.updateSupermarketKnownItem === 'function') {
+      const updatedStore = Core.updateSupermarketKnownItem(store, idx, {
+        name,
+        specification
+      });
+      state.supermarkets = state.supermarkets.map((s) =>
+        s.id === updatedStore.id ? updatedStore : s
+      );
+      if (state.shoppingList.supermarketId === updatedStore.id) {
+        state.shoppingList = Core.changeListSupermarket(state.shoppingList, updatedStore);
+      }
+    }
+
+    closeEditStoreItemModal();
+    saveAppState();
+    renderApp();
+    showToast(
+      `✎ „${formatDisplayName(name, specification)}“ in ${store.name} aktualisiert.`,
+      'success'
     );
   }
 
   /**
    * Öffnet das Modal zum gezielten Verschieben einer Ware (`⇄` Button) hinter eine
    * frei wählbare vorige Ware oder ganz an den Anfang (Position 1).
-   * @param {string} itemName - Name der zu verschiebenden Ware
+   * @param {string} itemName - Anzeigename der zu verschiebenden Ware
    * @param {number} currentIndex - Aktuelle Position (0-basiert)
    */
   function openMoveStoreItemModal(itemName, currentIndex) {
     const store = getConfigSupermarket();
     if (!store) return;
 
-    state.pendingMoveItem = { itemName, currentIndex };
+    const currentEntry =
+      typeof currentIndex === 'number' &&
+      currentIndex >= 0 &&
+      currentIndex < (store.itemOrder || []).length
+        ? store.itemOrder[currentIndex]
+        : itemName;
+    const displayLabel = formatDisplayName(currentEntry);
+
+    state.pendingMoveItem = { itemName: displayLabel, currentIndex };
     const modal = document.getElementById('move-store-item-modal');
     const titleEl = document.getElementById('move-item-modal-title');
     const subtitleEl = document.getElementById('move-item-modal-subtitle');
@@ -1574,23 +1941,23 @@
     const pickerListEl = document.getElementById('move-item-picker-list');
 
     if (titleEl) {
-      titleEl.textContent = `„${itemName}“ verschieben`;
+      titleEl.textContent = `„${displayLabel}“ verschieben`;
     }
     if (subtitleEl) {
-      subtitleEl.textContent = `Aktuell auf Position ${currentIndex + 1} in ${store.name}. Wähle die vorige Ware, hinter die „${itemName}“ platziert werden soll:`;
+      subtitleEl.textContent = `Aktuell auf Position ${currentIndex + 1} in ${store.name}. Wähle die vorige Ware, hinter die „${displayLabel}“ platziert werden soll:`;
     }
     if (inputEl) {
       inputEl.value = '';
     }
 
     if (pickerListEl) {
-      const itemNorm = Core.normalizeItemName(itemName);
       pickerListEl.innerHTML = (store.itemOrder || [])
-        .map((otherName, idx) => {
-          if (Core.normalizeItemName(otherName) === itemNorm) return '';
+        .map((otherEntry, idx) => {
+          if (idx === currentIndex) return '';
+          const otherLabel = formatDisplayName(otherEntry);
           return `<button type="button" class="move-picker-chip" data-pick-prev-item="${escapeHtml(
-            otherName
-          )}">#${idx + 1} ${escapeHtml(otherName)}</button>`;
+            otherLabel
+          )}">#${idx + 1} ${escapeHtml(otherLabel)}</button>`;
         })
         .join('');
     }
@@ -1639,7 +2006,11 @@
     saveAppState();
     renderApp();
 
-    const movedLabel = res.movedItem || itemNameOrIndex;
+    const movedLabel = formatDisplayName(res.movedItem || itemNameOrIndex);
+    const prevLabel =
+      res.previousItem && res.previousItem !== '__START__'
+        ? formatDisplayName(res.previousItem)
+        : rawTrimmed;
     const posNum = typeof res.insertedAtIndex === 'number' ? res.insertedAtIndex + 1 : 1;
 
     if (prevParam === '__START__' || posNum === 1) {
@@ -1649,7 +2020,7 @@
       );
     } else if (res.foundPrevious) {
       showToast(
-        `⇄ „${movedLabel}“ wurde direkt nach „${res.previousItem || rawTrimmed}“ (Pos. ${posNum}) verschoben!`,
+        `⇄ „${movedLabel}“ wurde direkt nach „${prevLabel}“ (Pos. ${posNum}) verschoben!`,
         'success'
       );
     } else {
@@ -1661,27 +2032,31 @@
   }
 
   /**
-   * Fügt eine neue bekannte Ware in die Laufreihenfolge (`itemOrder`) des gewählten Supermarkts
-   * exakt hinter der in `#storeAddItemPreviousInput` angegebenen vorigen Ware (oder am Anfang/Ende) ein.
+   * Fügt eine neue bekannte Ware (mit optionaler Spezifikation) in die Laufreihenfolge
+   * (`itemOrder`) des gewählten Supermarkts exakt hinter der in `#storeAddItemPreviousInput`
+   * angegebenen vorigen Ware (oder am Anfang/Ende) ein.
    * @param {Event} [event] - Submit-Event
    */
   function handleAddStoreKnownItem(event) {
     if (event) event.preventDefault();
     const nameInput = document.getElementById('new-store-item-name');
+    const specInput = document.getElementById('new-store-item-spec');
     const prevInput = document.getElementById('storeAddItemPreviousInput');
     const name = nameInput ? nameInput.value.trim() : '';
+    const specification = specInput ? specInput.value.trim() : '';
     if (!name) return;
 
     const prevRaw = prevInput ? prevInput.value.trim() : '';
     const prevParam = isStartPositionKeyword(prevRaw) ? '__START__' : prevRaw;
 
     const store = getConfigSupermarket();
+    const entryInput = { name, specification };
     let res;
     if (typeof Core.addSupermarketKnownItemAfter === 'function') {
-      res = Core.addSupermarketKnownItemAfter(store, name, prevParam);
+      res = Core.addSupermarketKnownItemAfter(store, entryInput, prevParam);
     } else {
       const insertIdx = prevParam === '__START__' ? 0 : -1;
-      res = Core.addSupermarketKnownItem(store, name, insertIdx);
+      res = Core.addSupermarketKnownItem(store, entryInput, insertIdx);
     }
 
     const updatedStore = res.supermarket || res;
@@ -1695,11 +2070,17 @@
     }
 
     if (nameInput) nameInput.value = '';
+    if (specInput) specInput.value = '';
     if (prevInput) prevInput.value = '';
 
     saveAppState();
     renderApp();
 
+    const displayLabel = formatDisplayName(name, specification);
+    const prevLabel =
+      res.previousItem && res.previousItem !== '__START__'
+        ? formatDisplayName(res.previousItem)
+        : prevRaw;
     const posNum =
       typeof res.insertedAtIndex === 'number'
         ? res.insertedAtIndex + 1
@@ -1707,30 +2088,30 @@
 
     if (prevParam === '__START__' || posNum === 1) {
       showToast(
-        `🧭 „${name}“ wurde ganz am Anfang (Position 1) in ${updatedStore.name} eingefügt.`,
+        `🧭 „${displayLabel}“ wurde ganz am Anfang (Position 1) in ${updatedStore.name} eingefügt.`,
         'success'
       );
     } else if (res.foundPrevious) {
       showToast(
-        `🧭 „${name}“ wurde direkt nach „${res.previousItem || prevRaw}“ (Pos. ${posNum}) eingefügt.`,
+        `🧭 „${displayLabel}“ wurde direkt nach „${prevLabel}“ (Pos. ${posNum}) eingefügt.`,
         'success'
       );
     } else {
       showToast(
-        `🧭 „${name}“ wurde am Ende (Pos. ${posNum}) von ${updatedStore.name} eingefügt.`,
+        `🧭 „${displayLabel}“ wurde am Ende (Pos. ${posNum}) von ${updatedStore.name} eingefügt.`,
         'success'
       );
     }
   }
 
   /**
-   * Entfernt eine Ware aus der Laufreihenfolge (`itemOrder`) des gewählten Supermarkts.
-   * @param {string} itemName - Name der Ware
+   * Entfernt eine Ware (per Index oder Name/Objekt) aus der Laufreihenfolge (`itemOrder`) des gewählten Supermarkts.
+   * @param {number|string|Object} itemOrIndex - Index oder Eintrag der Ware
    */
-  function handleRemoveStoreKnownItem(itemName) {
+  function handleRemoveStoreKnownItem(itemOrIndex) {
     const store = getConfigSupermarket();
     if (!store) return;
-    const updatedStore = Core.removeSupermarketKnownItem(store, itemName);
+    const updatedStore = Core.removeSupermarketKnownItem(store, itemOrIndex);
 
     state.supermarkets = state.supermarkets.map((s) =>
       s.id === updatedStore.id ? updatedStore : s
@@ -1745,102 +2126,175 @@
   }
 
   /* ==========================================================================
-   * TAB 4: Teilen, Export & Import Funktionen
+   * TAB 4: Dateibasierter Export & Import von Einkaufslisten
    * ========================================================================== */
 
   /**
-   * Teilt den aktuellen Einkaufszettel über `ShareService.exportShoppingList` und `ShareService.shareViaWebApi`.
+   * Aktualisiert die Zusammenfassung der aktuell aktiven Einkaufsliste im Tab "Export / Import".
    */
-  async function handleShareShoppingList() {
+  function renderExportImportTabSummary() {
+    const summaryEl = document.getElementById('export-current-list-summary');
+    if (!summaryEl || !state.shoppingList) return;
     const activeStore = getActiveSupermarket();
-    const exported = Core.exportShoppingList(state.shoppingList, activeStore);
+    const items = Array.isArray(state.shoppingList.items) ? state.shoppingList.items : [];
+    const openCount = items.filter((i) => !i.checked).length;
+    const checkedCount = items.length - openCount;
+    const listName = state.shoppingList.name || 'Einkaufszettel';
+    summaryEl.innerHTML =
+      `Aktive Liste: <strong>${escapeHtml(listName)}</strong> ` +
+      `(${items.length} ${items.length === 1 ? 'Ware' : 'Waren'}: ${openCount} offen, ${checkedCount} erledigt • ${escapeHtml(activeStore ? activeStore.name : '')})`;
+  }
 
-    const textarea = document.getElementById('share-code-textarea');
-    if (textarea) textarea.value = exported.shareText;
+  /**
+   * Speichert den aktuellen Einkaufszettel als `.smartcart.json`-Datei auf dem Gerät.
+   */
+  async function handleSaveShoppingListFile() {
+    if (!state.shoppingList || typeof Core.saveShoppingListFile !== 'function') return;
+    const activeStore = getActiveSupermarket();
+    const res = await Core.saveShoppingListFile(state.shoppingList, activeStore);
 
-    const shareRes = await Core.shareViaWebApi({
-      title: `SmartCart Einkaufszettel (${activeStore.name})`,
-      text: exported.shareText
-    });
-
-    if (shareRes && shareRes.method === 'web-share' && shareRes.success) {
-      showToast('📤 Einkaufszettel erfolgreich geteilt!', 'success');
+    if (res && res.success) {
+      showToast(`💾 Einkaufsliste als „${res.filename}“ gespeichert.`, 'success');
     } else {
-      await copyTextToClipboard(exported.shareText);
-      showToast('📋 Einkaufszettel inkl. Share-Code in die Zwischenablage kopiert!', 'success');
+      showToast(
+        `⚠️ ${(res && res.error) || 'Einkaufsliste konnte nicht als Datei gespeichert werden.'}`,
+        'late'
+      );
     }
   }
 
   /**
-   * Erzeugt einen kompakten Share-Code (`SC1:...`) über `ShareService.exportShoppingList`
-   * und zeigt ihn im Textfeld an.
+   * Teilt den aktuellen Einkaufszettel als `.smartcart.json`-Datei über das OS-Share-Sheet
+   * (z. B. WhatsApp, Mail, Messenger). Falls direktes Datei-Teilen vom Browser nicht unterstützt wird,
+   * wird die Datei automatisch gespeichert, damit sie manuell versendet werden kann.
    */
-  function handleExportShareCode() {
+  async function handleShareShoppingListFile() {
+    if (!state.shoppingList || typeof Core.shareShoppingListFile !== 'function') return;
     const activeStore = getActiveSupermarket();
-    const exported = Core.exportShoppingList(state.shoppingList, activeStore);
-
-    const textarea = document.getElementById('share-code-textarea');
-    if (textarea) textarea.value = exported.shareCode;
-    showToast('📋 Share-Code (SC1:...) erzeugt! Du kannst ihn jetzt kopieren und versenden.', 'success');
-  }
-
-  /**
-   * Importiert einen empfangenen Share-Code (`SC1:...`) oder ein JSON-Backup über `ShareService.decodeShareCode`.
-   */
-  function handleImportShareCode() {
-    const textarea = document.getElementById('share-code-textarea');
-    const raw = textarea ? textarea.value.trim() : '';
-    if (!raw) {
-      showToast('⚠️ Bitte zuerst einen Share-Code oder JSON in das Feld einfügen.', 'late');
-      return;
-    }
-
-    const decoded = Core.decodeShareCode(raw);
-    if (!decoded || !decoded.valid) {
-      showToast(`❌ ${decoded && decoded.error ? decoded.error : 'Ungültiger Share-Code.'}`, 'late');
-      return;
-    }
-
-    if (Array.isArray(decoded.supermarkets) && decoded.supermarkets.length > 0) {
-      state.supermarkets = decoded.supermarkets;
-    } else if (decoded.supermarket) {
-      const incoming = decoded.supermarket;
-      const exists = state.supermarkets.some((s) => s.id === incoming.id);
-      state.supermarkets = exists
-        ? state.supermarkets.map((s) => (s.id === incoming.id ? incoming : s))
-        : [...state.supermarkets, incoming];
-    }
-
-    if (decoded.list) {
-      const store =
-        state.supermarkets.find((s) => s.id === decoded.list.supermarketId) ||
-        state.supermarkets[0];
-      state.shoppingList = Core.changeListSupermarket(decoded.list, store);
-    } else if (Array.isArray(decoded.lists) && decoded.lists.length > 0) {
-      const firstList = decoded.lists[0];
-      const store =
-        state.supermarkets.find((s) => s.id === firstList.supermarketId) ||
-        state.supermarkets[0];
-      state.shoppingList = Core.changeListSupermarket(firstList, store);
-    }
-
-    saveAppState();
-    renderApp();
-    switchTab('tab-list');
-    showToast('✅ Einkaufsliste & Supermarkt-Konfiguration erfolgreich importiert!', 'success');
-  }
-
-  /**
-   * Lädt ein vollständiges JSON-Backup aller Supermärkte und aller gespeicherten Einkaufslisten herunter.
-   */
-  function handleDownloadBackupJson() {
-    const backup = Core.exportFullBackup({
-      supermarkets: state.supermarkets,
-      lists: state.shoppingLists && state.shoppingLists.length > 0 ? state.shoppingLists : [state.shoppingList]
+    const res = await Core.shareShoppingListFile(state.shoppingList, activeStore, {
+      fallbackToSave: true
     });
-    const filename = `SmartCart_Backup_${new Date().toISOString().slice(0, 10)}.json`;
-    Core.downloadJsonFile(backup.json, filename);
-    showToast('💾 Backup-Datei wurde heruntergeladen.', 'success');
+
+    if (!res) return;
+    if (res.aborted) {
+      return;
+    }
+
+    if (res.success && (res.method === 'web-share-file' || res.method === 'capacitor-share')) {
+      showToast(`📤 Datei „${res.filename}“ erfolgreich geteilt!`, 'success');
+    } else if (res.fallbackSaved) {
+      showToast(
+        `💾 Direktes Datei-Teilen wird von diesem Browser nicht unterstützt – „${res.filename}“ wurde stattdessen gespeichert und kann per WhatsApp/Mail versendet werden.`,
+        'info'
+      );
+    } else {
+      showToast(
+        `⚠️ ${(res && res.error) || 'Einkaufslisten-Datei konnte nicht geteilt werden.'}`,
+        'late'
+      );
+    }
+  }
+
+  /**
+   * Importiert eine ausgewählte SmartCart-Einkaufslisten-Datei (`.smartcart.json` / `.json`)
+   * über `<input type="file">`, wendet den gewählten Import-Modus (`new`, `merge`, `replace`) an
+   * und macht die Liste sofort auf diesem Gerät nutzbar.
+   * @param {Event} event - Change-Event des Datei-Inputs
+   */
+  async function handleImportShoppingListFile(event) {
+    const input = event && event.target ? event.target : null;
+    const file = input && input.files && input.files[0];
+    if (!file) return;
+
+    const statusBox = document.getElementById('import-file-status');
+    const modeSelect = document.getElementById('import-list-mode');
+    const mode = modeSelect && modeSelect.value ? modeSelect.value : 'new';
+
+    const setImportStatus = (text, variant) => {
+      if (!statusBox) return;
+      statusBox.style.display = 'block';
+      statusBox.className = `import-status-box${variant ? ` ${variant}` : ''}`;
+      statusBox.textContent = text;
+    };
+
+    try {
+      if (typeof Core.readShoppingListFile !== 'function' || typeof Core.applyImportedShoppingList !== 'function') {
+        setImportStatus('⚠️ Import-Modul ist nicht verfügbar.', 'error');
+        return;
+      }
+
+      const parsed = await Core.readShoppingListFile(file);
+      if (!parsed || !parsed.valid || !parsed.list) {
+        const errMsg =
+          (parsed && parsed.error) ||
+          'Die ausgewählte Datei konnte nicht als SmartCart-Einkaufsliste gelesen werden.';
+        setImportStatus(`❌ ${errMsg}`, 'error');
+        showToast(`❌ ${errMsg}`, 'late');
+        return;
+      }
+
+      const activeStore = getActiveSupermarket();
+      const applied = Core.applyImportedShoppingList(parsed.list, {
+        mode,
+        targetList: state.shoppingList,
+        existingLists: state.shoppingLists,
+        supermarkets: state.supermarkets,
+        supermarketMeta: parsed.supermarketMeta,
+        fallbackSupermarketId: activeStore ? activeStore.id : undefined
+      });
+
+      if (!applied || !applied.list) {
+        setImportStatus('❌ Importierte Einkaufsliste konnte nicht übernommen werden.', 'error');
+        showToast('❌ Importierte Einkaufsliste konnte nicht übernommen werden.', 'late');
+        return;
+      }
+
+      const repo = getRepository();
+      if (mode === 'new') {
+        state.shoppingList = applied.list;
+        state.shoppingLists = [...state.shoppingLists, applied.list];
+        if (repo && typeof repo.saveShoppingLists === 'function') {
+          repo.saveShoppingLists(state.shoppingLists);
+        }
+      } else {
+        state.shoppingList = applied.list;
+        const idx = state.shoppingLists.findIndex((l) => l.id === applied.list.id);
+        if (idx !== -1) {
+          state.shoppingLists[idx] = applied.list;
+        } else {
+          state.shoppingLists.push(applied.list);
+        }
+      }
+
+      if (applied.supermarket && applied.supermarket.id) {
+        state.configSelectedStoreId = applied.supermarket.id;
+      }
+
+      saveAppState();
+      renderApp();
+      switchTab('tab-list');
+
+      const storeLabel = applied.supermarket ? applied.supermarket.name : activeStore.name;
+      let successMsg;
+      if (mode === 'merge') {
+        const skipInfo =
+          applied.skippedCount > 0 ? ` (${applied.skippedCount} bereits vorhanden)` : '';
+        successMsg = `📥 ${applied.addedCount} Waren in „${applied.list.name}“ zusammengeführt${skipInfo} und für ${storeLabel} sortiert!`;
+      } else if (mode === 'replace') {
+        successMsg = `📥 „${applied.list.name}“ mit ${applied.addedCount} importierten Waren ersetzt (${storeLabel})!`;
+      } else {
+        successMsg = `📥 Einkaufszettel „${applied.list.name}“ (${applied.addedCount} Waren) importiert und für ${storeLabel} sortiert!`;
+      }
+
+      setImportStatus(`✅ ${successMsg}`, 'success');
+      showToast(successMsg, 'success');
+    } catch (err) {
+      const errMsg = (err && err.message) || 'Unbekannter Fehler beim Datei-Import.';
+      setImportStatus(`❌ ${errMsg}`, 'error');
+      showToast(`❌ ${errMsg}`, 'late');
+    } finally {
+      if (input) input.value = '';
+    }
   }
 
   /* ==========================================================================
@@ -1848,8 +2302,132 @@
    * ========================================================================== */
 
   /**
+   * Stoppt eine laufende Auto-Scroll-Animation (`requestAnimationFrame`) beim Drag & Drop
+   * und entfernt ein ggf. vorhandenes schwebendes Drag-Vorschau-Element.
+   */
+  function stopDragAutoScroll() {
+    if (state.dragState.autoScrollRafId !== null && typeof cancelAnimationFrame === 'function') {
+      cancelAnimationFrame(state.dragState.autoScrollRafId);
+    }
+    state.dragState.autoScrollRafId = null;
+    state.dragState.autoScrollLastTime = 0;
+    state.dragState.autoScrollSpeed = 0;
+    state.dragState.dragFromIndex = null;
+    state.dragState.dragCurrentOverIndex = null;
+    state.dragState.touchDragFromIndex = null;
+    state.dragState.touchCurrentOverIndex = null;
+    if (state.dragState.ghostEl && state.dragState.ghostEl.parentNode) {
+      state.dragState.ghostEl.parentNode.removeChild(state.dragState.ghostEl);
+    }
+    state.dragState.ghostEl = null;
+    if (typeof document !== 'undefined') {
+      if (document.body) {
+        document.body.classList.remove('is-dragging-store-order');
+      }
+      const listEl = document.getElementById('store-order-list');
+      if (listEl) {
+        listEl.querySelectorAll('.store-order-item').forEach((row) => {
+          row.classList.remove('dragging', 'drag-over');
+        });
+      }
+    }
+  }
+
+  /**
+   * Ermittelt den tatsächlichen Scroll-Container für ein Element (entweder ein
+   * scrollbares Eltern-Element mit `overflow-y: auto|scroll` oder `window`).
+   * @param {HTMLElement} element
+   * @returns {HTMLElement|Window}
+   */
+  function getDragScrollContainer(element) {
+    let el = element ? element.parentElement : null;
+    while (el && el !== document.body && el !== document.documentElement) {
+      const style = typeof window.getComputedStyle === 'function' ? window.getComputedStyle(el) : null;
+      const overflowY = style ? style.overflowY : '';
+      if (
+        (overflowY === 'auto' || overflowY === 'scroll') &&
+        el.scrollHeight > el.clientHeight + 1
+      ) {
+        return el;
+      }
+      el = el.parentElement;
+    }
+    return window;
+  }
+
+  /**
+   * Berechnet die sichtbaren oberen/unteren Grenzen sowie die Randzone (`edgeZone`)
+   * für das automatische Scrollen beim Ziehen (unter Berücksichtigung des Sticky-Headers
+   * und der fixierten unteren Navigationsleiste).
+   * @param {HTMLElement|Window} scrollContainer
+   * @returns {{ topEdge: number, bottomEdge: number, edgeZone: number }}
+   */
+  function getVisibleDragBounds(scrollContainer) {
+    const viewportH =
+      (typeof window !== 'undefined' && window.innerHeight) ||
+      (document.documentElement && document.documentElement.clientHeight) ||
+      600;
+    let topEdge = 0;
+    let bottomEdge = viewportH;
+
+    const appHeader = document.querySelector('.app-header');
+    if (appHeader && typeof appHeader.getBoundingClientRect === 'function') {
+      const rect = appHeader.getBoundingClientRect();
+      if (rect.height > 0 && rect.bottom > 0 && rect.top <= 2) {
+        topEdge = Math.max(topEdge, rect.bottom);
+      }
+    }
+
+    const bottomNav = document.querySelector('.bottom-nav');
+    if (bottomNav && typeof bottomNav.getBoundingClientRect === 'function') {
+      const rect = bottomNav.getBoundingClientRect();
+      if (rect.height > 0 && rect.top < viewportH) {
+        bottomEdge = Math.min(bottomEdge, rect.top);
+      }
+    }
+
+    if (scrollContainer && scrollContainer !== window && typeof scrollContainer.getBoundingClientRect === 'function') {
+      const rect = scrollContainer.getBoundingClientRect();
+      topEdge = Math.max(topEdge, rect.top);
+      bottomEdge = Math.min(bottomEdge, rect.bottom);
+    }
+
+    if (bottomEdge - topEdge < 90) {
+      topEdge = 0;
+      bottomEdge = viewportH;
+    }
+
+    const visibleHeight = Math.max(1, bottomEdge - topEdge);
+    const edgeZone = Math.max(56, Math.min(96, Math.round(visibleHeight * 0.22)));
+    return { topEdge, bottomEdge, edgeZone };
+  }
+
+  /**
+   * Berechnet die Scroll-Geschwindigkeit (Pixel pro 16,67ms Frame) in Abhängigkeit von der
+   * Nähe zur oberen oder unteren Randzone. Gibt `0` zurück, wenn der Zeiger außerhalb der Randzonen ist.
+   * @param {number} clientY
+   * @param {{ topEdge: number, bottomEdge: number, edgeZone: number }} bounds
+   * @returns {number}
+   */
+  function computeDragAutoScrollSpeed(clientY, bounds) {
+    const { topEdge, bottomEdge, edgeZone } = bounds;
+    const MIN_SPEED = 4.5;
+    const MAX_SPEED = 18;
+
+    if (clientY < topEdge + edgeZone) {
+      const ratio = Math.min(1, Math.max(0, (topEdge + edgeZone - clientY) / edgeZone));
+      return -(MIN_SPEED + (MAX_SPEED - MIN_SPEED) * ratio);
+    }
+    if (clientY > bottomEdge - edgeZone) {
+      const ratio = Math.min(1, Math.max(0, (clientY - (bottomEdge - edgeZone)) / edgeZone));
+      return MIN_SPEED + (MAX_SPEED - MIN_SPEED) * ratio;
+    }
+    return 0;
+  }
+
+  /**
    * Registriert HTML5-Drag-and-Drop- sowie Mobile-Touch-Drag-Event-Listener
-   * auf der Supermarkt-Warenliste (`#store-order-list`).
+   * inkl. flüssigem Rand-Auto-Scroll (`requestAnimationFrame`) auf der Supermarkt-Warenliste (`#store-order-list`).
    * @param {HTMLElement} listEl - Das `<ul id="store-order-list">`-Element
    */
   function bindStoreOrderDragAndDrop(listEl) {
@@ -1861,13 +2439,230 @@
       });
     };
 
+    const cleanupAllDragState = () => {
+      stopDragAutoScroll();
+      state.dragState.dragFromIndex = null;
+      state.dragState.dragCurrentOverIndex = null;
+      state.dragState.touchDragFromIndex = null;
+      state.dragState.touchCurrentOverIndex = null;
+      clearDragClasses();
+    };
+
+    const createDragGhost = (row, clientY) => {
+      if (state.dragState.ghostEl && state.dragState.ghostEl.parentNode) {
+        state.dragState.ghostEl.parentNode.removeChild(state.dragState.ghostEl);
+      }
+      const rect = row.getBoundingClientRect();
+      const ghost = row.cloneNode(true);
+      ghost.removeAttribute('draggable');
+      ghost.classList.remove('dragging', 'drag-over');
+      ghost.classList.add('drag-ghost');
+      ghost.setAttribute('aria-hidden', 'true');
+      ghost.style.left = `${rect.left}px`;
+      ghost.style.width = `${rect.width}px`;
+      const offsetY = Math.max(0, Math.min(rect.height, clientY - rect.top));
+      state.dragState.ghostOffsetY = offsetY;
+      ghost.style.top = `${rect.top}px`;
+      document.body.appendChild(ghost);
+      state.dragState.ghostEl = ghost;
+    };
+
+    const positionDragGhost = (clientY) => {
+      const ghost = state.dragState.ghostEl;
+      if (!ghost) return;
+      const viewportH =
+        (typeof window !== 'undefined' && window.innerHeight) ||
+        (document.documentElement && document.documentElement.clientHeight) ||
+        600;
+      const ghostH = ghost.offsetHeight || 52;
+      const desiredTop = clientY - state.dragState.ghostOffsetY;
+      const clampedTop = Math.max(4, Math.min(viewportH - ghostH - 4, desiredTop));
+      ghost.style.top = `${clampedTop}px`;
+    };
+
+    const updateDropTargetAtPoint = (clientX, clientY, mode) => {
+      const rows = Array.from(listEl.querySelectorAll('.store-order-item[data-item-index]'));
+      if (rows.length === 0) return;
+
+      const scrollContainer = getDragScrollContainer(listEl);
+      const { topEdge, bottomEdge } = getVisibleDragBounds(scrollContainer);
+      const listRect = listEl.getBoundingClientRect();
+
+      const sampleX =
+        listRect.width > 16
+          ? Math.max(listRect.left + 8, Math.min(listRect.right - 8, clientX))
+          : clientX;
+      const sampleY = Math.max(topEdge + 4, Math.min(bottomEdge - 4, clientY));
+
+      let overRow = null;
+      if (typeof document.elementFromPoint === 'function') {
+        const hitEl = document.elementFromPoint(sampleX, sampleY);
+        if (hitEl && typeof hitEl.closest === 'function') {
+          const candidate = hitEl.closest('.store-order-item[data-item-index]');
+          if (candidate && listEl.contains(candidate)) {
+            overRow = candidate;
+          }
+        }
+      }
+
+      if (!overRow) {
+        const firstRect = rows[0].getBoundingClientRect();
+        const lastRect = rows[rows.length - 1].getBoundingClientRect();
+        if (sampleY <= firstRect.top) {
+          overRow = rows[0];
+        } else if (sampleY >= lastRect.bottom) {
+          overRow = rows[rows.length - 1];
+        } else {
+          let bestRow = null;
+          let bestDist = Infinity;
+          for (const row of rows) {
+            const rect = row.getBoundingClientRect();
+            const mid = rect.top + rect.height / 2;
+            const dist = Math.abs(sampleY - mid);
+            if (dist < bestDist) {
+              bestDist = dist;
+              bestRow = row;
+            }
+          }
+          overRow = bestRow;
+        }
+      }
+
+      listEl.querySelectorAll('.store-order-item.drag-over').forEach((el) => {
+        if (el !== overRow) el.classList.remove('drag-over');
+      });
+
+      if (overRow) {
+        overRow.classList.add('drag-over');
+        const idx = Number(overRow.getAttribute('data-item-index'));
+        if (!isNaN(idx)) {
+          if (mode === 'touch') {
+            state.dragState.touchCurrentOverIndex = idx;
+          } else {
+            state.dragState.dragCurrentOverIndex = idx;
+          }
+        }
+      }
+    };
+
+    const scrollContainerBy = (container, deltaY) => {
+      if (!deltaY) return false;
+      if (container === window) {
+        const scrollingEl = document.scrollingElement || document.documentElement;
+        const before =
+          typeof window.scrollY === 'number'
+            ? window.scrollY
+            : scrollingEl
+            ? scrollingEl.scrollTop
+            : 0;
+        if (typeof window.scrollBy === 'function') {
+          window.scrollBy(0, deltaY);
+        } else if (scrollingEl) {
+          scrollingEl.scrollTop = before + deltaY;
+        }
+        const after =
+          typeof window.scrollY === 'number'
+            ? window.scrollY
+            : scrollingEl
+            ? scrollingEl.scrollTop
+            : 0;
+        return after !== before;
+      }
+      const before = container.scrollTop;
+      container.scrollTop = before + deltaY;
+      return container.scrollTop !== before;
+    };
+
+    const stopAutoScrollLoopOnly = () => {
+      if (state.dragState.autoScrollRafId !== null && typeof cancelAnimationFrame === 'function') {
+        cancelAnimationFrame(state.dragState.autoScrollRafId);
+      }
+      state.dragState.autoScrollRafId = null;
+      state.dragState.autoScrollLastTime = 0;
+      state.dragState.autoScrollSpeed = 0;
+    };
+
+    const updateAutoScrollForPointer = (clientX, clientY, mode) => {
+      state.dragState.pointerClientX = clientX;
+      state.dragState.pointerClientY = clientY;
+
+      const container = getDragScrollContainer(listEl);
+      const bounds = getVisibleDragBounds(container);
+      const speed = computeDragAutoScrollSpeed(clientY, bounds);
+      state.dragState.autoScrollSpeed = speed;
+
+      if (speed === 0) {
+        stopAutoScrollLoopOnly();
+        return;
+      }
+
+      if (state.dragState.autoScrollRafId === null && typeof requestAnimationFrame === 'function') {
+        state.dragState.autoScrollLastTime =
+          typeof performance !== 'undefined' && typeof performance.now === 'function'
+            ? performance.now()
+            : Date.now();
+
+        const tick = (now) => {
+          const isTouchDragging = state.dragState.touchDragFromIndex !== null;
+          const isMouseDragging = state.dragState.dragFromIndex !== null;
+          if ((!isTouchDragging && !isMouseDragging) || state.dragState.autoScrollSpeed === 0) {
+            stopAutoScrollLoopOnly();
+            return;
+          }
+
+          const currentTime =
+            typeof now === 'number'
+              ? now
+              : typeof performance !== 'undefined' && typeof performance.now === 'function'
+              ? performance.now()
+              : Date.now();
+          const dt = Math.min(48, Math.max(4, currentTime - state.dragState.autoScrollLastTime));
+          state.dragState.autoScrollLastTime = currentTime;
+
+          const activeContainer = getDragScrollContainer(listEl);
+          const activeBounds = getVisibleDragBounds(activeContainer);
+          const currentSpeed = computeDragAutoScrollSpeed(
+            state.dragState.pointerClientY,
+            activeBounds
+          );
+          state.dragState.autoScrollSpeed = currentSpeed;
+
+          if (currentSpeed === 0) {
+            stopAutoScrollLoopOnly();
+            return;
+          }
+
+          const deltaY = currentSpeed * (dt / 16.67);
+          const scrolled = scrollContainerBy(activeContainer, deltaY);
+
+          if (isTouchDragging) {
+            positionDragGhost(state.dragState.pointerClientY);
+          }
+
+          if (scrolled) {
+            updateDropTargetAtPoint(
+              state.dragState.pointerClientX,
+              state.dragState.pointerClientY,
+              isTouchDragging ? 'touch' : 'mouse'
+            );
+          }
+
+          state.dragState.autoScrollRafId = requestAnimationFrame(tick);
+        };
+
+        state.dragState.autoScrollRafId = requestAnimationFrame(tick);
+      }
+    };
+
     // 1. HTML5 Mouse / Desktop Drag & Drop
     listEl.addEventListener('dragstart', (e) => {
       const row = e.target.closest('.store-order-item[data-item-index]');
       if (!row) return;
       const idx = Number(row.getAttribute('data-item-index'));
       state.dragState.dragFromIndex = idx;
+      state.dragState.dragCurrentOverIndex = idx;
       row.classList.add('dragging');
+      if (document.body) document.body.classList.add('is-dragging-store-order');
       if (e.dataTransfer) {
         e.dataTransfer.effectAllowed = 'move';
         e.dataTransfer.setData('text/plain', String(idx));
@@ -1877,13 +2672,16 @@
     listEl.addEventListener('dragover', (e) => {
       if (state.dragState.dragFromIndex === null) return;
       e.preventDefault();
-      const row = e.target.closest('.store-order-item[data-item-index]');
-      listEl.querySelectorAll('.store-order-item.drag-over').forEach((el) => {
-        if (el !== row) el.classList.remove('drag-over');
-      });
-      if (row) {
-        row.classList.add('drag-over');
-      }
+      updateDropTargetAtPoint(e.clientX, e.clientY, 'mouse');
+      updateAutoScrollForPointer(e.clientX, e.clientY, 'mouse');
+    });
+
+    document.addEventListener('dragover', (e) => {
+      if (state.dragState.dragFromIndex === null) return;
+      if (listEl.contains(e.target)) return;
+      e.preventDefault();
+      updateDropTargetAtPoint(e.clientX, e.clientY, 'mouse');
+      updateAutoScrollForPointer(e.clientX, e.clientY, 'mouse');
     });
 
     listEl.addEventListener('drop', (e) => {
@@ -1891,16 +2689,28 @@
       e.preventDefault();
       const targetRow = e.target.closest('.store-order-item[data-item-index]');
       const fromIdx = state.dragState.dragFromIndex;
-      state.dragState.dragFromIndex = null;
-      clearDragClasses();
-      if (!targetRow) return;
-      const toIdx = Number(targetRow.getAttribute('data-item-index'));
-      handleDragReorderStoreItem(fromIdx, toIdx);
+      const fallbackToIdx = state.dragState.dragCurrentOverIndex;
+      cleanupAllDragState();
+      const toIdx = targetRow ? Number(targetRow.getAttribute('data-item-index')) : fallbackToIdx;
+      if (typeof toIdx === 'number' && !isNaN(toIdx) && fromIdx !== toIdx) {
+        handleDragReorderStoreItem(fromIdx, toIdx);
+      }
+    });
+
+    document.addEventListener('drop', (e) => {
+      if (state.dragState.dragFromIndex === null) return;
+      if (listEl.contains(e.target)) return;
+      e.preventDefault();
+      const fromIdx = state.dragState.dragFromIndex;
+      const toIdx = state.dragState.dragCurrentOverIndex;
+      cleanupAllDragState();
+      if (typeof toIdx === 'number' && !isNaN(toIdx) && fromIdx !== toIdx) {
+        handleDragReorderStoreItem(fromIdx, toIdx);
+      }
     });
 
     listEl.addEventListener('dragend', () => {
-      state.dragState.dragFromIndex = null;
-      clearDragClasses();
+      cleanupAllDragState();
     });
 
     // 2. Mobile Touch Drag & Drop über das ☰ Drag-Handle
@@ -1911,12 +2721,20 @@
         if (!handle) return;
         const row = handle.closest('.store-order-item[data-item-index]');
         if (!row) return;
+        const touch = e.touches && e.touches[0];
+        if (!touch) return;
+        if (e.cancelable) e.preventDefault();
+
         const idx = Number(row.getAttribute('data-item-index'));
         state.dragState.touchDragFromIndex = idx;
         state.dragState.touchCurrentOverIndex = idx;
+        state.dragState.pointerClientX = touch.clientX;
+        state.dragState.pointerClientY = touch.clientY;
         row.classList.add('dragging');
+        if (document.body) document.body.classList.add('is-dragging-store-order');
+        createDragGhost(row, touch.clientY);
       },
-      { passive: true }
+      { passive: false }
     );
 
     listEl.addEventListener(
@@ -1927,36 +2745,232 @@
         if (!touch) return;
         if (e.cancelable) e.preventDefault();
 
-        const targetEl = document.elementFromPoint(touch.clientX, touch.clientY);
-        const overRow = targetEl && targetEl.closest
-          ? targetEl.closest('.store-order-item[data-item-index]')
-          : null;
-
-        listEl.querySelectorAll('.store-order-item.drag-over').forEach((el) => {
-          if (el !== overRow) el.classList.remove('drag-over');
-        });
-
-        if (overRow) {
-          overRow.classList.add('drag-over');
-          state.dragState.touchCurrentOverIndex = Number(
-            overRow.getAttribute('data-item-index')
-          );
-        }
+        positionDragGhost(touch.clientY);
+        updateDropTargetAtPoint(touch.clientX, touch.clientY, 'touch');
+        updateAutoScrollForPointer(touch.clientX, touch.clientY, 'touch');
       },
       { passive: false }
     );
 
-    listEl.addEventListener('touchend', () => {
+    const finishTouchDrag = (commitReorder) => {
       if (state.dragState.touchDragFromIndex === null) return;
       const fromIdx = state.dragState.touchDragFromIndex;
       const toIdx = state.dragState.touchCurrentOverIndex;
-      state.dragState.touchDragFromIndex = null;
-      state.dragState.touchCurrentOverIndex = null;
-      clearDragClasses();
-      if (typeof toIdx === 'number' && fromIdx !== toIdx) {
+      cleanupAllDragState();
+      if (commitReorder && typeof toIdx === 'number' && !isNaN(toIdx) && fromIdx !== toIdx) {
         handleDragReorderStoreItem(fromIdx, toIdx);
       }
+    };
+
+    listEl.addEventListener('touchend', () => finishTouchDrag(true));
+    listEl.addEventListener('touchcancel', () => finishTouchDrag(false));
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('blur', () => {
+        if (
+          state.dragState.touchDragFromIndex !== null ||
+          state.dragState.dragFromIndex !== null
+        ) {
+          cleanupAllDragState();
+        }
+      });
+    }
+  }
+
+  /**
+   * Bricht einen aktiven Long-Press-Timer auf einer unbekannten Einkaufslisten-Ware ab
+   * und entfernt visuelles Hold-Feedback.
+   */
+  function cancelUnknownItemLongPress() {
+    if (state.longPressState.timerId !== null) {
+      clearTimeout(state.longPressState.timerId);
+      state.longPressState.timerId = null;
+    }
+    if (state.longPressState.feedbackTimerId !== null) {
+      clearTimeout(state.longPressState.feedbackTimerId);
+      state.longPressState.feedbackTimerId = null;
+    }
+    if (state.longPressState.activeRow) {
+      state.longPressState.activeRow.classList.remove('long-pressing');
+      state.longPressState.activeRow = null;
+    }
+    state.longPressState.itemId = null;
+    state.longPressState.pointerId = null;
+    state.longPressState.triggered = false;
+    state.longPressState.triggeredPointerId = null;
+  }
+
+  /**
+   * Registriert zuverlässige Long-Press-Erkennung ("langes Gedrückthalten") auf unbekannten
+   * Einkaufslisten-Waren (`[data-unknown-item="true"]`) für Touch UND Maus/Pointer:
+   * - Löst nach 550ms gedrückt halten aus und fügt die Ware dem aktuellen Supermarkt hinzu.
+   * - Bricht sofort ab bei Bewegung > 10px oder Scrollen (kein versehentliches Auslösen beim Scrollen).
+   * - Unterdrückt das folgende `click`-Event nach erfolgreichem Long-Press (kein Konflikt mit Abhaken).
+   * - Verhindert unerwünschte Textauswahl und Browser-Kontextmenüs während des Gedrückthaltens.
+   * @param {HTMLElement} listEl
+   */
+  function bindUnknownItemLongPress(listEl) {
+    if (!listEl) return;
+
+    const LONG_PRESS_DURATION_MS = 550;
+    const FEEDBACK_DELAY_MS = 110;
+    const MOVE_CANCEL_PX = 10;
+
+    const clearStaleTriggeredState = () => {
+      state.longPressState.triggered = false;
+      state.longPressState.triggeredPointerId = null;
+    };
+
+    const startPress = (row, clientX, clientY, pointerId) => {
+      cancelUnknownItemLongPress();
+      const itemId = row.getAttribute('data-item-id');
+      if (!itemId) return;
+
+      state.longPressState.activeRow = row;
+      state.longPressState.itemId = itemId;
+      state.longPressState.startX = clientX;
+      state.longPressState.startY = clientY;
+      state.longPressState.pointerId = pointerId;
+      state.longPressState.triggered = false;
+      state.longPressState.triggeredPointerId = null;
+
+      state.longPressState.feedbackTimerId = setTimeout(() => {
+        if (state.longPressState.activeRow === row) {
+          row.classList.add('long-pressing');
+        }
+      }, FEEDBACK_DELAY_MS);
+
+      state.longPressState.timerId = setTimeout(() => {
+        const triggeredItemId = state.longPressState.itemId;
+        const activePointerId = state.longPressState.pointerId;
+        cancelUnknownItemLongPress();
+        state.longPressState.triggered = true;
+        state.longPressState.triggeredPointerId = activePointerId;
+        state.longPressState.suppressNextClickUntil = Date.now() + 700;
+        if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') {
+          try {
+            navigator.vibrate(25);
+          } catch (_) {}
+        }
+        if (triggeredItemId) {
+          handleAddUnknownItemToSupermarket(triggeredItemId);
+        }
+      }, LONG_PRESS_DURATION_MS);
+    };
+
+    const finishPressRelease = () => {
+      if (state.longPressState.triggered) {
+        state.longPressState.suppressNextClickUntil = Date.now() + 450;
+      }
+      cancelUnknownItemLongPress();
+    };
+
+    const checkMoveCancel = (clientX, clientY) => {
+      if (state.longPressState.timerId === null) return;
+      const dx = clientX - state.longPressState.startX;
+      const dy = clientY - state.longPressState.startY;
+      if (Math.hypot(dx, dy) > MOVE_CANCEL_PX) {
+        cancelUnknownItemLongPress();
+      }
+    };
+
+    listEl.addEventListener('contextmenu', (e) => {
+      if (e.target.closest('.shopping-item[data-unknown-item="true"]')) {
+        e.preventDefault();
+      }
     });
+
+    if (typeof window !== 'undefined' && 'PointerEvent' in window) {
+      listEl.addEventListener('pointerdown', (e) => {
+        clearStaleTriggeredState();
+        if (e.isPrimary === false) return;
+        if (e.pointerType === 'mouse' && e.button !== 0) return;
+        if (e.target.closest('button')) return;
+        const row = e.target.closest('.shopping-item[data-unknown-item="true"][data-item-id]');
+        if (!row) return;
+        startPress(row, e.clientX, e.clientY, e.pointerId);
+      });
+
+      listEl.addEventListener('pointermove', (e) => {
+        if (state.longPressState.pointerId !== e.pointerId) return;
+        checkMoveCancel(e.clientX, e.clientY);
+      });
+
+      const endPointer = (e) => {
+        const matchesActive = state.longPressState.pointerId === e.pointerId;
+        const matchesTriggered =
+          state.longPressState.triggered &&
+          state.longPressState.triggeredPointerId === e.pointerId;
+        if (matchesActive || matchesTriggered) {
+          finishPressRelease();
+        }
+      };
+      listEl.addEventListener('pointerup', endPointer);
+      listEl.addEventListener('pointercancel', endPointer);
+      listEl.addEventListener('pointerleave', endPointer);
+
+      if (!state.longPressState.windowCleanupBound) {
+        state.longPressState.windowCleanupBound = true;
+        window.addEventListener('pointerup', endPointer);
+        window.addEventListener('pointercancel', endPointer);
+      }
+    } else {
+      // Fallback für ältere Umgebungen ohne PointerEvent
+      const endFallback = (kind) => {
+        const matchesActive = state.longPressState.pointerId === kind;
+        const matchesTriggered =
+          state.longPressState.triggered &&
+          state.longPressState.triggeredPointerId === kind;
+        if (matchesActive || matchesTriggered) {
+          finishPressRelease();
+        }
+      };
+
+      listEl.addEventListener(
+        'touchstart',
+        (e) => {
+          clearStaleTriggeredState();
+          if (e.target.closest('button')) return;
+          const row = e.target.closest('.shopping-item[data-unknown-item="true"][data-item-id]');
+          const touch = e.touches && e.touches[0];
+          if (!row || !touch) return;
+          startPress(row, touch.clientX, touch.clientY, 'touch');
+        },
+        { passive: true }
+      );
+      listEl.addEventListener(
+        'touchmove',
+        (e) => {
+          const touch = e.touches && e.touches[0];
+          if (touch) checkMoveCancel(touch.clientX, touch.clientY);
+        },
+        { passive: true }
+      );
+      listEl.addEventListener('touchend', () => endFallback('touch'));
+      listEl.addEventListener('touchcancel', () => endFallback('touch'));
+
+      listEl.addEventListener('mousedown', (e) => {
+        clearStaleTriggeredState();
+        if (e.button !== 0 || e.target.closest('button')) return;
+        const row = e.target.closest('.shopping-item[data-unknown-item="true"][data-item-id]');
+        if (!row) return;
+        startPress(row, e.clientX, e.clientY, 'mouse');
+      });
+      listEl.addEventListener('mousemove', (e) => {
+        if (state.longPressState.pointerId === 'mouse') {
+          checkMoveCancel(e.clientX, e.clientY);
+        }
+      });
+      listEl.addEventListener('mouseup', () => endFallback('mouse'));
+      listEl.addEventListener('mouseleave', () => endFallback('mouse'));
+
+      if (typeof window !== 'undefined' && !state.longPressState.windowCleanupBound) {
+        state.longPressState.windowCleanupBound = true;
+        window.addEventListener('touchend', () => endFallback('touch'));
+        window.addEventListener('touchcancel', () => endFallback('touch'));
+        window.addEventListener('mouseup', () => endFallback('mouse'));
+      }
+    }
   }
 
   /**
@@ -2016,17 +3030,31 @@
       quickSuggestions.addEventListener('click', (e) => {
         const chip = e.target.closest('[data-suggest-name]');
         if (!chip) return;
-        const itemName = chip.getAttribute('data-suggest-name');
+        const itemName = chip.getAttribute('data-suggest-name') || '';
+        const itemSpec = chip.getAttribute('data-suggest-spec') || '';
         const nameInput = document.getElementById('add-item-name');
+        const specInput = document.getElementById('add-item-spec');
         if (nameInput) {
           nameInput.value = itemName;
+          if (specInput) specInput.value = itemSpec;
           handleAddItemSubmit();
         }
       });
     }
 
-    // Checked & Unchecked Lists (Delegated click for toggle check & delete)
+    // Checked & Unchecked Lists (Delegated click for toggle check, edit & delete + Long-Press for unknown items)
     const handleListClick = (e) => {
+      if (Date.now() < state.longPressState.suppressNextClickUntil) {
+        state.longPressState.suppressNextClickUntil = 0;
+        e.preventDefault();
+        e.stopPropagation();
+        return;
+      }
+      const editBtn = e.target.closest('[data-edit-item-id]');
+      if (editBtn) {
+        openEditItemModal(editBtn.getAttribute('data-edit-item-id'), e);
+        return;
+      }
       const deleteBtn = e.target.closest('[data-delete-id]');
       if (deleteBtn) {
         handleRemoveItem(deleteBtn.getAttribute('data-delete-id'), e);
@@ -2038,8 +3066,36 @@
       }
     };
 
-    addListener('checked-items-list', 'click', handleListClick);
-    addListener('unchecked-items-list', 'click', handleListClick);
+    const checkedListEl = document.getElementById('checked-items-list');
+    const uncheckedListEl = document.getElementById('unchecked-items-list');
+    if (checkedListEl) {
+      checkedListEl.addEventListener('click', handleListClick);
+      bindUnknownItemLongPress(checkedListEl);
+    }
+    if (uncheckedListEl) {
+      uncheckedListEl.addEventListener('click', handleListClick);
+      bindUnknownItemLongPress(uncheckedListEl);
+    }
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener(
+        'scroll',
+        () => {
+          if (state.longPressState.timerId !== null) {
+            cancelUnknownItemLongPress();
+          }
+        },
+        { passive: true, capture: true }
+      );
+    }
+
+    // Edit Shopping List Item Modal
+    addListener('edit-item-modal-form', 'submit', handleEditItemModalSubmit);
+    addListener('edit-item-modal-cancel-btn', 'click', closeEditItemModal);
+
+    // Edit Supermarket Item Modal
+    addListener('edit-store-item-modal-form', 'submit', handleEditStoreItemModalSubmit);
+    addListener('edit-store-item-modal-cancel-btn', 'click', closeEditStoreItemModal);
 
     addListener('clear-checked-btn', 'click', handleClearCheckedItems);
     addListener('seed-demo-list-btn', 'click', seedDemoShoppingList);
@@ -2084,13 +3140,19 @@
       }
     });
 
-    // Supermarket Item Order List (⇄ Move Modal, ↑/↓ Arrows, ✕ Remove, Drag & Drop)
+    // Supermarket Item Order List (✎ Edit, ⇄ Move Modal, ↑/↓ Arrows, ✕ Remove, Drag & Drop)
     const storeOrderList = document.getElementById('store-order-list');
     if (storeOrderList) {
       storeOrderList.addEventListener('click', (e) => {
-        const moveAfterBtn = e.target.closest('[data-move-after-item]');
+        const editBtn = e.target.closest('[data-edit-store-idx]');
+        if (editBtn) {
+          const idx = Number(editBtn.getAttribute('data-edit-store-idx'));
+          openEditStoreItemModal(idx);
+          return;
+        }
+        const moveAfterBtn = e.target.closest('[data-move-after-idx]');
         if (moveAfterBtn) {
-          const itemName = moveAfterBtn.getAttribute('data-move-after-item');
+          const itemName = moveAfterBtn.getAttribute('data-move-after-item') || '';
           const idx = Number(moveAfterBtn.getAttribute('data-move-after-idx'));
           openMoveStoreItemModal(itemName, idx);
           return;
@@ -2100,6 +3162,12 @@
           const idx = Number(moveBtn.getAttribute('data-move-idx'));
           const dir = moveBtn.getAttribute('data-move-dir');
           handleMoveStoreItem(idx, dir);
+          return;
+        }
+        const removeIdxBtn = e.target.closest('[data-remove-store-idx]');
+        if (removeIdxBtn) {
+          const idx = Number(removeIdxBtn.getAttribute('data-remove-store-idx'));
+          handleRemoveStoreKnownItem(idx);
           return;
         }
         const removeBtn = e.target.closest('[data-remove-store-item]');
@@ -2114,7 +3182,11 @@
     // Direct Move (⇄) Modal Listeners
     addListener('move-item-to-start-btn', 'click', () => {
       if (!state.pendingMoveItem) return;
-      handleMoveStoreItemAfter(state.pendingMoveItem.itemName, '__START__');
+      const target =
+        typeof state.pendingMoveItem.currentIndex === 'number'
+          ? state.pendingMoveItem.currentIndex
+          : state.pendingMoveItem.itemName;
+      handleMoveStoreItemAfter(target, '__START__');
     });
 
     addListener('move-item-picker-list', 'click', (e) => {
@@ -2139,31 +3211,19 @@
         showToast('⚠️ Bitte wähle eine vorige Ware aus oder klicke auf „Ganz an den Anfang“.', 'late');
         return;
       }
-      handleMoveStoreItemAfter(state.pendingMoveItem.itemName, prevVal);
+      const target =
+        typeof state.pendingMoveItem.currentIndex === 'number'
+          ? state.pendingMoveItem.currentIndex
+          : state.pendingMoveItem.itemName;
+      handleMoveStoreItemAfter(target, prevVal);
     });
 
     addListener('move-item-cancel-btn', 'click', closeMoveStoreItemModal);
 
-    // Share & Backup Tab
-    addListener('native-share-list-btn', 'click', handleShareShoppingList);
-    addListener('native-share-store-btn', 'click', () => {
-      handleExportShareCode();
-      const textarea = document.getElementById('share-code-textarea');
-      if (textarea && textarea.value) {
-        copyTextToClipboard(textarea.value);
-        showToast('🏪 Supermarkt-Konfiguration & Liste als Share-Code kopiert!', 'success');
-      }
-    });
-    addListener('export-code-btn', 'click', handleExportShareCode);
-    addListener('download-json-btn', 'click', handleDownloadBackupJson);
-    addListener('copy-share-code-btn', 'click', async () => {
-      const textarea = document.getElementById('share-code-textarea');
-      if (textarea && textarea.value) {
-        await copyTextToClipboard(textarea.value);
-        showToast('📋 Code in die Zwischenablage kopiert!', 'success');
-      }
-    });
-    addListener('import-share-code-btn', 'click', handleImportShareCode);
+    // File-based Export & Import Tab
+    addListener('share-list-file-btn', 'click', handleShareShoppingListFile);
+    addListener('save-list-file-btn', 'click', handleSaveShoppingListFile);
+    addListener('import-list-file-input', 'change', handleImportShoppingListFile);
   }
 
   /**
@@ -2199,21 +3259,6 @@
       reader.onerror = () => reject(new Error('Datei konnte nicht gelesen werden'));
       reader.readAsDataURL(file);
     });
-  }
-
-  /**
-   * Kopiert einen Text in die Zwischenablage.
-   * @param {string} text
-   * @returns {Promise<boolean>}
-   */
-  async function copyTextToClipboard(text) {
-    try {
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        await navigator.clipboard.writeText(text);
-        return true;
-      }
-    } catch (_) {}
-    return false;
   }
 
   /**
@@ -2265,6 +3310,10 @@
     selectSupermarket,
     handleToggleLiveOptimization,
     handleAddItemSubmit,
+    openEditItemModal,
+    closeEditItemModal,
+    handleEditItemModalSubmit,
+    handleAddUnknownItemToSupermarket,
     handleItemToggleCheck,
     openLiveOptimizationModal,
     confirmLiveOptimizationUpdate,
@@ -2277,6 +3326,7 @@
     renderLiveOptimizationHeader,
     renderShoppingListView,
     renderQuickSuggestions,
+    renderExportImportTabSummary,
     handleOcrFileUpload,
     handleLoadDemoPhoto,
     renderOcrPreviewFromText,
@@ -2287,15 +3337,19 @@
     handleDeleteSupermarket,
     handleMoveStoreItem,
     handleDragReorderStoreItem,
+    openEditStoreItemModal,
+    closeEditStoreItemModal,
+    handleEditStoreItemModalSubmit,
     openMoveStoreItemModal,
     closeMoveStoreItemModal,
     handleMoveStoreItemAfter,
     handleAddStoreKnownItem,
     handleRemoveStoreKnownItem,
-    handleShareShoppingList,
-    handleExportShareCode,
-    handleImportShareCode,
-    handleDownloadBackupJson,
+    handleSaveShoppingListFile,
+    handleShareShoppingListFile,
+    handleImportShoppingListFile,
+    stopDragAutoScroll,
+    cancelUnknownItemLongPress,
     showToast
   };
 
