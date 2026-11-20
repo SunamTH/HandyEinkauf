@@ -28,8 +28,8 @@ jobs:
         with:
           node-version: '22'
 
-      - name: Run Core Engine Unit Tests
-        run: node tests/engine.test.js
+      - name: Run Unit Tests (Core Engine & File Export/Import)
+        run: npm test
 
       - name: Build Self-Contained Mobile HTML Bundle
         run: node scripts/bundle-standalone.js
@@ -94,11 +94,22 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           cp android/app/build/outputs/apk/debug/app-debug.apk SmartCart.apk
-          TAG="v1.0.${{ github.run_number }}"
+          APP_VERSION=$(node -p "require('./package.json').version")
+          if gh release view "v${APP_VERSION}" --repo "${{ github.repository }}" >/dev/null 2>&1; then
+            TAG="v${APP_VERSION}-r${{ github.run_number }}"
+          else
+            TAG="v${APP_VERSION}"
+          fi
           gh release create "$TAG" SmartCart.apk dist/SmartCart_Handy_App.html \
             --repo "${{ github.repository }}" \
             --title "SmartCart Einkaufslisten-App ($TAG)" \
             --notes "### 📱 Direkter Handy-Download (ohne Entpacken)
           - **Android App (.apk):** [SmartCart.apk direkt herunterladen](https://github.com/${{ github.repository }}/releases/latest/download/SmartCart.apk)
-          - **Offline HTML-Einzeldatei (Android & iOS):** [SmartCart_Handy_App.html herunterladen](https://github.com/${{ github.repository }}/releases/latest/download/SmartCart_Handy_App.html)" \
+          - **Offline HTML-Einzeldatei (Android & iOS):** [SmartCart_Handy_App.html herunterladen](https://github.com/${{ github.repository }}/releases/latest/download/SmartCart_Handy_App.html)
+
+          ### ✨ Highlights in v${APP_VERSION}
+          - **Spezifikation / Marke:** Optionale Spezifikation auf Einkaufslisten- und Supermarkt-Einträgen inkl. Mehrfach-Koexistenz pro Warengruppe und exaktem Matching mit Fallback auf unspezifizierte Einträge
+          - **Unbekannte Waren & Long-Press:** Noch nicht im Supermarkt vorhandene Waren stehen am Anfang der offenen Liste, sortieren sich beim Abhaken sauber ein und lassen sich per Long-Press direkt in den Supermarkt aufnehmen
+          - **Drag-and-Drop Auto-Scroll:** Automatisches Rand-Scrollen beim Umsortieren langer Supermarkt-Listen (Touch & Desktop)
+          - **Reiner Datei-Export & -Import (.smartcart.json):** Speichern, Datei-Teilen (WhatsApp, Mail, Messenger) und validierter Datei-Import (Neu / Zusammenführen / Ersetzen)" \
             --latest
